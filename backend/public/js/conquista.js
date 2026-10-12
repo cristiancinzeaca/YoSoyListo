@@ -137,6 +137,7 @@
     if (msg.t === 'cq_queued') return onQueued(msg);
     if (msg.t === 'cq_state') return onState(msg);
     if (msg.t === 'queue_cancelled' || msg.t === 'left') return (location.href = '/');
+    if (msg.t === 'chat') return window.Chat && Chat.match.receive(msg.message);
     if (msg.t === 'helper') return onHelper(msg);
     if (msg.t === 'error') {
       if (helperWait) {
@@ -514,6 +515,7 @@
 
   // ---------- estado ----------
   function onState(s) {
+    if (window.Chat) Chat.match.start((m) => socket.send(m));
     const prev = state.s && state.s.code === s.code ? state.s : null;
     state.s = s;
     if (!state.me) return;

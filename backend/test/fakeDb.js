@@ -6,6 +6,7 @@ function createFakeDb() {
   const tables = {
     questions: [], numeric_questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [],
     player_sessions: [], player_items: [], coin_ledger: [], country_owners: [], country_attacks: [],
+    chat_messages: [], chat_reports: [], chat_blocks: [], chat_reads: [],
   };
 
   class Query {
@@ -48,7 +49,7 @@ function createFakeDb() {
       if (this.op === 'insert') {
         const list = (Array.isArray(this.payload) ? this.payload : [this.payload]).map((row) => ({
           id: crypto.randomUUID(),
-          created_at: new Date().toISOString(),
+          created_at: nextTime(),
           ...defaults(this.table),
           ...structuredClone(row),
         }));
@@ -84,7 +85,16 @@ function createFakeDb() {
     }
   }
 
+  // Fechas siempre crecientes (en los tests se insertan varias filas en el mismo milisegundo).
+  let lastTime = 0;
+  function nextTime() {
+    lastTime = Math.max(Date.now(), lastTime + 1);
+    return new Date(lastTime).toISOString();
+  }
+
   function defaults(table) {
+    if (table === 'chat_messages') return { recipient_id: null, hidden: false };
+    if (table === 'chat_reports') return { resolved: false };
     if (table === 'questions') return { category: 'general', difficulty: 2, explanation: null, active: true };
     if (table === 'players') {
       return {
@@ -176,6 +186,38 @@ function createFakeDb() {
       }
       const player = (id) => tables.players.find((x) => x.id === id);
       const ledger = (id, amount, reason) => tables.coin_ledger.push({ player_id: id, amount, reason, created_at: new Date().toISOString() });
+      if (name === 'mark_chat_read') {
+        const r = tables.chat_reads.find((x) => x.player_id === args.p_player && x.channel === args.p_channel);
+        if (r) r.read_at = nextTime();
+        else tables.chat_reads.push({ player_id: args.p_player, channel: args.p_channel, read_at: nextTime() });
+        return { data: null, error: null };
+      }
+      if (name === 'block_player') {
+        if (!tables.chat_blocks.some((b) => b.blocker_id === args.p_blocker && b.blocked_id === args.p_blocked)) {
+          tables.chat_blocks.push({ blocker_id: args.p_blocker, blocked_id: args.p_blocked, created_at: nextTime() });
+        }
+        return { data: null, error: null };
+      }
+      if (name === 'report_chat_message') {
+        const msg = tables.chat_messages.find((m) => m.id === args.p_message);
+        if (!msg) return { data: [], error: null };
+        const wasHidden = msg.hidden;
+        if (!tables.chat_reports.some((r) => r.message_id === msg.id && r.reporter_id === args.p_reporter)) {
+          tables.chat_reports.push({ message_id: msg.id, reporter_id: args.p_reporter, reason: args.p_reason, resolved: false, created_at: nextTime() });
+        }
+        const n = tables.chat_reports.filter((r) => r.message_id === msg.id && !r.resolved).length;
+        let muted = false;
+        if (n >= args.p_hide_at && !wasHidden) {
+          msg.hidden = true;
+          const hid = tables.chat_messages.filter((m) => m.sender_id === msg.sender_id && m.hidden).length;
+          if (hid >= args.p_mute_after) {
+            player(msg.sender_id).chat_muted_until = new Date(Date.now() + args.p_mute_hours * 3600_000).toISOString();
+            muted = true;
+          }
+        }
+        return { data: [{ reports: n, hidden: wasHidden || n >= args.p_hide_at, muted }], error: null };
+      }
+      if (name === 'prune_chat') return { data: 0, error: null };
       if (name === 'pay_coins') {
         const p = player(args.p_id);
         if (!p || p.coins < args.p_amount) return { data: [{ ok: false, balance: p ? p.coins : null }], error: null };

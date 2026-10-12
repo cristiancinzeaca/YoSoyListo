@@ -147,6 +147,8 @@
         return;
       case 'helper':
         return onHelper(msg);
+      case 'chat':
+        return window.Chat && Chat.match.receive(msg.message);
       case 'error':
         if (helperWait) {
           helperWait.reject(new Error(msg.message));
@@ -199,6 +201,7 @@
   }
 
   function onRoom(room) {
+    if (window.Chat) Chat.match.start((m) => socket.send(m));
     state.room = room;
     if (room.mode === 'room' && params.get('c') !== room.code) {
       params.set('c', room.code);

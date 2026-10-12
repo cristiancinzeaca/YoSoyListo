@@ -13,6 +13,8 @@ const playersRoutes = require('../modules/players/routes');
 const shopRoutes = require('../modules/shop/routes');
 const authRoutes = require('../modules/auth/routes');
 const countriesRoutes = require('../modules/countries/routes');
+const chatRoutes = require('../modules/chat/routes');
+const chat = require('../modules/chat/service');
 const { attachMultiplayer } = require('../modules/multiplayer/hub');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -67,6 +69,7 @@ function createApp() {
   app.use('/api/shop', shopRoutes);
   app.use('/api/auth', authRoutes.api);
   app.use('/api/countries', countriesRoutes);
+  app.use('/api/chat', chatRoutes);
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
   app.use('/auth', authRoutes.pages);
@@ -137,6 +140,9 @@ if (require.main === module) {
       try {
         const total = await migrate(getDb().pool);
         console.log(`Base de datos lista: ${total} preguntas`);
+        // Los mensajes viejos del chat se borran solos (cada 6 horas).
+        chat.prune();
+        setInterval(() => chat.prune(), 6 * 3600_000).unref();
       } catch (err) {
         console.error('❌ No se pudo preparar la base de datos:', err.message);
       }

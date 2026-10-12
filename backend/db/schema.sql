@@ -448,3 +448,112 @@ alter table player_items enable row level security;
 alter table coin_ledger enable row level security;
 alter table country_owners enable row level security;
 alter table country_attacks enable row level security;
+
+-- ---------- Chat ----------
+-- Canales: 'lobby' (sala general), 'match:<código>' (partida) y 'dm:<id>:<id>' (privados, ids ordenados).
+alter table players add column if not exists chat_muted_until timestamptz;
+alter table players add column if not exists dm_open boolean not null default true;
+
+create table if not exists chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  channel text not null,
+  sender_id uuid not null references players (id) on delete cascade,
+  recipient_id uuid references players (id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 200),
+  hidden boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists chat_messages_channel_idx on chat_messages (channel, created_at desc);
+create index if not exists chat_messages_sender_idx on chat_messages (sender_id, created_at desc);
+create index if not exists chat_messages_recipient_idx on chat_messages (recipient_id, created_at desc) where recipient_id is not null;
+
+create table if not exists chat_reports (
+  message_id uuid not null references chat_messages (id) on delete cascade,
+  reporter_id uuid not null references players (id) on delete cascade,
+  reason text not null,
+  resolved boolean not null default false,
+  created_at timestamptz not null default now(),
+  primary key (message_id, reporter_id)
+);
+
+create table if not exists chat_blocks (
+  blocker_id uuid not null references players (id) on delete cascade,
+  blocked_id uuid not null references players (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (blocker_id, blocked_id)
+);
+
+create table if not exists chat_reads (
+  player_id uuid not null references players (id) on delete cascade,
+  channel text not null,
+  read_at timestamptz not null default now(),
+  primary key (player_id, channel)
+);
+
+-- Marca un canal como leído hasta ahora.
+create or replace function mark_chat_read(p_player uuid, p_channel text)
+returns void
+language sql as $$
+  insert into chat_reads (player_id, channel, read_at) values (p_player, p_channel, now())
+  on conflict (player_id, channel) do update set read_at = excluded.read_at;
+$$;
+
+-- Bloquear (sin error si ya estaba bloqueado).
+create or replace function block_player(p_blocker uuid, p_blocked uuid)
+returns void
+language sql as $$
+  insert into chat_blocks (blocker_id, blocked_id) values (p_blocker, p_blocked) on conflict do nothing;
+$$;
+
+-- Reportar un mensaje. Con p_hide_at reportes distintos se oculta; si al autor le han
+-- ocultado p_mute_after mensajes en 7 días, queda silenciado p_mute_hours horas.
+create or replace function report_chat_message(
+  p_message uuid, p_reporter uuid, p_reason text, p_hide_at int, p_mute_after int, p_mute_hours int
+) returns table (reports int, hidden boolean, muted boolean)
+language plpgsql as $$
+declare
+  msg chat_messages%rowtype;
+  n int;
+  hid int;
+  was_hidden boolean;
+  mute boolean := false;
+begin
+  select * into msg from chat_messages where id = p_message for update;
+  if not found then return; end if;
+  was_hidden := msg.hidden;
+  insert into chat_reports (message_id, reporter_id, reason) values (p_message, p_reporter, p_reason)
+  on conflict (message_id, reporter_id) do nothing;
+  select count(*)::int into n from chat_reports where message_id = p_message and not resolved;
+  if n >= p_hide_at and not was_hidden then
+    update chat_messages set hidden = true where id = p_message;
+    select count(*)::int into hid from chat_messages
+      where sender_id = msg.sender_id and hidden and created_at > now() - interval '7 days';
+    if hid >= p_mute_after then
+      update players set chat_muted_until = greatest(coalesce(chat_muted_until, now()), now() + make_interval(hours => p_mute_hours))
+        where id = msg.sender_id;
+      mute := true;
+    end if;
+  end if;
+  return query select n, (was_hidden or n >= p_hide_at), mute;
+end;
+$$;
+
+-- Borra los mensajes viejos (los privados se guardan más tiempo).
+create or replace function prune_chat(p_public_days int, p_private_days int)
+returns int
+language plpgsql as $$
+declare
+  n int;
+begin
+  delete from chat_messages
+    where (recipient_id is null and created_at < now() - make_interval(days => p_public_days))
+       or (recipient_id is not null and created_at < now() - make_interval(days => p_private_days));
+  get diagnostics n = row_count;
+  return n;
+end;
+$$;
+
+alter table chat_messages enable row level security;
+alter table chat_reports enable row level security;
+alter table chat_blocks enable row level security;
+alter table chat_reads enable row level security;
