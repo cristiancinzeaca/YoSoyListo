@@ -21,7 +21,7 @@ Todo funciona con un solo servidor (Railway) y una base de datos (Supabase), amb
 2. Nombre `yosoylisto`, inventa una contraseña para la base de datos (guárdala) y elige una región de **Europa**
 3. Espera 1-2 minutos a que se cree
 4. Menú lateral → **SQL Editor** → **New query**. Copia y pega **todo** el contenido de [`backend/db/schema.sql`](backend/db/schema.sql) y pulsa **Run**
-5. Otra **New query** con [`backend/db/seed.sql`](backend/db/seed.sql) → **Run** (53 preguntas de ejemplo para poder jugar ya)
+5. Otra **New query** con [`backend/db/seed.sql`](backend/db/seed.sql) → **Run** (473 preguntas en 6 categorías para poder jugar desde el primer día)
 6. **Project Settings** (engranaje) → **API**. Copia:
    - **Project URL** (algo como `https://xxxxx.supabase.co`)
    - la clave **service_role** (¡no la `anon`!). Es secreta: no la pegues en ningún sitio público.
@@ -51,13 +51,17 @@ Railway vuelve a desplegar solo cada vez que cambia la rama principal en GitHub.
 ### 4. Antes de anunciarlo
 
 - [ ] Cambia el texto de contacto en `backend/public/privacidad.html` (busca `TODO`) por tu email
-- [ ] Carga muchas más preguntas (ver abajo). Con pocas se repiten enseguida
+- [ ] (Opcional) Añade más preguntas (ver abajo): cuantas más haya, menos se repiten
 - [ ] (Opcional) Dominio propio: en Railway → **Settings** → **Networking** → **Custom Domain**. Después añade la variable `PUBLIC_URL=https://tudominio.es`
 - [ ] (Opcional) Da de alta el dominio en [Google Search Console](https://search.google.com/search-console) y envía `https://tudominio.es/sitemap.xml`
 
 ---
 
 ## Añadir preguntas
+
+El juego ya trae 473 preguntas (geografía, historia, ciencia, arte y literatura, deportes y cultura general). Para añadir más hay dos caminos:
+
+**Desde el panel** (lo más fácil):
 
 En `/admin/` → **Importar varias preguntas (JSON)**, pega una lista con este formato (hasta 500 cada vez):
 
@@ -79,6 +83,8 @@ En `/admin/` → **Importar varias preguntas (JSON)**, pega una lista con este f
 - `difficulty`: 1 fácil, 2 media, 3 difícil
 - `explanation`: opcional; se muestra al jugador cuando falla
 
+**Desde el código**: las preguntas iniciales están en `backend/db/questions/<categoria>.json`. Después de editarlas, ejecuta `npm run seed` (regenera `seed.sql` comprobando que no haya errores ni repetidas) y vuelve a ejecutar `seed.sql` en Supabase: solo añade las nuevas.
+
 ---
 
 ## Para desarrolladores
@@ -86,7 +92,7 @@ En `/admin/` → **Importar varias preguntas (JSON)**, pega una lista con este f
 ```bash
 cd backend
 npm install
-npm test          # 22 pruebas: preguntas, Blitz, perfiles, duelos, salas, reconexión
+npm test          # 23 pruebas: preguntas, Blitz, perfiles, duelos, salas, reconexión
 cp .env.example .env   # rellena las variables
 npm run dev       # http://localhost:3000
 ```
@@ -94,7 +100,7 @@ npm run dev       # http://localhost:3000
 ### Estructura
 
 - `backend/core/` — servidor HTTP, seguridad (cabeceras, límites de peticiones), conexión a Supabase
-- `backend/db/` — `schema.sql` (todas las tablas) y `seed.sql` (preguntas de ejemplo)
+- `backend/db/` — `schema.sql` (todas las tablas), `questions/` (preguntas iniciales) y `seed.sql` (generado con `npm run seed`)
 - `backend/modules/questions/` — preguntas, categorías y avisos de errores
 - `backend/modules/game-blitz/` — modo Blitz
 - `backend/modules/players/` — perfiles de invitado (nombre + token guardado en el navegador)
