@@ -1,5 +1,24 @@
 const { getDb, dbError } = require('../../core/db');
 const { eloUpdate } = require('./elo');
+const shop = require('../shop/service');
+const { matchCoins } = require('../shop/rewards');
+
+// Reparte las monedas de la partida y las anota en cada fila de la clasificación.
+async function awardMatchCoins(mode, ranking) {
+  await Promise.all(
+    ranking
+      .filter((r) => !r.isBot)
+      .map(async (r) => {
+        try {
+          const res = await shop.award(r.playerId, matchCoins(mode, r, ranking), `game:${mode}`);
+          r.coins = res.awarded + res.bonus;
+          r.coinsBonus = res.bonus;
+        } catch (err) {
+          console.error('[coins] no se pudieron dar las monedas', err.context || '', err.cause || err);
+        }
+      })
+  );
+}
 
 // Carga preguntas completas (con la respuesta correcta) para una partida en red.
 async function loadQuestions(count, category) {
@@ -82,7 +101,8 @@ async function saveMatch(room, ranking) {
     })
   );
 
+  await awardMatchCoins(room.mode, ranking);
   return ranking;
 }
 
-module.exports = { loadQuestions, saveMatch };
+module.exports = { loadQuestions, saveMatch, awardMatchCoins };

@@ -74,6 +74,7 @@ class Room {
       players: [...this.players.values()].map((p) => ({
         id: p.id,
         name: p.name,
+        avatar: p.avatar || null,
         isBot: p.isBot,
         connected: p.connected,
         score: p.score,
@@ -121,6 +122,7 @@ class Room {
     this.players.set(player.id, {
       id: player.id,
       name: player.name,
+      avatar: player.avatar || null,
       rating: player.rating ?? null,
       isBot: !!player.isBot,
       skill: player.skill,
@@ -252,7 +254,7 @@ class Room {
     if (this.index >= this.questions.length) return this.finish();
     const now = Date.now();
     this.status = 'question';
-    this.current = { startedAt: now, deadline: now + config.questionMs, answers: new Map() };
+    this.current = { startedAt: now, deadline: now + config.questionMs, answers: new Map(), helpers: new Map() };
     this.lastReveal = null;
     for (const p of this.players.values()) {
       if (!p.isBot && p.connected) this.send(p.id, this.questionMessage(p.id));
@@ -287,6 +289,30 @@ class Room {
     this.touch();
     this.broadcast({ t: 'answered', playerId });
     this.maybeRevealEarly();
+  }
+
+  // Comodín pedido por un jugador. Reserva el uso (una vez por pregunta) y devuelve lo que verá;
+  // si luego no tenía el comodín, se llama a cancel().
+  helperOffer(playerId, kind) {
+    if (kind !== 'fifty') throw new GameError('Ese comodín solo se puede usar en el Blitz');
+    const p = this.players.get(playerId);
+    if (!p || p.left || this.status !== 'question') throw new GameError('Ahora no se puede usar un comodín');
+    if (this.current.answers.has(playerId)) throw new GameError('Ya has respondido');
+    const used = this.current.helpers.get(playerId) || new Set();
+    if (used.has(kind)) throw new GameError('Ya has usado ese comodín en esta pregunta');
+    used.add(kind);
+    this.current.helpers.set(playerId, used);
+    const q = this.questions[this.index];
+    const wrong = q.options.map((_, i) => i).filter((i) => i !== q.correctIndex);
+    for (let i = wrong.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [wrong[i], wrong[j]] = [wrong[j], wrong[i]];
+    }
+    const current = this.current;
+    return {
+      payload: { index: this.index, remove: wrong.slice(0, Math.max(0, q.options.length - 2)).sort() },
+      cancel: () => current.helpers.get(playerId)?.delete(kind),
+    };
   }
 
   maybeRevealEarly() {
@@ -344,6 +370,7 @@ class Room {
       return {
         playerId: p.id,
         name: p.name,
+        avatar: p.avatar || null,
         isBot: p.isBot,
         left: !!p.left,
         score: p.score,

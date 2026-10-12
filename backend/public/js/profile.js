@@ -1,14 +1,14 @@
 (async function () {
   const $ = (id) => document.getElementById(id);
-  await Player.ensure('Crea tu perfil para guardar tus estadísticas y aparecer en el ranking.');
+  await Player.ensure('Entra con Google para ver tu perfil, tus monedas y tus estadísticas.');
 
   let me;
   try {
     me = await Player.refresh();
   } catch (err) {
     if (err.status === 401) {
-      await Player.ensure('Tu perfil ha caducado. Elige tu nombre otra vez.');
-      me = await Player.refresh();
+      await Player.ensure('Tu sesión ha caducado. Vuelve a entrar con Google.');
+      return;
     } else {
       document.querySelector('.container').append(Object.assign(document.createElement('p'), { className: 'error-box', textContent: err.message }));
       return;
@@ -17,7 +17,12 @@
 
   $('profile').hidden = false;
   $('name').value = me.name;
-  $('p-avatar').src = FX.avatar(me.name).src;
+  $('p-avatar').src = FX.avatar(me.name, me.avatar).src;
+  FX.countUp($('p-coins'), me.coins);
+  $('logout-btn').addEventListener('click', async () => {
+    await Player.logout();
+    location.href = '/';
+  });
   FX.countUp($('st-rating'), me.rating);
   $('st-blitz').textContent = me.bestBlitz;
   $('st-duels').textContent = `${me.duelsWon} / ${me.duelsPlayed}`;
@@ -55,7 +60,6 @@
     try {
       await Player.rename($('name').value);
       $('rename-ok').hidden = false;
-      $('p-avatar').src = FX.avatar($('name').value).src;
       FX.bump($('p-avatar'));
     } catch (err) {
       $('rename-error').textContent = err.message;

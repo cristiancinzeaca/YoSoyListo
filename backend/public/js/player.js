@@ -1,4 +1,4 @@
-// Perfil de invitado: un nombre y un token guardado en este navegador.
+// Cuenta del jugador: se entra con Google. El token de sesión se guarda en este navegador.
 const Player = {
   get token() {
     return storage.get('ysl:token');
@@ -10,8 +10,10 @@ const Player = {
       return null;
     }
   },
+  // Solo vale una cuenta de Google (los perfiles de invitado antiguos ya no sirven para jugar).
   has() {
-    return !!(this.token && this.data);
+    const d = this.data;
+    return !!(this.token && d && d.hasAccount);
   },
   save(player, token) {
     if (token) storage.set('ysl:token', token);
@@ -19,15 +21,17 @@ const Player = {
     storage.set('ysl:name', player.name);
     renderMeChip();
   },
+  // Cerrar sesión en este navegador.
   clear() {
     storage.remove('ysl:token');
     storage.remove('ysl:player');
     renderMeChip();
   },
-  async create(name) {
-    const { player, token } = await api.post('/api/players', { name });
-    this.save(player, token);
-    return player;
+  // La sesión ya no vale: se olvidan los datos, pero el token se queda por si era un
+  // perfil de invitado antiguo (al entrar con Google se convierte en la cuenta).
+  forget() {
+    storage.remove('ysl:player');
+    renderMeChip();
   },
   async refresh() {
     try {
@@ -35,7 +39,7 @@ const Player = {
       this.save(me);
       return me;
     } catch (err) {
-      if (err.status === 401) this.clear();
+      if (err.status === 401) this.forget();
       throw err;
     }
   },
@@ -44,54 +48,119 @@ const Player = {
     this.save(player);
     return player;
   },
+  async logout() {
+    try {
+      await api.post('/api/auth/logout', {});
+    } catch {
+      // aunque falle, se cierra en este navegador
+    }
+    this.clear();
+    Wallet.data = null;
+  },
+  loginUrl(next = location.pathname + location.search) {
+    return `/auth/google?next=${encodeURIComponent(next)}`;
+  },
 
-  // Garantiza que hay perfil: si no lo hay, pide el nombre en una ventana.
-  ensure(message = 'Elige el nombre con el que te verán los demás jugadores.') {
+  // Garantiza que hay cuenta: si no, muestra la ventana para entrar con Google.
+  // next: a dónde volver después de entrar (por defecto, esta misma página).
+  ensure(message, next) {
     if (this.has()) return Promise.resolve(this.data);
-    return new Promise((resolve) => {
-      const overlay = document.createElement('div');
-      overlay.className = 'overlay';
-      overlay.innerHTML = `
-        <form class="card" novalidate>
-          <h2>¿Cómo te llamas?</h2>
-          <p></p>
-          <label for="ensure-name">Tu nombre</label>
-          <input type="text" id="ensure-name" maxlength="20" autocomplete="nickname" placeholder="Tu nombre">
-          <button class="btn" type="submit">Continuar</button>
-          <p class="form-error" hidden></p>
-        </form>`;
-      overlay.querySelector('p').textContent = message;
-      const form = overlay.querySelector('form');
-      const input = overlay.querySelector('input');
-      const error = overlay.querySelector('.form-error');
-      input.value = storage.get('ysl:name') || '';
-      form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        error.hidden = true;
-        const button = form.querySelector('button');
-        button.disabled = true;
-        try {
-          const player = await Player.create(input.value);
-          overlay.remove();
-          resolve(player);
-        } catch (err) {
-          error.textContent = err.message;
-          error.hidden = false;
-          button.disabled = false;
-        }
-      });
-      document.body.appendChild(overlay);
-      input.focus();
-    });
+    showLogin(message || 'Para jugar necesitas entrar con tu cuenta de Google. Así guardamos tus monedas, avatares y estadísticas en todos tus dispositivos.', next);
+    // No se resuelve: al entrar con Google se vuelve a esta misma página.
+    return new Promise(() => {});
   },
 };
 
-// Botón con el nombre del jugador en la cabecera (enlace al perfil).
+function showLogin(message, next) {
+  if (document.querySelector('.overlay.login')) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay login';
+  overlay.innerHTML = `
+    <div class="card login-card" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <img class="login-art" src="/img/logo.webp" alt="" width="900" height="580">
+      <h2 id="login-title">¡Entra para jugar!</h2>
+      <p class="login-msg"></p>
+      <ul class="login-perks">
+        <li>🪙 <strong>100 monedas</strong> de bienvenida</li>
+        <li>🎁 Un comodín de cada tipo</li>
+        <li>📱 Tu progreso en el móvil y en el ordenador</li>
+      </ul>
+      <a class="btn btn-google" href="#"><span class="g-logo" aria-hidden="true">G</span> Entrar con Google</a>
+      <a class="link-btn login-back" href="/">Volver al inicio</a>
+    </div>`;
+  overlay.querySelector('.login-msg').textContent = message;
+  overlay.querySelector('.btn-google').href = Player.loginUrl(next);
+  document.body.appendChild(overlay);
+  overlay.querySelector('.btn-google').focus();
+}
+
+// Monedas y comodines del jugador.
+const Wallet = {
+  data: null,
+  async load() {
+    if (!Player.has()) return null;
+    try {
+      this.data = await api.get('/api/shop/me');
+      renderMeChip();
+    } catch (err) {
+      if (err.status === 401) Player.forget();
+    }
+    return this.data;
+  },
+  count(kind) {
+    return this.data && this.data.helpers ? this.data.helpers[kind] || 0 : 0;
+  },
+  setCount(kind, n) {
+    if (this.data && this.data.helpers) this.data.helpers[kind] = n;
+  },
+  setCoins(n) {
+    if (n === null || n === undefined) return;
+    if (this.data) this.data.coins = n;
+    const d = Player.data;
+    if (d) {
+      d.coins = n;
+      storage.set('ysl:player', JSON.stringify(d));
+    }
+    renderMeChip();
+  },
+};
+
+// Cabecera: avatar + nombre (perfil) y monedas (tienda).
 function renderMeChip() {
   const el = document.getElementById('me-chip');
   if (!el) return;
   const data = Player.data;
-  el.textContent = data && Player.token ? `👤 ${data.name}` : '👤 Mi perfil';
+  el.replaceChildren();
+  if (data && Player.token && data.hasAccount) {
+    if (window.FX) el.appendChild(FX.avatar(data.name, data.avatar, 'chip-avatar'));
+    const n = document.createElement('span');
+    n.className = 'chip-name';
+    n.textContent = data.name;
+    el.appendChild(n);
+    el.href = '/perfil';
+  } else {
+    el.textContent = '🔑 Entrar';
+    el.href = Player.loginUrl();
+  }
+  let coins = document.getElementById('coin-chip');
+  if (!coins && el.parentElement) {
+    coins = document.createElement('a');
+    coins.id = 'coin-chip';
+    coins.className = 'coin-chip';
+    coins.href = '/tienda';
+    coins.setAttribute('aria-label', 'Monedas · ir a la tienda');
+    el.before(coins);
+  }
+  if (coins) {
+    const has = data && data.hasAccount && Player.token;
+    coins.hidden = !has;
+    const value = Wallet.data ? Wallet.data.coins : data ? data.coins : 0;
+    coins.textContent = `🪙 ${value ?? 0}`;
+  }
 }
 
-document.addEventListener('DOMContentLoaded', renderMeChip);
+document.addEventListener('DOMContentLoaded', () => {
+  renderMeChip();
+  // Actualiza monedas y datos en segundo plano.
+  if (Player.has()) Player.refresh().catch(() => {});
+});

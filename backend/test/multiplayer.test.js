@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const WebSocket = require('ws');
@@ -5,6 +6,7 @@ const { createServer } = require('../core/server');
 const { setDbForTests } = require('../core/db');
 const { config } = require('../modules/multiplayer/config');
 const { createFakeDb } = require('./fakeDb');
+const { login } = require('./login');
 
 Object.assign(config, {
   questionMs: 600,
@@ -58,9 +60,7 @@ async function api(method, path, body, token) {
 }
 
 async function newPlayer(name) {
-  const res = await api('POST', '/api/players', { name });
-  assert.equal(res.status, 201, JSON.stringify(res.body));
-  return res.body;
+  return login(base, name);
 }
 
 // Cliente de prueba: guarda todos los mensajes y permite esperar uno concreto.
@@ -129,8 +129,11 @@ test('perfiles de jugador', async () => {
   const { player, token } = await newPlayer('Lucía');
   assert.equal(player.name, 'Lucía');
   assert.equal(player.rating, 1000);
-  assert.equal((await api('POST', '/api/players', { name: 'Bot listo' })).status, 400);
-  assert.equal((await api('POST', '/api/players', { name: 'gilipollas' })).status, 400);
+  assert.equal(player.hasAccount, true);
+  assert.equal(player.coins, 100);
+  assert.equal((await api('POST', '/api/players', { name: 'Lucía' })).status, 410);
+  assert.equal((await api('PATCH', '/api/players/me', { name: 'Bot listo' }, token)).status, 400);
+  assert.equal((await api('PATCH', '/api/players/me', { name: 'gilipollas' }, token)).status, 400);
   assert.equal((await api('GET', '/api/players/me')).status, 401);
   const me = await api('GET', '/api/players/me', undefined, token);
   assert.equal(me.body.bestBlitz, 0);
@@ -278,4 +281,40 @@ test('informar de un error en una pregunta', async () => {
   const res = await fetch(`http://${base}/api/questions/reports`, { headers: { 'X-Admin-Key': 'k' } });
   const body = await res.json();
   assert.equal(body.items[0].reports[0].reason, 'La respuesta es otra');
+});
+
+test('comodín 50/50 en un duelo y monedas al acabar', async () => {
+  const p = await newPlayer('Comodina');
+  const c = await connect(p.token);
+  c.send({ t: 'queue' });
+  const q = await c.waitFor(is('question'), 5000);
+  c.send({ t: 'helper', kind: 'time' });
+  assert.match((await c.waitFor(is('error'))).message, /Blitz/);
+  c.send({ t: 'helper', kind: 'fifty' });
+  const h = await c.waitFor(is('helper'));
+  assert.equal(h.kind, 'fifty');
+  assert.equal(h.left, 0);
+  assert.equal(h.remove.length, 2);
+  assert.ok(!h.remove.includes(correctOf(q.question.text)), 'nunca quita la correcta');
+  c.send({ t: 'helper', kind: 'fifty' });
+  assert.match((await c.waitFor(is('error'))).message, /ya has usado/i);
+  c.send({ t: 'answer', index: q.index, option: correctOf(q.question.text) });
+  const [end] = await playToEnd([{ c, right: true }]);
+  const mine = end.ranking.find((r) => r.playerId === p.player.id);
+  // Gana contra un bot: 25 × 0,6 = 15, más 20 de bonus diario.
+  assert.equal(mine.position, 1);
+  assert.equal(mine.coins, 35);
+  assert.equal(db.tables.players.find((x) => x.id === p.player.id).coins, 135);
+  c.close();
+});
+
+test('un perfil de invitado antiguo ya no puede jugar', async () => {
+  const token = 'invitado-antiguo-token-1234567890';
+  db.tables.players.push({
+    id: crypto.randomUUID(), name: 'Viejo', token_hash: require('../modules/players/service').hashToken(token),
+    rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0, conquista_played: 0, conquista_won: 0,
+    google_sub: null, coins: 0, avatar: null,
+  });
+  const c = await connect(token);
+  assert.equal(c.welcome.code, 'auth');
 });

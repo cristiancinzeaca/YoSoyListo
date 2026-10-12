@@ -10,6 +10,8 @@ const { migrate } = require('./migrate');
 const questionsRoutes = require('../modules/questions/routes');
 const blitzRoutes = require('../modules/game-blitz/routes');
 const playersRoutes = require('../modules/players/routes');
+const shopRoutes = require('../modules/shop/routes');
+const authRoutes = require('../modules/auth/routes');
 const { attachMultiplayer } = require('../modules/multiplayer/hub');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -61,11 +63,15 @@ function createApp() {
   app.use('/api/questions', questionsRoutes);
   app.use('/api/blitz', blitzRoutes);
   app.use('/api/players', playersRoutes);
+  app.use('/api/shop', shopRoutes);
+  app.use('/api/auth', authRoutes.api);
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
+
+  app.use('/auth', authRoutes.pages);
 
   app.get('/robots.txt', (req, res) => {
     res.type('text/plain').send(
-      ['User-agent: *', 'Disallow: /admin/', 'Disallow: /api/', '', `Sitemap: ${baseUrl(req)}/sitemap.xml`, ''].join('\n')
+      ['User-agent: *', 'Disallow: /admin/', 'Disallow: /api/', 'Disallow: /auth/', '', `Sitemap: ${baseUrl(req)}/sitemap.xml`, ''].join('\n')
     );
   });
 

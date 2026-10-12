@@ -356,10 +356,11 @@
     return ANIMALS[h % ANIMALS.length];
   }
 
-  function avatar(name, cls = '') {
+  // key: avatar elegido por el jugador (si lo hay); si no, uno fijo según el nombre.
+  function avatar(name, key = null, cls = '') {
     const img = document.createElement('img');
     img.className = `avatar ${cls}`.trim();
-    img.src = `/img/avatar-${avatarKey(name)}.webp`;
+    img.src = `/img/avatar-${key && ANIMALS.includes(key) ? key : avatarKey(name)}.webp`;
     img.alt = '';
     img.width = 40;
     img.height = 40;

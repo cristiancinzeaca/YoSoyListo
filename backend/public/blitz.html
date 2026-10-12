@@ -51,15 +51,16 @@
           <div><span id="result-streak">0</span><small>mejor racha</small></div>
         </div>
 
-        <form id="name-form" novalidate>
-          <label for="player-name">Guarda tu puntuación en el ranking</label>
-          <input type="text" id="player-name" maxlength="20" placeholder="Tu nombre" autocomplete="nickname">
-          <button class="btn" type="submit" id="save-btn">Guardar</button>
-          <p class="form-error" id="name-error" hidden></p>
-        </form>
+        <div class="coins-won" id="result-coins" hidden>
+          <span class="coin-big" aria-hidden="true">🪙</span>
+          <strong id="coins-won">+0</strong>
+          <small>monedas</small>
+          <p class="coins-note" id="coins-note"></p>
+        </div>
         <p class="rank-msg" id="rank-msg" hidden></p>
 
         <a class="btn" id="again-btn" href="/blitz">Jugar otra vez</a>
+        <a class="btn btn-secondary" href="/tienda">🪙 Ir a la tienda</a>
         <a class="btn btn-secondary" href="/">Volver al inicio</a>
       </div>
 
@@ -75,6 +76,7 @@
   <script src="/js/fx.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/player.js"></script>
+  <script src="/js/helpers.js"></script>
   <script src="/js/blitz.js"></script>
 </body>
 </html>
