@@ -9,6 +9,7 @@ const persist = require('./persist');
 const { ConquistaGame } = require('../conquista/game');
 const { CQ } = require('../conquista/config');
 const cqPersist = require('../conquista/persist');
+const shop = require('../shop/service');
 
 function shuffleList(list) {
   const a = [...list];
@@ -33,6 +34,7 @@ function attachMultiplayer(server, deps = {}) {
   const loadNumeric = deps.loadNumeric || cqPersist.loadNumeric;
   const loadChoice = deps.loadChoice || cqPersist.loadChoice;
   const saveConquista = deps.saveConquista || cqPersist.saveConquista;
+  const useItem = deps.useItem || shop.useItem;
 
   const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 4096 });
   const clients = new Map(); // playerId → conexión
@@ -283,6 +285,24 @@ function attachMultiplayer(server, deps = {}) {
       const room = currentRoom(conn.player.id);
       if (room && room.mode !== 'conquista') room.answer(conn.player.id, Number(msg.index), Number(msg.option));
     },
+    async helper(conn, msg) {
+      const room = currentRoom(conn.player.id);
+      if (!room || room.status === 'finished') throw new GameError('No estás en ninguna partida');
+      const kind = String(msg.kind || '');
+      const offer = room.helperOffer(conn.player.id, kind);
+      let left;
+      try {
+        left = await useItem(conn.player.id, kind);
+      } catch (err) {
+        offer.cancel();
+        throw err;
+      }
+      if (left === null) {
+        offer.cancel();
+        throw new GameError('No te quedan comodines de ese tipo. ¡Consíguelos en la tienda!');
+      }
+      sendTo(conn, { t: 'helper', kind, left, ...offer.payload });
+    },
     rematch(conn) {
       requireRoom(conn).rematch(conn.player.id);
     },
@@ -307,8 +327,8 @@ function attachMultiplayer(server, deps = {}) {
       sendTo(conn, { t: 'error', code: 'server', message: 'Error del servidor, inténtalo de nuevo' });
       return conn.ws.close(1011);
     }
-    if (!player) {
-      sendTo(conn, { t: 'error', code: 'auth', message: 'Perfil no válido' });
+    if (!player || !player.hasAccount) {
+      sendTo(conn, { t: 'error', code: 'auth', message: 'Entra con tu cuenta de Google para jugar' });
       return conn.ws.close(4001, 'auth');
     }
     clearTimeout(conn.helloTimer);

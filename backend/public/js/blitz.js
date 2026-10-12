@@ -45,13 +45,43 @@
     FX.play('go');
   }
 
+  // Comodines: 50/50, tiempo extra y saltar.
+  const helperBar = HelperBar.create(['fifty', 'time', 'skip'], async (kind) => {
+    if (state.busy || state.ended) return false;
+    const q = state.questions[state.index];
+    const res = await api.post(`/api/blitz/${state.sessionId}/helper`, { kind, questionId: q.id });
+    Wallet.setCount(kind, res.left);
+    if (state.questions[state.index] !== q) return true;
+    const buttons = [...$('options').children];
+    if (kind === 'fifty') HelperBar.applyFifty(buttons, res.remove);
+    if (kind === 'time') {
+      state.endAt += res.extraMs;
+      FX.float('+10 s', $('timer-text'), 'big');
+    }
+    if (kind === 'skip') {
+      FX.float('⏭️', $('question-card'));
+      state.index += 1;
+      if (state.index >= state.questions.length) end();
+      else renderQuestion();
+    }
+    return true;
+  });
+  $('question-card').appendChild(helperBar.el);
+
   async function begin() {
+    await Player.ensure();
+    await Wallet.load();
+    helperBar.refresh();
     await countdown();
     let data;
     try {
       data = await api.post('/api/blitz/start', { category: category || undefined });
     } catch (err) {
       screens.countdown.replaceChildren();
+      if (err.status === 401) {
+        Player.forget();
+        return Player.ensure();
+      }
       showError(`${err.message}. `);
       const link = document.createElement('a');
       link.href = '/';
@@ -91,6 +121,7 @@
     $('question-cat').textContent = categoryLabel(q.category);
     $('question-text').textContent = q.text;
     FX.enter($('question-card'));
+    helperBar.reset();
     const options = $('options');
     options.replaceChildren();
     q.options.forEach((text, i) => {
@@ -184,6 +215,25 @@
     renderResult(result);
   }
 
+  // Monedas ganadas en la partida.
+  function renderCoins(result) {
+    const c = result.coins || {};
+    const total = (c.awarded || 0) + (c.bonus || 0);
+    const box = $('result-coins');
+    if (!box) return;
+    box.hidden = false;
+    $('coins-won').textContent = `+${total}`;
+    const notes = [];
+    if (c.personalBest) notes.push('🎯 ¡Nuevo récord personal!');
+    if (c.bonus) notes.push(`☀️ +${c.bonus} por tu primera partida del día`);
+    $('coins-note').textContent = notes.join(' · ');
+    if (c.balance !== null && c.balance !== undefined) Wallet.setCoins(c.balance);
+    if (total > 0) setTimeout(() => {
+      FX.burst($('coins-won'), { colors: ['#ffcb2b', '#ffe58a', '#fff'], amount: 30 });
+      FX.bump(box);
+    }, 900);
+  }
+
   function renderResult(result) {
     show('result');
     FX.countUp($('result-score'), result.score, 1200);
@@ -197,9 +247,11 @@
     $('result-answered').textContent = result.answeredCount;
     $('result-streak').textContent = result.bestStreak;
 
-    const lastName = Player.data ? Player.data.name : storage.get('ysl:name');
-    if (lastName) $('player-name').value = lastName;
-    if (result.score === 0) $('name-form').hidden = true;
+    renderCoins(result);
+    if (result.rank) {
+      $('rank-msg').textContent = `🏆 Puesto ${result.rank} del ranking histórico`;
+      $('rank-msg').hidden = false;
+    }
 
     if (state.mistakes.length > 0) {
       const list = $('review');
@@ -232,32 +284,6 @@
       $('review-card').hidden = false;
     }
   }
-
-  $('name-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const name = $('player-name').value.trim();
-    const errorEl = $('name-error');
-    errorEl.hidden = true;
-    if (name.length < 2) {
-      errorEl.textContent = 'El nombre debe tener al menos 2 caracteres';
-      errorEl.hidden = false;
-      return;
-    }
-    $('save-btn').disabled = true;
-    try {
-      const result = await api.post(`/api/blitz/${state.sessionId}/finish`, { name });
-      if (!Player.data) storage.set('ysl:name', result.playerName);
-      $('name-form').hidden = true;
-      $('rank-msg').textContent = `¡Guardado! Estás en el puesto ${result.rank} del ranking histórico.`;
-      $('rank-msg').hidden = false;
-      FX.play('streak');
-      FX.burst($('rank-msg'), { amount: 30 });
-    } catch (err) {
-      errorEl.textContent = err.message;
-      errorEl.hidden = false;
-      $('save-btn').disabled = false;
-    }
-  });
 
   begin();
 })();

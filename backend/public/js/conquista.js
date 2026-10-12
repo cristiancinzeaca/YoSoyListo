@@ -73,9 +73,61 @@
   };
 
   async function reauth() {
-    Player.clear();
-    await Player.ensure('Tu perfil ha caducado. Elige tu nombre otra vez.');
-    socket.connect();
+    Player.forget();
+    await Player.ensure('Tu sesión ha caducado. Vuelve a entrar con Google.');
+  }
+
+  // ---------- comodines: 50/50 (opciones) y pista (aproximación) ----------
+  const helps = {}; // texto de la pregunta → { remove, range }
+  let helperWait = null;
+  function requestHelper(kind) {
+    return new Promise((resolve, reject) => {
+      helperWait = { resolve, reject };
+      socket.send({ t: 'helper', kind });
+      setTimeout(() => {
+        if (helperWait && helperWait.resolve === resolve) {
+          helperWait = null;
+          reject(new Error('Sin respuesta del servidor'));
+        }
+      }, 5000);
+    });
+  }
+  const hintBar = HelperBar.create(['hint'], () => requestHelper('hint'));
+  const fiftyBar = HelperBar.create(['fifty'], () => requestHelper('fifty'));
+
+  function hintLine(range, unit) {
+    const p = el('p', 'hint-line', `💡 Está entre ${fmt(range[0])} y ${fmt(range[1])}${unitLabel(unit) ? ` ${unitLabel(unit)}` : ''}`);
+    p.id = 'cq-hint';
+    return p;
+  }
+
+  function onHelper(msg) {
+    Wallet.setCount(msg.kind, msg.left);
+    if (helperWait) {
+      helperWait.resolve(true);
+      helperWait = null;
+    }
+    const h = (helps[msg.question] = { ...(helps[msg.question] || {}) });
+    if (msg.remove) h.remove = msg.remove;
+    if (msg.range) h.range = msg.range;
+    const q = state.s && state.s.question;
+    if (!q || q.text !== msg.question) return;
+    if (msg.range && !$('cq-hint')) {
+      const anchor = $('cq-panel').querySelector('.guess-row');
+      if (anchor) anchor.after(hintLine(msg.range, q.unit));
+      FX.float('💡', $('cq-panel'));
+    }
+    if (msg.remove) HelperBar.applyFifty([...$('cq-panel').querySelectorAll('.option')], msg.remove);
+  }
+
+  function attachBar(bar, kind, panel, q) {
+    if (state.barFor !== `${kind}|${q.text}`) {
+      state.barFor = `${kind}|${q.text}`;
+      bar.reset();
+    }
+    if (helps[q.text] && helps[q.text][kind === 'hint' ? 'range' : 'remove']) bar.lock(kind);
+    bar.refresh();
+    panel.appendChild(bar.el);
   }
 
   function onMessage(msg) {
@@ -83,7 +135,13 @@
     if (msg.t === 'cq_queued') return onQueued(msg);
     if (msg.t === 'cq_state') return onState(msg);
     if (msg.t === 'queue_cancelled' || msg.t === 'left') return (location.href = '/');
+    if (msg.t === 'helper') return onHelper(msg);
     if (msg.t === 'error') {
+      if (helperWait) {
+        helperWait.reject(new Error(msg.message));
+        helperWait = null;
+        return;
+      }
       if (msg.code === 'replaced') return fatal('Partida abierta en otra pestaña', 'Sigue jugando en la otra pestaña o dispositivo.');
       if (msg.code === 'auth') return;
       banner(msg.message, true);
@@ -94,6 +152,10 @@
     banner('');
     state.me = msg.player;
     Player.save(msg.player);
+    Wallet.load().then(() => {
+      hintBar.refresh();
+      fiftyBar.refresh();
+    });
     if (msg.roomCode) return;
     if (state.introDone && state.phase !== 'queue' && state.phase !== 'connecting') {
       if (state.phase !== 'end') fatal('La partida se ha cortado', 'El servidor se ha reiniciado y la partida se ha perdido. ¡Lo sentimos!');
@@ -230,7 +292,7 @@
     for (const p of s.players) {
       const card = el('div', 'cq-player');
       card.dataset.id = p.id;
-      card.appendChild(FX.avatar(p.name));
+      card.appendChild(FX.avatar(p.name, p.avatar));
       if (p.id === state.me.id) card.classList.add('me');
       if (turnIds.has(p.id)) card.classList.add('turn');
       if (p.eliminated || p.left) card.classList.add('out');
@@ -317,6 +379,8 @@
         });
         panel.appendChild(form);
         if (unitLabel(q.unit)) panel.appendChild(el('div', 'unit', `En ${unitLabel(q.unit)}`));
+        if (helps[q.text]?.range) panel.appendChild(hintLine(helps[q.text].range, q.unit));
+        attachBar(hintBar, 'hint', panel, q);
         setTimeout(() => input.focus(), 50);
       } else if (isParticipant) {
         panel.appendChild(el('p', 'muted', `Has respondido ${fmt(s.myAnswer)} ${unitLabel(q.unit)}. Esperando a los demás…`));
@@ -369,6 +433,10 @@
         opts.appendChild(b);
       });
       panel.appendChild(opts);
+      if (isParticipant && s.myAnswer === null) {
+        if (helps[q.text]?.remove) HelperBar.applyFifty([...opts.children], helps[q.text].remove);
+        attachBar(fiftyBar, 'fifty', panel, q);
+      }
       if (!isParticipant) panel.appendChild(el('p', 'muted', 'Tú miras este combate. ¡Piensa la respuesta!'));
       panel.appendChild(answeredChips(s));
       return;
@@ -594,6 +662,11 @@
         FX.play('defeat');
       }
     }
+    const coinsBox = $('end-coins');
+    if (coinsBox && state.coinsShown !== s.code) {
+      state.coinsShown = s.code;
+      coinsBox.replaceChildren(me ? coinReward(me) : '');
+    }
     const list = $('end-ranking');
     list.replaceChildren();
     for (const r of ranking) {
@@ -603,7 +676,7 @@
       dot.style.background = r.color;
       li.append(
         el('span', 'pos', r.position <= 3 ? ['🥇', '🥈', '🥉'][r.position - 1] : r.position),
-        FX.avatar(r.name),
+        FX.avatar(r.name, r.avatar),
         dot,
         el('span', 'name', `${r.name}${r.eliminated ? ' (eliminado)' : ''}`),
         el('span', 'pts', `${r.score}`)
@@ -619,7 +692,7 @@
     } catch {
       return fatal('No se pudo cargar el mapa', 'Revisa tu conexión e inténtalo de nuevo.');
     }
-    await Player.ensure('Elige el nombre que verán tus rivales.');
+    await Player.ensure();
     socket.connect();
   })();
 })();

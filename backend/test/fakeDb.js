@@ -3,7 +3,10 @@
 const crypto = require('crypto');
 
 function createFakeDb() {
-  const tables = { questions: [], numeric_questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [] };
+  const tables = {
+    questions: [], numeric_questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [],
+    player_sessions: [], player_items: [], coin_ledger: [],
+  };
 
   class Query {
     constructor(table) {
@@ -84,12 +87,15 @@ function createFakeDb() {
   function defaults(table) {
     if (table === 'questions') return { category: 'general', difficulty: 2, explanation: null, active: true };
     if (table === 'players') {
-      return { rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0, conquista_played: 0, conquista_won: 0 };
+      return {
+        rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0, conquista_played: 0, conquista_won: 0,
+        token_hash: null, google_sub: null, email: null, coins: 0, avatar: null,
+      };
     }
     if (table !== 'blitz_sessions') return {};
     return {
       answers: {}, score: 0, correct_count: 0, answered_count: 0, streak: 0, best_streak: 0,
-      finished_at: null, player_name: null, category: null,
+      finished_at: null, player_name: null, category: null, helpers: {}, coins: null,
     };
   }
 
@@ -123,6 +129,45 @@ function createFakeDb() {
           p.conquista_won += args.p_won;
         }
         return { data: null, error: null };
+      }
+      if (name === 'award_coins') {
+        const p = tables.players.find((x) => x.id === args.p_id);
+        if (!p) return { data: [], error: null };
+        const today = new Date().toISOString().slice(0, 10);
+        const games = tables.coin_ledger.filter(
+          (l) => l.player_id === p.id && l.reason.startsWith('game:') && l.created_at.slice(0, 10) === today
+        );
+        const earned = games.reduce((sum, l) => sum + l.amount, 0);
+        const give = Math.max(0, Math.min(args.p_amount, args.p_daily_cap - earned));
+        const bonus = games.length === 0 ? args.p_daily_bonus : 0;
+        const now = new Date().toISOString();
+        tables.coin_ledger.push({ player_id: p.id, amount: give, reason: args.p_reason, created_at: now });
+        if (bonus) tables.coin_ledger.push({ player_id: p.id, amount: bonus, reason: 'bonus:daily', created_at: now });
+        p.coins += give + bonus;
+        return { data: [{ awarded: give, bonus, balance: p.coins }], error: null };
+      }
+      if (name === 'buy_item') {
+        const p = tables.players.find((x) => x.id === args.p_id);
+        if (!p) return { data: [], error: null };
+        let row = tables.player_items.find((r) => r.player_id === p.id && r.item === args.p_item);
+        const qty = row ? row.qty : 0;
+        if ((args.p_unique && qty > 0) || p.coins < args.p_price) {
+          return { data: [{ ok: false, coins_left: p.coins, item_qty: qty }], error: null };
+        }
+        p.coins -= args.p_price;
+        if (!row) {
+          row = { player_id: p.id, item: args.p_item, qty: 0 };
+          tables.player_items.push(row);
+        }
+        row.qty += args.p_qty;
+        tables.coin_ledger.push({ player_id: p.id, amount: -args.p_price, reason: `buy:${args.p_item}`, created_at: new Date().toISOString() });
+        return { data: [{ ok: true, coins_left: p.coins, item_qty: row.qty }], error: null };
+      }
+      if (name === 'use_item') {
+        const row = tables.player_items.find((r) => r.player_id === args.p_id && r.item === args.p_item && r.qty > 0);
+        if (!row) return { data: [], error: null };
+        row.qty -= 1;
+        return { data: [{ item_left: row.qty }], error: null };
       }
       if (name === 'question_categories') {
         const counts = {};

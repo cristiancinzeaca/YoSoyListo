@@ -41,7 +41,7 @@ function errorHandler(err, req, res, next) {
     console.error(`[${req.method} ${req.originalUrl}]`, err.context || '', err.cause || err);
     if (status === 500) message = 'Error interno del servidor';
   }
-  res.status(status).json({ error: message });
+  res.status(status).json(err.code && status < 500 ? { error: message, code: err.code } : { error: message });
 }
 
 module.exports = { httpError, isUuid, requireAdmin, errorHandler };

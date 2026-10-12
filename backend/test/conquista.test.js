@@ -7,6 +7,7 @@ const { CQ } = require('../modules/conquista/config');
 const { ConquistaGame } = require('../modules/conquista/game');
 const { REGIONS, ADJ } = require('../modules/conquista/map');
 const { createFakeDb } = require('./fakeDb');
+const { login } = require('./login');
 
 Object.assign(CQ, { introMs: 20, numericMs: 300, choiceMs: 300, pickMs: 250, resultMs: 20, botWaitMs: 200 });
 
@@ -101,12 +102,7 @@ test.after(() => {
 });
 
 async function newPlayer(name) {
-  const res = await fetch(`http://${base}/api/players`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
-  });
-  return res.json();
+  return login(base, name);
 }
 
 // Cliente que juega solo: responde lo que le toque en cada estado.

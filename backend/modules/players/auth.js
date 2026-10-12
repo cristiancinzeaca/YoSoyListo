@@ -7,18 +7,28 @@ function bearer(req) {
   return match ? match[1] : null;
 }
 
-// Si la petición trae un token válido, deja el jugador en req.player.
+function loginError() {
+  const err = httpError(401, 'Entra con tu cuenta de Google para jugar');
+  err.code = 'login';
+  return err;
+}
+
+// Si la petición trae una sesión válida, deja el jugador en req.player.
 async function optionalPlayer(req, res, next) {
   const token = bearer(req);
-  req.player = token ? await players.findByToken(token) : null;
+  const player = token ? await players.findByToken(token) : null;
+  req.player = player && player.hasAccount ? player : null;
   next();
 }
 
+// Exige haber entrado con Google (los perfiles de invitado antiguos ya no valen para jugar).
 async function requirePlayer(req, res, next) {
   const token = bearer(req);
-  req.player = token ? await players.findByToken(token) : null;
-  if (!req.player) return next(httpError(401, 'Perfil no válido, vuelve a crear tu nombre'));
+  const player = token ? await players.findByToken(token) : null;
+  if (!player || !player.hasAccount) return next(loginError());
+  req.player = player;
+  req.token = token;
   next();
 }
 
-module.exports = { optionalPlayer, requirePlayer };
+module.exports = { optionalPlayer, requirePlayer, bearer };

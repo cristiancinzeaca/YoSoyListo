@@ -1,5 +1,5 @@
 const { getDb, dbError } = require('../../core/db');
-const { loadQuestions } = require('../multiplayer/persist');
+const { loadQuestions, awardMatchCoins } = require('../multiplayer/persist');
 
 async function loadNumeric(count) {
   const { data, error } = await getDb().rpc('random_numeric_questions', { p_limit: count });
@@ -52,6 +52,7 @@ async function saveConquista(game, ranking) {
       if (e) throw dbError(e, 'conquista.save.stats');
     })
   );
+  await awardMatchCoins('conquista', ranking);
   return ranking;
 }
 

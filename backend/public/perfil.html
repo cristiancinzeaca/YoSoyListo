@@ -22,6 +22,7 @@
       <section class="card">
         <img class="avatar profile-avatar" id="p-avatar" src="/img/avatar-buho.webp" alt="" width="96" height="96">
         <h2>Mi perfil</h2>
+        <a class="profile-coins" href="/tienda"><span>🪙 <strong id="p-coins">0</strong> monedas</span><span class="go">Tienda · cambiar avatar →</span></a>
         <form id="rename-form" novalidate>
           <label for="name">Nombre</label>
           <input type="text" id="name" maxlength="20" autocomplete="nickname">
@@ -46,7 +47,8 @@
         <p class="empty" id="history-empty" hidden>Todavía no has jugado online.</p>
       </section>
       <section class="card">
-        <p>Tu perfil se guarda solo en este navegador. Si borras los datos del navegador o cambias de móvil, empezarás con un perfil nuevo.</p>
+        <p>Tu cuenta está vinculada a Google: puedes entrar desde cualquier móvil u ordenador y conservarás tus monedas, avatares y estadísticas.</p>
+        <button class="btn btn-secondary" type="button" id="logout-btn">Cerrar sesión</button>
       </section>
     </main>
     <footer class="site-footer">© Yo Soy Listo · <a href="/privacidad">Privacidad</a></footer>

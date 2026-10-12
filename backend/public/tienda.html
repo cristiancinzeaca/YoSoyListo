@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Tienda · Yo Soy Listo</title>
+  <meta name="robots" content="noindex">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a class="logo" href="/" aria-label="Yo Soy Listo · Inicio"><img src="/img/logo.webp" alt="Yo Soy Listo" width="900" height="580"></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
+    </header>
+    <main id="tienda">
+      <section class="shop-hero card">
+        <div class="shop-balance">
+          <span class="coin-big" aria-hidden="true">🪙</span>
+          <div>
+            <small>Tus monedas</small>
+            <strong id="s-coins">0</strong>
+          </div>
+        </div>
+        <p class="shop-earn" id="s-earn"></p>
+      </section>
+
+      <section class="card">
+        <h2>🎁 Comodines</h2>
+        <p>Úsalos durante la partida. Como máximo uno de cada tipo por pregunta.</p>
+        <div class="shop-grid" id="s-helpers"></div>
+      </section>
+
+      <section class="card">
+        <h2>🐾 Avatares</h2>
+        <p>Toca un avatar que tengas para ponértelo.</p>
+        <div class="avatar-grid" id="s-avatars"></div>
+      </section>
+      <p class="form-error center" id="s-error" hidden></p>
+    </main>
+
+    <footer class="site-footer">© Yo Soy Listo · <a href="/privacidad">Privacidad</a></footer>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+
+  <script src="/js/fx.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/tienda.js"></script>
+</body>
+</html>

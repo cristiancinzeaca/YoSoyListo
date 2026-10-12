@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const { createApp } = require('../core/server');
 const { setDbForTests } = require('../core/db');
 const { createFakeDb } = require('./fakeDb');
+const { login } = require('./login');
 
 const ADMIN_KEY = 'clave-de-prueba';
 let server;
@@ -84,38 +85,50 @@ test('partida Blitz completa', async () => {
   const cats = await call('GET', '/api/questions/categories');
   assert.deepEqual(cats.body.categories, [{ category: 'general', total: 5 }]);
 
-  const start = await call('POST', '/api/blitz/start', {});
+  assert.equal((await call('POST', '/api/blitz/start', {})).status, 401);
+  const { player, token } = await login(base, 'Ana');
+  const auth = { Authorization: `Bearer ${token}` };
+  const start = await call('POST', '/api/blitz/start', {}, auth);
   assert.equal(start.status, 201);
   const { sessionId, questions: qs } = start.body;
   assert.equal(qs.length, 5);
   assert.equal(qs[0].correctIndex, undefined, 'no debe filtrar la respuesta correcta');
 
   // No se puede cerrar antes de tiempo.
-  assert.equal((await call('POST', `/api/blitz/${sessionId}/finish`, {})).status, 409);
+  assert.equal((await call('POST', `/api/blitz/${sessionId}/finish`, {}, auth)).status, 409);
+  // Otra cuenta no puede tocar esta partida.
+  const other = await login(base, 'Intrusa');
+  const otherAuth = { Authorization: `Bearer ${other.token}` };
+  assert.equal((await call('POST', `/api/blitz/${sessionId}/finish`, {}, otherAuth)).status, 404);
 
   const correctOf = (q) => questions.find((x) => x.text === q.text).correctIndex;
   let last;
   for (const [i, q] of qs.entries()) {
     const option = i === 3 ? (correctOf(q) + 1) % 3 : correctOf(q); // falla la cuarta
-    last = await call('POST', `/api/blitz/${sessionId}/answer`, { questionId: q.id, optionIndex: option });
+    last = await call('POST', `/api/blitz/${sessionId}/answer`, { questionId: q.id, optionIndex: option }, auth);
     assert.equal(last.status, 200);
   }
   // 10 + 10 + 10 + 0 + 10
   assert.equal(last.body.score, 40);
   assert.equal(last.body.streak, 1);
 
-  const again = await call('POST', `/api/blitz/${sessionId}/answer`, { questionId: qs[0].id, optionIndex: 0 });
+  const again = await call('POST', `/api/blitz/${sessionId}/answer`, { questionId: qs[0].id, optionIndex: 0 }, auth);
   assert.equal(again.status, 409);
 
-  const finished = await call('POST', `/api/blitz/${sessionId}/finish`, {});
+  const finished = await call('POST', `/api/blitz/${sessionId}/finish`, {}, auth);
   assert.equal(finished.status, 200);
   assert.equal(finished.body.correctCount, 4);
   assert.equal(finished.body.bestStreak, 3);
-
-  assert.equal((await call('POST', `/api/blitz/${sessionId}/finish`, { name: 'x' })).status, 400);
-  const named = await call('POST', `/api/blitz/${sessionId}/finish`, { name: 'Ana' });
-  assert.equal(named.body.rank, 1);
-  assert.equal((await call('POST', `/api/blitz/${sessionId}/finish`, { name: 'Otra' })).status, 409);
+  assert.equal(finished.body.rank, 1);
+  assert.equal(finished.body.playerName, 'Ana');
+  // 4 aciertos + 10 por mejor marca + 20 de bonus diario.
+  assert.equal(finished.body.coins.awarded, 14);
+  assert.equal(finished.body.coins.bonus, 20);
+  assert.equal(finished.body.coins.balance, 134);
+  // Cerrarla otra vez no da más monedas.
+  const again2 = await call('POST', `/api/blitz/${sessionId}/finish`, {}, auth);
+  assert.equal(again2.body.coins.awarded, 34);
+  assert.equal(db.tables.players.find((p) => p.id === player.id).coins, 134);
 
   const board = await call('GET', '/api/blitz/leaderboard?period=all');
   assert.equal(board.body.entries[0].name, 'Ana');
@@ -123,11 +136,13 @@ test('partida Blitz completa', async () => {
 });
 
 test('no se aceptan respuestas fuera de tiempo', async () => {
-  const start = await call('POST', '/api/blitz/start', {});
+  const { token } = await login(base, 'Tardona');
+  const auth = { Authorization: `Bearer ${token}` };
+  const start = await call('POST', '/api/blitz/start', {}, auth);
   const { sessionId, questions: qs } = start.body;
   const session = db.tables.blitz_sessions.find((s) => s.id === sessionId);
   session.ends_at = new Date(Date.now() - 10_000).toISOString();
-  const late = await call('POST', `/api/blitz/${sessionId}/answer`, { questionId: qs[0].id, optionIndex: 0 });
+  const late = await call('POST', `/api/blitz/${sessionId}/answer`, { questionId: qs[0].id, optionIndex: 0 }, auth);
   assert.equal(late.status, 409);
-  assert.equal((await call('POST', `/api/blitz/${sessionId}/finish`, {})).status, 200);
+  assert.equal((await call('POST', `/api/blitz/${sessionId}/finish`, {}, auth)).status, 200);
 });

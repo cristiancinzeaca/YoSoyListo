@@ -30,7 +30,7 @@ Joc de întrebări de cultură generală **în spaniolă** (public: Spania), gâ
 - **Cod**: GitHub `cristiancinzeaca/YoSoyListo`, ramura `main`.
 - **Hosting**: Railway, proiectul „YoSoyListo”, regiunea EU West. **Fiecare modificare pusă în `main` se publică automat** în 1–2 minute.
 - **Baza de date**: PostgreSQL în același proiect Railway. Serverul creează singur tabelele și încarcă întrebările la pornire.
-- **Variabile în Railway** (serviciul YoSoyListo): `DATABASE_URL = ${{Postgres.DATABASE_URL}}` și `ADMIN_KEY` (parola panoului admin).
+- **Variabile în Railway** (serviciul YoSoyListo): `DATABASE_URL = ${{Postgres.DATABASE_URL}}`, `ADMIN_KEY` (parola panoului admin), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` și `PUBLIC_URL` (adresa site-ului, ex. `https://yosoylisto.up.railway.app`) — fără ultimele trei nu se poate intra în joc.
 - **Domeniu**: încă nu există (se folosește adresa `*.up.railway.app`). Plan: un domeniu `.es`/`.com` (~10–15 €/an) legat din Railway → Settings → Networking → Custom Domain, apoi variabila `PUBLIC_URL`.
 - **Cost**: Railway Hobby ~5 $/lună.
 - Proiectul Supabase creat la început **nu mai este folosit** (poate fi șters).
@@ -117,11 +117,21 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 
 ---
 
+## 5b. Conturi, monede și magazin (ramura `cuentas-monedas-tienda`)
+
+- **Contul e obligatoriu și se face doar cu Google.** Fluxul e pe server (redirecționare + cod), fără scripturi Google în pagini, deci CSP-ul rămâne strict: `/auth/google?next=…` → Google → `/auth/google/callback` → `/entrar#code=…` → `POST /api/auth/complete` → token de sesiune în browser. Fiecare dispozitiv are sesiunea lui (`player_sessions`); `POST /api/auth/logout` închide doar acel dispozitiv.
+- Profilurile de invitat vechi nu mai pot juca; la prima intrare cu Google din același browser, profilul de invitat **devine contul** (păstrează nume, ELO și statistici).
+- Pentru probe locale: `DEV_FAKE_GOOGLE=1` (nu funcționează niciodată în producție) și `/auth/google?dev=Nume`.
+- **Monede** (`modules/shop/catalog.js` are toate cifrele): 100 la creare + un comodín din fiecare; Blitz 1/răspuns corect (+10 la record personal); Duel 25/15/8 (câștig/egal/pierdere); Sală 30/18/10/5; Conquista 50/25/10; contra boților ×0,6 în Duel/Sală; +20 la prima partidă a zilei; plafon 500/zi (ora Madridului). Cine abandonează nu primește nimic. Totul se calculează pe server (`award_coins` în SQL, cu istoric în `coin_ledger`).
+- **Magazin** `/tienda`: comodines 50/50 (40), Timp extra +10 s (30, doar Blitz), Sari (25, doar Blitz, nu rupe seria), Pistă (40, doar întrebările de aproximare din Conquista); avatare: 4 gratuite (bufniță, vulpe, pisică, papagal) și 4 de cumpărat (150–200). Un comodín de fiecare tip pe întrebare. Cumpărarea e atomică (`buy_item`), consumul tot (`use_item`).
+- API nou: `/api/shop/catalog`, `/api/shop/me`, `/api/shop/buy`, `/api/shop/avatar`, `/api/blitz/:id/helper`; WebSocket: mesaj `helper` (`fifty` în duel/sală/Conquista, `hint` în Conquista).
+
+**Configurarea Google (o singură dată):** în console.cloud.google.com → proiect nou → „OAuth consent screen” (External, nume „Yo Soy Listo”, email de suport, publicare) → „Credentials” → „Create OAuth client ID” → Web application → *Authorized redirect URI*: `https://<adresa-site-ului>/auth/google/callback` → se copiază Client ID și Client secret în Railway (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) plus `PUBLIC_URL`. Dacă se schimbă domeniul, se adaugă noul redirect URI în Google și se schimbă `PUBLIC_URL`.
+
 ## 6. Alte idei în așteptare
 
 - **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).
 - **Provocarea zilnică** (aceleași 10 întrebări pentru toți, clasament pe zi).
-- **Conturi cu email/Google** (ca profilul să nu se piardă când schimbi telefonul).
 - **SEO**: pagini pe categorii, domeniu propriu, Google Search Console.
 - **Monetizare** (când există trafic): Google AdSense + banner de cookie-uri (obligatoriu în UE) + pagina „Aviso legal” (cere numele și NIF-ul titularului).
 - Mai multe întrebări și categorii (de exemplu „España”, cinema, muzică). Formatul e explicat în `README.md`.

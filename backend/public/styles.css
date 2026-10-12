@@ -445,3 +445,92 @@ body::after { background-size: 300px 300px; background-position: 140px 90px; opa
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
 }
+
+/* =====================================================================
+   Cuenta, monedas, tienda y comodines
+   ===================================================================== */
+.me-chip { gap: 6px; }
+.me-chip .chip-avatar { width: 24px; height: 24px; margin: -3px 0 -3px -5px; }
+.me-chip .chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.coin-chip { flex: 0 0 auto; display: inline-flex; align-items: center; background: linear-gradient(180deg, #ffd64f, #f5b400); color: #3b2600; font-weight: 900; font-size: 0.9rem; padding: 7px 11px; border-radius: 99px; text-decoration: none; box-shadow: 0 3px 0 #b07c00; transition: transform 0.15s; }
+.coin-chip:hover { transform: translateY(-1px); }
+.coin-chip:active { transform: translateY(2px); box-shadow: 0 1px 0 #b07c00; }
+@media (max-width: 420px) { .header-actions .me-chip .chip-name { max-width: 70px; } }
+
+/* Ventana de acceso */
+.overlay.login { backdrop-filter: blur(3px); }
+.login-card { text-align: center; animation: card-in 0.4s cubic-bezier(.2,1.4,.4,1) both; }
+.login-art { width: 160px; height: auto; margin: -6px auto 2px; display: block; filter: drop-shadow(0 4px 0 rgba(27,16,53,0.25)); }
+.login-card h2 { font-size: 1.5rem; margin: 4px 0 6px; }
+.login-perks { list-style: none; padding: 0; margin: 4px 0 6px; text-align: left; display: grid; gap: 6px; }
+.login-perks li { background: #f6f2ff; border-radius: 12px; padding: 8px 12px; font-weight: 700; font-size: 0.95rem; }
+.btn-google { display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; color: #1f1f1f; border: 2px solid #dadce0; box-shadow: 0 5px 0 #c4c7cc; }
+.btn-google:active { box-shadow: 0 1px 0 #c4c7cc; }
+.btn-google::after { animation: none; }
+.g-logo { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 1000; color: #fff;
+  background: conic-gradient(#ea4335 0 25%, #fbbc05 0 50%, #34a853 0 75%, #4285f4 0); }
+.login-back { display: inline-block; margin-top: 12px; }
+#entrar .btn { max-width: 340px; margin-left: auto; margin-right: auto; }
+
+/* Monedas ganadas */
+.coins-won { margin: 14px 0 4px; padding: 12px; border-radius: 16px; text-align: center; background: linear-gradient(180deg, #fff7d6, #ffeaa0); color: #6b4a00; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; }
+.coins-won strong { font-size: 2rem; font-weight: 1000; color: #b37400; line-height: 1; }
+.coins-won small { font-weight: 800; }
+.coins-won .coins-note { flex-basis: 100%; margin: 2px 0 0; font-size: 0.85rem; font-weight: 700; color: #8a6400; }
+.coins-won .coins-note:empty { display: none; }
+.coin-big { font-size: 2rem; line-height: 1; display: inline-block; animation: coin-spin 2.4s ease-in-out infinite; }
+@keyframes coin-spin { 0%, 70%, 100% { transform: rotateY(0); } 85% { transform: rotateY(180deg); } }
+
+/* Comodines en partida */
+.helper-bar { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; position: relative; }
+.helper-btn { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 5px; font: inherit; font-weight: 900; font-size: 0.9rem; padding: 8px 6px; border-radius: 12px;
+  border: 2px solid #d9cdfb; background: #f3eeff; color: var(--accent); cursor: pointer; transition: transform 0.12s, background 0.12s; }
+.helper-btn:hover:not(:disabled) { transform: translateY(-2px); background: #ebe2ff; }
+.helper-btn:active:not(:disabled) { transform: scale(0.95); }
+.helper-btn .i { font-size: 1.05rem; }
+.helper-btn .l { white-space: nowrap; }
+.helper-btn .n { background: var(--accent); color: #fff; border-radius: 99px; min-width: 20px; padding: 0 6px; font-size: 0.75rem; line-height: 20px; }
+.helper-btn.empty { opacity: 0.6; }
+.helper-btn.empty .n { background: #b3a9cc; }
+.helper-btn.used, .helper-btn:disabled { opacity: 0.4; cursor: default; }
+.helper-toast { position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); background: #2b1d55; color: #fff; text-decoration: none; font-weight: 800; font-size: 0.85rem; padding: 8px 12px; border-radius: 10px; text-align: center; box-shadow: var(--shadow); z-index: 5; }
+.option.removed { opacity: 0.25; text-decoration: line-through; transform: scale(0.97); border-style: dashed; }
+.hint-line { margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; background: #fff7d6; color: #6b4a00; font-weight: 800; animation: card-in 0.35s ease-out both; }
+
+/* Tienda */
+.shop-hero { display: grid; gap: 8px; background: linear-gradient(135deg, #3a2382, #1b1035); color: var(--text-light); border: 2px solid rgba(255,203,43,0.5); }
+.shop-balance { display: flex; align-items: center; gap: 14px; }
+.shop-balance .coin-big { font-size: 3rem; }
+.shop-balance small { display: block; color: #cfc4f0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.75rem; }
+.shop-balance strong { font-size: 2.6rem; font-weight: 1000; color: var(--primary); line-height: 1; text-shadow: 0 3px 0 #1b1035; }
+.shop-hero .shop-earn { color: #cfc4f0; margin: 0; font-size: 0.9rem; }
+.shop-grid { display: grid; gap: 10px; }
+.shop-item { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; column-gap: 12px; align-items: center; padding: 12px; border-radius: 14px; background: #f8f5ff; border: 2px solid #ece6ff; }
+.shop-icon { grid-row: span 2; font-size: 2rem; width: 52px; height: 52px; border-radius: 14px; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 0 #e2dcf2; }
+.shop-info strong { display: block; }
+.shop-info span { display: block; color: var(--muted); font-size: 0.85rem; line-height: 1.25; }
+.shop-own { grid-column: 2; font-size: 0.8rem; font-weight: 800; color: var(--accent); }
+.btn-buy { grid-column: 3; grid-row: 1 / span 2; width: auto; margin: 0; padding: 10px 14px; font-size: 1rem; white-space: nowrap; }
+.btn-small { padding: 8px 10px; font-size: 0.9rem; margin-top: 8px; width: 100%; }
+.avatar-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 480px) { .avatar-grid { grid-template-columns: repeat(4, 1fr); } }
+.avatar-item { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px 8px; border-radius: 14px; background: #f8f5ff; border: 2px solid #ece6ff; transition: transform 0.15s; }
+.avatar-item .avatar { width: 80px; height: 80px; }
+.avatar-item.locked .avatar { filter: grayscale(0.85) brightness(0.9); }
+.avatar-item.worn { border-color: var(--primary); background: #fff8de; }
+.avatar-name { font-weight: 800; font-size: 0.85rem; margin-top: 4px; }
+.avatar-tag { margin-top: 10px; font-weight: 900; color: #8a6400; font-size: 0.85rem; }
+.center { text-align: center; }
+
+/* Portada y perfil */
+.shop-banner { display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--text); background: linear-gradient(135deg, #fff7d6, #ffffff); border: 2px solid #ffe08a; transition: transform 0.2s; }
+.shop-banner:hover { transform: translateY(-2px); }
+.shop-banner strong { display: block; font-size: 1.1rem; }
+.shop-banner span:nth-child(2) { color: var(--muted); font-size: 0.92rem; flex: 1; }
+.shop-banner strong { color: var(--text); }
+.shop-banner .go { font-size: 1.6rem; font-weight: 900; color: #c99500; }
+.profile-coins { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; background: #fff7d6; color: #6b4a00; text-decoration: none; font-weight: 800; padding: 10px 14px; border-radius: 12px; margin: 4px 0 14px; }
+.profile-coins strong { font-size: 1.3rem; color: #b37400; }
+.profile-coins .go { font-size: 0.85rem; color: var(--accent); }
+.card h2 + .profile-coins { margin-top: 6px; }
+.card:has(#p-avatar) h2 { text-align: center; }

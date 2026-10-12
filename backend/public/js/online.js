@@ -86,9 +86,36 @@
   };
 
   async function reauth() {
-    Player.clear();
-    await Player.ensure('Tu perfil ha caducado. Elige tu nombre otra vez.');
-    socket.connect();
+    Player.forget();
+    await Player.ensure('Tu sesión ha caducado. Vuelve a entrar con Google.');
+  }
+
+  // Comodín 50/50 (en duelos y salas solo existe este).
+  let helperWait = null;
+  const helperBar = HelperBar.create(['fifty'], (kind) => {
+    if (state.phase !== 'question' || state.myAnswer !== null) return false;
+    return new Promise((resolve, reject) => {
+      helperWait = { resolve, reject, index: state.question.index };
+      socket.send({ t: 'helper', kind });
+      setTimeout(() => {
+        if (helperWait && helperWait.resolve === resolve) {
+          helperWait = null;
+          reject(new Error('Sin respuesta del servidor'));
+        }
+      }, 5000);
+    });
+  });
+
+  function onHelper(msg) {
+    Wallet.setCount(msg.kind, msg.left);
+    if (helperWait) {
+      helperWait.resolve(true);
+      helperWait = null;
+    }
+    if (msg.kind === 'fifty' && state.question && msg.index === state.question.index && state.phase === 'question') {
+      HelperBar.applyFifty([...$('g-options').children], msg.remove);
+    }
+    helperBar.refresh();
   }
 
   // ---------- mensajes del servidor ----------
@@ -116,7 +143,14 @@
       case 'left':
         location.href = '/';
         return;
+      case 'helper':
+        return onHelper(msg);
       case 'error':
+        if (helperWait) {
+          helperWait.reject(new Error(msg.message));
+          helperWait = null;
+          return;
+        }
         return onError(msg);
       default:
     }
@@ -126,6 +160,7 @@
     banner('');
     state.me = msg.player;
     Player.save(msg.player);
+    Wallet.load().then(() => helperBar.refresh());
     if (msg.roomCode) return; // el servidor nos manda el estado de la partida
     if (state.introDone && state.phase !== 'queue' && state.phase !== 'connecting') {
       if (state.phase !== 'end') fatal('La partida se ha cortado', 'El servidor se ha reiniciado y la partida se ha perdido. ¡Lo sentimos!');
@@ -193,7 +228,7 @@
       const name = document.createElement('span');
       name.className = 'grow';
       name.textContent = p.name + (state.me && p.id === state.me.id ? ' (tú)' : '');
-      li.append(FX.avatar(p.name), name);
+      li.append(FX.avatar(p.name, p.avatar), name);
       if (p.id === room.hostId) {
         const tag = document.createElement('span');
         tag.className = 'tag';
@@ -323,6 +358,9 @@
       b.addEventListener('click', () => answer(i));
       options.appendChild(b);
     });
+    if (!helperBar.el.isConnected) options.after(helperBar.el);
+    helperBar.reset();
+    if (state.myAnswer !== null) helperBar.lock('fifty');
     renderStrip();
     requestAnimationFrame(tick);
   }
@@ -333,6 +371,7 @@
     const buttons = [...$('g-options').children];
     buttons.forEach((b) => (b.disabled = true));
     buttons[i].classList.add('mine');
+    helperBar.lock('fifty');
     socket.send({ t: 'answer', index: state.question.index, option: i });
     markAnswered(state.me.id);
   }
@@ -368,7 +407,7 @@
       const s = document.createElement('span');
       s.className = 's';
       s.textContent = p.score;
-      chip.append(FX.avatar(p.name), n, s);
+      chip.append(FX.avatar(p.name, p.avatar), n, s);
       strip.appendChild(chip);
     }
   }
@@ -445,7 +484,7 @@
       const pts = document.createElement('span');
       pts.className = 'pts';
       pts.textContent = `${r.score}`;
-      li.append(pos, FX.avatar(r.name), name, pts);
+      li.append(pos, FX.avatar(r.name, r.avatar), name, pts);
       if (r.ratingBefore !== null && r.ratingAfter !== null) {
         const diff = r.ratingAfter - r.ratingBefore;
         const elo = document.createElement('span');
@@ -458,6 +497,7 @@
 
     const actions = $('end-actions');
     actions.replaceChildren();
+    if (me) actions.appendChild(coinReward(me));
     const button = (text, cls, onClick) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -493,9 +533,7 @@
   (async function init() {
     if (MODE === 'room') loadCategories();
     show('s-connecting');
-    await Player.ensure(
-      MODE === 'duel' ? 'Elige el nombre que verá tu rival.' : 'Elige el nombre que verán tus amigos en la sala.'
-    );
+    await Player.ensure();
     socket.connect();
   })();
 })();

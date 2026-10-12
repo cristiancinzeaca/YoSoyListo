@@ -2,9 +2,10 @@ const crypto = require('crypto');
 const { getDb, dbError } = require('../../core/db');
 const { httpError } = require('../../core/http');
 const { validatePlayerName } = require('./names');
+const { FREE_AVATARS, COINS, AVATARS } = require('../shop/catalog');
 
 const PUBLIC_FIELDS =
-  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at';
+  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, coins, avatar';
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -22,13 +23,18 @@ function toPublic(row) {
     conquistaPlayed: row.conquista_played ?? 0,
     conquistaWon: row.conquista_won ?? 0,
     createdAt: row.created_at,
+    hasAccount: !!row.google_sub,
+    coins: row.coins ?? 0,
+    avatar: row.avatar && AVATARS[row.avatar] ? row.avatar : null,
   };
 }
+
+const newToken = () => crypto.randomBytes(24).toString('base64url');
 
 async function create(name) {
   const { value, error } = validatePlayerName(name);
   if (error) throw httpError(400, error);
-  const token = crypto.randomBytes(24).toString('base64url');
+  const token = newToken();
   const { data, error: dbErr } = await getDb()
     .from('players')
     .insert({ name: value, token_hash: hashToken(token) })
@@ -38,16 +44,91 @@ async function create(name) {
   return { player: toPublic(data), token };
 }
 
-// Devuelve el jugador de un token, o null si el token no es válido.
+async function findById(id) {
+  const { data, error } = await getDb().from('players').select(PUBLIC_FIELDS).eq('id', id).maybeSingle();
+  if (error) throw dbError(error, 'players.findById');
+  return data ? toPublic(data) : null;
+}
+
+// Devuelve el jugador de un token (sesión de Google o perfil de invitado antiguo), o null.
+// Ojo: un perfil de invitado tiene hasAccount = false y ya no puede jugar hasta entrar con Google.
 async function findByToken(token) {
   if (typeof token !== 'string' || token.length < 20 || token.length > 100) return null;
-  const { data, error } = await getDb()
-    .from('players')
-    .select(PUBLIC_FIELDS)
-    .eq('token_hash', hashToken(token))
-    .maybeSingle();
+  const hash = hashToken(token);
+  const db = getDb();
+  const { data: session, error: sErr } = await db.from('player_sessions').select('player_id').eq('token_hash', hash).maybeSingle();
+  if (sErr) throw dbError(sErr, 'players.findByToken.session');
+  if (session) return findById(session.player_id);
+  const { data, error } = await db.from('players').select(PUBLIC_FIELDS).eq('token_hash', hash).maybeSingle();
   if (error) throw dbError(error, 'players.findByToken');
   return data ? toPublic(data) : null;
+}
+
+async function createSession(playerId) {
+  const token = newToken();
+  const { error: insErr } = await getDb().from('player_sessions').insert({ token_hash: hashToken(token), player_id: playerId });
+  if (insErr) throw dbError(insErr, 'players.createSession');
+  return token;
+}
+
+async function logout(token) {
+  if (typeof token !== 'string') return;
+  const { error } = await getDb().from('player_sessions').delete().eq('token_hash', hashToken(token));
+  if (error) throw dbError(error, 'players.logout');
+}
+
+// Nombre inicial a partir del de Google; si no vale, uno genérico.
+function nameFromGoogle(identity) {
+  for (const candidate of [identity.givenName, identity.name]) {
+    if (!candidate) continue;
+    const { value } = validatePlayerName(String(candidate).slice(0, 20));
+    if (value) return value;
+  }
+  return `Jugador${crypto.randomInt(1000, 10000)}`;
+}
+
+const randomFreeAvatar = () => FREE_AVATARS[crypto.randomInt(FREE_AVATARS.length)];
+
+// Entrar con Google. Si es la primera vez y el navegador tenía un perfil de invitado,
+// ese perfil se convierte en la cuenta (se conservan estadísticas y nombre).
+// Devuelve { player, token, created }.
+async function loginWithGoogle(identity, guestToken, { onCreated } = {}) {
+  if (!identity || typeof identity.sub !== 'string' || !identity.sub) throw httpError(400, 'Identidad de Google no válida');
+  const db = getDb();
+  const { data: existing, error } = await db.from('players').select('id').eq('google_sub', identity.sub).maybeSingle();
+  if (error) throw dbError(error, 'players.login.find');
+
+  let playerId;
+  let created = false;
+  if (existing) {
+    playerId = existing.id;
+    await db.from('players').update({ email: identity.email || null, last_seen_at: new Date().toISOString() }).eq('id', playerId).select('id');
+  } else {
+    const guest = guestToken ? await findByToken(guestToken) : null;
+    if (guest && !guest.hasAccount) {
+      const { data: linked, error: linkErr } = await db
+        .from('players')
+        .update({ google_sub: identity.sub, email: identity.email || null, token_hash: null, coins: COINS.welcome, avatar: randomFreeAvatar() })
+        .eq('id', guest.id)
+        .is('google_sub', null)
+        .select('id');
+      if (linkErr) throw dbError(linkErr, 'players.login.link');
+      if (linked.length) playerId = guest.id;
+    }
+    if (!playerId) {
+      const { data: row, error: insErr } = await db
+        .from('players')
+        .insert({ name: nameFromGoogle(identity), google_sub: identity.sub, email: identity.email || null, coins: COINS.welcome, avatar: randomFreeAvatar() })
+        .select('id')
+        .single();
+      if (insErr) throw dbError(insErr, 'players.login.create');
+      playerId = row.id;
+    }
+    created = true;
+    if (onCreated) await onCreated(playerId);
+  }
+  const token = await createSession(playerId);
+  return { player: await findById(playerId), token, created };
 }
 
 async function rename(playerId, name) {
@@ -114,13 +195,13 @@ async function profile(player) {
 async function conquistaLeaderboard(limit) {
   const { data, error } = await getDb()
     .from('players')
-    .select('name, conquista_played, conquista_won')
+    .select('name, avatar, conquista_played, conquista_won')
     .gt('conquista_won', 0)
     .order('conquista_won', { ascending: false })
     .order('conquista_played', { ascending: true })
     .limit(limit);
   if (error) throw dbError(error, 'players.conquistaLeaderboard');
-  return data.map((r, i) => ({ rank: i + 1, name: r.name, won: r.conquista_won, played: r.conquista_played }));
+  return data.map((r, i) => ({ rank: i + 1, name: r.name, avatar: r.avatar || null, won: r.conquista_won, played: r.conquista_played }));
 }
 
 async function leaderboard(limit = 20, mode = 'duel') {
@@ -128,7 +209,7 @@ async function leaderboard(limit = 20, mode = 'duel') {
   if (mode === 'conquista') return conquistaLeaderboard(limit);
   const { data, error } = await getDb()
     .from('players')
-    .select('name, rating, duels_played, duels_won')
+    .select('name, avatar, rating, duels_played, duels_won')
     .gt('duels_played', 0)
     .order('rating', { ascending: false })
     .order('duels_won', { ascending: false })
@@ -137,10 +218,11 @@ async function leaderboard(limit = 20, mode = 'duel') {
   return data.map((r, i) => ({
     rank: i + 1,
     name: r.name,
+    avatar: r.avatar || null,
     rating: r.rating,
     duelsPlayed: r.duels_played,
     duelsWon: r.duels_won,
   }));
 }
 
-module.exports = { create, findByToken, rename, profile, leaderboard, hashToken };
+module.exports = { create, findByToken, findById, rename, profile, leaderboard, hashToken, loginWithGoogle, createSession, logout };

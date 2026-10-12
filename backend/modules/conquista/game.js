@@ -1,10 +1,25 @@
 const crypto = require('crypto');
 const { CQ } = require('./config');
 const { REGIONS, NAMES, ADJ, CASTLE_SETS } = require('./map');
+const { GameError } = require('../multiplayer/room');
 
 const COLORS = ['#e5484d', '#3e8ef7', '#2fbf71'];
 
 class Cancelled extends Error {}
+
+// Intervalo que contiene la respuesta, colocado al azar para que no sea siempre el centro.
+function hintRange(q, rand = Math.random) {
+  const a = q.answer;
+  const isYear = /año/i.test(q.unit || '') && a > 500 && a < 2100;
+  const width = isYear ? 30 : Math.max(Math.abs(a) * 0.4, 2);
+  let lo = a - rand() * width;
+  let hi = lo + width;
+  if (a >= 0) lo = Math.max(0, lo);
+  const round = (v) => (isYear || Math.abs(a) >= 10 || Number.isInteger(a) ? Math.round(v) : Math.round(v * 10) / 10);
+  lo = Math.min(round(lo), a);
+  hi = Math.max(round(hi), a);
+  return [lo, hi];
+}
 
 function shuffle(list) {
   const a = [...list];
@@ -38,6 +53,7 @@ class ConquistaGame {
     this.players = players.map((p, i) => ({
       id: p.id,
       name: p.name,
+      avatar: p.avatar || null,
       isBot: !!p.isBot,
       skill: p.skill ?? 0.6,
       color: COLORS[i],
@@ -111,6 +127,7 @@ class ConquistaGame {
       players: this.players.map((p) => ({
         id: p.id,
         name: p.name,
+        avatar: p.avatar,
         isBot: p.isBot,
         color: p.color,
         connected: p.connected,
@@ -157,7 +174,7 @@ class ConquistaGame {
     return new Promise((resolve, reject) => {
       const answers = new Map();
       const deadline = Date.now() + durationMs;
-      const pending = { participants, answers, deadline, durationMs, resolve, reject };
+      const pending = { participants, answers, deadline, durationMs, resolve, reject, helpers: new Map() };
       this.pending = pending;
       const finish = () => {
         if (this.pending !== pending) return;
@@ -224,6 +241,33 @@ class ConquistaGame {
     }
   }
 
+  // ---------- comodines ----------
+  // 50/50 en las preguntas con opciones; pista (intervalo) en las de aproximación.
+  helperOffer(playerId, kind) {
+    const pending = this.pending;
+    if (kind !== 'fifty' && kind !== 'hint') throw new GameError('Ese comodín solo se puede usar en el Blitz');
+    if (!pending || !pending.participants.includes(playerId)) throw new GameError('Ahora no se puede usar un comodín');
+    if (pending.answers.has(playerId)) throw new GameError('Ya has respondido');
+    const numeric = this.phase === 'exp_question' || this.phase === 'bat_tiebreak';
+    if (kind === 'fifty' && this.phase !== 'bat_question') throw new GameError('El 50/50 es para las preguntas con opciones');
+    if (kind === 'hint' && !numeric) throw new GameError('La pista es para las preguntas de aproximación');
+    const used = pending.helpers.get(playerId) || new Set();
+    if (used.has(kind)) throw new GameError('Ya has usado ese comodín en esta pregunta');
+    used.add(kind);
+    pending.helpers.set(playerId, used);
+
+    let payload;
+    if (kind === 'fifty') {
+      const q = this.currentChoice;
+      const wrong = shuffle(q.options.map((_, i) => i).filter((i) => i !== q.correctIndex));
+      payload = { question: q.text, remove: wrong.slice(0, Math.max(0, q.options.length - 2)).sort() };
+    } else {
+      const q = this.currentNumeric;
+      payload = { question: q.text, range: hintRange(q) };
+    }
+    return { payload, cancel: () => pending.helpers.get(playerId)?.delete(kind) };
+  }
+
   // ---------- preguntas ----------
   async nextNumeric() {
     if (this.numericPool.length === 0) this.numericPool = await this.loadNumeric(20);
@@ -252,6 +296,7 @@ class ConquistaGame {
   async numericRound(phase, participants, extraView = {}) {
     const q = await this.nextNumeric();
     if (this.destroyed) throw new Cancelled();
+    this.currentNumeric = q;
     this.view = { ...extraView, question: { kind: 'numeric', text: q.text, unit: q.unit, category: q.category } };
     this.phase = phase;
     this.result = null;
@@ -376,6 +421,7 @@ class ConquistaGame {
     // Pregunta con opciones para atacante y defensor.
     const q = await this.nextChoice();
     if (this.destroyed) throw new Cancelled();
+    this.currentChoice = q;
     this.phase = 'bat_question';
     this.result = null;
     this.view = { attack, question: { kind: 'choice', text: q.text, options: q.options, category: q.category } };
@@ -447,6 +493,7 @@ class ConquistaGame {
       .map((p) => ({
         playerId: p.id,
         name: p.name,
+        avatar: p.avatar,
         isBot: p.isBot,
         color: p.color,
         left: p.left,
@@ -513,4 +560,4 @@ class ConquistaGame {
   }
 }
 
-module.exports = { ConquistaGame, COLORS };
+module.exports = { ConquistaGame, COLORS, GameError, hintRange };
