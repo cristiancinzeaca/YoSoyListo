@@ -50,7 +50,7 @@ Railway vuelve a desplegar solo cada vez que cambia la rama principal en GitHub.
 
 ### 4. Antes de anunciarlo
 
-- [ ] Cambia el texto de contacto en `backend/public/privacidad.html` (busca `TODO`) por tu email
+- [ ] (Opcional) Cambia el email de contacto de `backend/public/privacidad.html` si creas uno propio para el juego
 - [ ] (Opcional) Añade más preguntas (ver abajo): cuantas más haya, menos se repiten
 - [ ] (Opcional) Dominio propio: en Railway → **Settings** → **Networking** → **Custom Domain**. Después añade la variable `PUBLIC_URL=https://tudominio.es`
 - [ ] (Opcional) Da de alta el dominio en [Google Search Console](https://search.google.com/search-console) y envía `https://tudominio.es/sitemap.xml`
