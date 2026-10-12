@@ -912,3 +912,7 @@ html.chat-open, html.chat-open body { overflow: hidden; }
 .chat-menu-title { margin: 0 0 4px; font-weight: 900; font-size: 1.1rem; text-align: center; }
 .chat-cancel { padding: 10px; border: 0; background: transparent; color: var(--text-light); font: inherit; font-weight: 800; opacity: 0.8; cursor: pointer; }
 .chat-flash { position: absolute; left: 12px; right: 12px; bottom: 80px; z-index: 3; padding: 10px 14px; border-radius: 12px; background: #1b1035; border: 1px solid rgba(255,229,138,0.5); font-weight: 700; font-size: 0.9rem; text-align: center; box-shadow: var(--shadow); }
+/* ---------- Nombre único (perfil) ---------- */
+.name-hint { font-size: 0.85rem; font-weight: 700; opacity: 0.8; margin: 8px 0 10px; }
+.name-hint.ok { color: #6ff0a8; opacity: 1; }
+.name-hint.bad { color: #ff8a8a; opacity: 1; }

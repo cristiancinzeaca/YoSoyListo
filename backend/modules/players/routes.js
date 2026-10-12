@@ -14,6 +14,11 @@ router.get('/leaderboard', async (req, res) => {
   res.json({ entries: await service.leaderboard(req.query.limit, req.query.mode === 'conquista' ? 'conquista' : 'duel') });
 });
 
+// ¿Está libre un nombre? (para avisar mientras se escribe)
+router.get('/name-check', requirePlayer, rateLimit({ windowMs: 60_000, max: 60 }), async (req, res) => {
+  res.json(await service.checkName(String(req.query.name || ''), req.player));
+});
+
 router.get('/me', requirePlayer, async (req, res) => {
   res.json(await service.profile(req.player));
 });

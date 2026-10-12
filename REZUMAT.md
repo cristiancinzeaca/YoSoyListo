@@ -137,6 +137,13 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - În Conquista, cine are țări poate cere, la rândul lui de atac, o întrebare din țara aleasă (aliat).
 - Totul e atomic în SQL: `buy_country`, `collect_income`, `conquer_country`, `defend_country`, `pay_coins`, `add_coins`; tabele `country_owners`, `country_attacks`.
 
+## 5d. Nume unice (ramura `nombres-unicos`)
+
+- Două conturi nu pot avea același nume; se compară fără majuscule, accente și separatori („Cristián” = „cristian” = „Cris-tian”). Coloana `players.name_key` (index unic) o calculează serverul (`nameKey` în `modules/players/names.js`).
+- La intrarea cu Google, dacă numele e ocupat, primește un număr: „Lucía”, „lucia2”, „Lucía3”…
+- Jucătorii vechi cu nume repetate se separă singuri la pornire (`fillNameKeys` în `core/migrate.js`): cel mai vechi păstrează numele.
+- Schimbarea numelui costă **100 monede** (`COINS.rename`); doar majuscule/accente = gratis. Atomic în SQL (`rename_player`). În profil se verifică pe loc dacă numele e liber (`GET /api/players/name-check`).
+
 ## 5e. Chat (ramura `chat`)
 
 - Buton 💬 în antetul tuturor paginilor (după login), cu 3 file: **Partida** (doar când ești într-o sală/partidă, în timp real prin WebSocket, cu fraze rapide), **General** (sala deschisă tuturor) și **Privados** (unu la unu, căutare după nume). General și privatele se citesc din API la fiecare 3 s cât panoul e deschis; cu panoul închis se verifică privatele la 30 s (insignă + notificare mică).
@@ -145,7 +152,6 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Atingi un mesaj → **Mensaje privado**, **Reportar** (motiv), **Bloquear**. Blocatul nu-ți mai apare nicăieri și nu-ți poate scrie în privat. Oricine poate închide privatele din „Ajustes del chat”.
 - 3 reportări de la persoane diferite ascund mesajul; cine are 3 mesaje ascunse în 7 zile nu poate scrie 24 h. În panoul de admin (`/admin`) există secțiunea „Chat: mensajes reportados” (fals aviz / ascunde / ascunde și reduce la tăcere 7 zile).
 - Mesajele publice se șterg după 7 zile, cele private după 90 (`prune_chat`, la pornire și la fiecare 6 h). Tabele: `chat_messages`, `chat_reports`, `chat_blocks`, `chat_reads`.
-
 ## 6. Alte idei în așteptare
 
 - **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).

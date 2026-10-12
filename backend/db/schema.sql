@@ -189,6 +189,11 @@ alter table players add column if not exists email text;
 alter table players add column if not exists coins int not null default 0;
 alter table players add column if not exists avatar text;
 
+-- Nombres únicos: name_key es el nombre sin mayúsculas, acentos ni separadores (lo calcula
+-- el servidor, ver modules/players/names.js). Las filas antiguas se rellenan al arrancar.
+alter table players add column if not exists name_key text;
+create unique index if not exists players_name_key_idx on players (name_key);
+
 -- Una fila por dispositivo con la sesión iniciada.
 create table if not exists player_sessions (
   token_hash text primary key,
@@ -316,6 +321,38 @@ create table if not exists country_attacks (
   created_at timestamptz not null default now()
 );
 create index if not exists country_attacks_attacker_idx on country_attacks (attacker_id, country, created_at);
+
+-- Cambio de nombre atómico: libre, con saldo, y cobra p_cost (gratis si la clave no cambia).
+create or replace function rename_player(p_id uuid, p_name text, p_key text, p_cost int)
+returns table (ok boolean, reason text, cost int, coins_left int)
+language plpgsql as $$
+declare
+  me players%rowtype;
+  price int;
+begin
+  select * into me from players where id = p_id for update;
+  if not found then return; end if;
+  if exists (select 1 from players where name_key = p_key and id <> p_id) then
+    return query select false, 'taken'::text, 0, me.coins;
+    return;
+  end if;
+  price := case when me.name_key = p_key then 0 else p_cost end;
+  if me.coins < price then
+    return query select false, 'coins'::text, price, me.coins;
+    return;
+  end if;
+  begin
+    update players set name = p_name, name_key = p_key, coins = coins - price where id = p_id;
+  exception when unique_violation then
+    return query select false, 'taken'::text, 0, me.coins;
+    return;
+  end;
+  if price > 0 then
+    insert into coin_ledger (player_id, amount, reason) values (p_id, -price, 'rename');
+  end if;
+  return query select true, null::text, price, me.coins - price;
+end;
+$$;
 
 -- Cobra monedas si hay saldo suficiente.
 create or replace function pay_coins(p_id uuid, p_amount int, p_reason text)
