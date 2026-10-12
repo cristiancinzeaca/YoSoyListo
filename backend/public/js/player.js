@@ -155,7 +155,13 @@ function renderMeChip() {
     const has = data && data.hasAccount && Player.token;
     coins.hidden = !has;
     const value = Wallet.data ? Wallet.data.coins : data ? data.coins : 0;
-    coins.textContent = `🪙 ${value ?? 0}`;
+    coins.replaceChildren();
+    const img = document.createElement('img');
+    img.src = '/img/ic-moneda.webp';
+    img.alt = '';
+    const n = document.createElement('span');
+    n.textContent = value ?? 0;
+    coins.append(img, n);
   }
 }
 
