@@ -847,3 +847,8 @@ label { color: #fff; }
 .ally-chip { font: inherit; font-weight: 900; font-size: 0.9rem; padding: 6px 10px; border-radius: 99px; border: 2px solid var(--ink); background: rgba(255,255,255,0.1); color: #fff; cursor: pointer; box-shadow: 0 3px 0 var(--ink); }
 .ally-chip.on { background: linear-gradient(180deg, #ffe680, #f5b400); color: #3b2600; }
 .world-banner .coin-big { background-image: url("/img/ic-mundo.webp") !important; }
+
+/* ---------- Nombre único (perfil) ---------- */
+.name-hint { font-size: 0.85rem; font-weight: 700; opacity: 0.8; margin: 8px 0 10px; }
+.name-hint.ok { color: #6ff0a8; opacity: 1; }
+.name-hint.bad { color: #ff8a8a; opacity: 1; }

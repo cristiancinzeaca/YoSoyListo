@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const { getDb, dbError } = require('../../core/db');
 const { httpError } = require('../../core/http');
-const { validatePlayerName } = require('./names');
+const { validatePlayerName, nameKey, numberedName } = require('./names');
 const { FREE_AVATARS, COINS, AVATARS } = require('../shop/catalog');
 
 const PUBLIC_FIELDS =
@@ -30,19 +30,6 @@ function toPublic(row) {
 }
 
 const newToken = () => crypto.randomBytes(24).toString('base64url');
-
-async function create(name) {
-  const { value, error } = validatePlayerName(name);
-  if (error) throw httpError(400, error);
-  const token = newToken();
-  const { data, error: dbErr } = await getDb()
-    .from('players')
-    .insert({ name: value, token_hash: hashToken(token) })
-    .select(PUBLIC_FIELDS)
-    .single();
-  if (dbErr) throw dbError(dbErr, 'players.create');
-  return { player: toPublic(data), token };
-}
 
 async function findById(id) {
   const { data, error } = await getDb().from('players').select(PUBLIC_FIELDS).eq('id', id).maybeSingle();
@@ -87,6 +74,32 @@ function nameFromGoogle(identity) {
   return `Jugador${crypto.randomInt(1000, 10000)}`;
 }
 
+// ¿Está libre este nombre? (ignora mayúsculas, acentos y separadores)
+async function nameTaken(name, exceptId = null) {
+  let q = getDb().from('players').select('id').eq('name_key', nameKey(name)).limit(1);
+  if (exceptId) q = q.neq('id', exceptId);
+  const { data, error } = await q;
+  if (error) throw dbError(error, 'players.nameTaken');
+  return data.length > 0;
+}
+
+// Primer nombre libre: «Ana», «Ana2», «Ana3»… y, si todo está cogido, con un número al azar.
+async function freeName(name) {
+  for (let n = 1; n <= 30; n++) {
+    const candidate = n === 1 ? name : numberedName(name, n);
+    if (!(await nameTaken(candidate))) return candidate;
+  }
+  return numberedName(name, crypto.randomInt(100, 100000));
+}
+
+// Para el formulario del perfil: ¿se puede usar y cuánto cuesta?
+async function checkName(name, player) {
+  const { value, error } = validatePlayerName(name);
+  if (error) return { available: false, error };
+  if (await nameTaken(value, player.id)) return { available: false, error: 'Ese nombre ya lo tiene otro jugador' };
+  return { available: true, name: value, cost: nameKey(value) === nameKey(player.name) ? 0 : COINS.rename };
+}
+
 const randomFreeAvatar = () => FREE_AVATARS[crypto.randomInt(FREE_AVATARS.length)];
 
 // Entrar con Google. Si es la primera vez y el navegador tenía un perfil de invitado,
@@ -116,13 +129,19 @@ async function loginWithGoogle(identity, guestToken, { onCreated } = {}) {
       if (linked.length) playerId = guest.id;
     }
     if (!playerId) {
-      const { data: row, error: insErr } = await db
-        .from('players')
-        .insert({ name: nameFromGoogle(identity), google_sub: identity.sub, email: identity.email || null, coins: COINS.welcome, avatar: randomFreeAvatar() })
-        .select('id')
-        .single();
-      if (insErr) throw dbError(insErr, 'players.login.create');
-      playerId = row.id;
+      // Dos altas a la vez con el mismo nombre: el índice único rechaza una y se reintenta.
+      const wanted = nameFromGoogle(identity);
+      for (let attempt = 0; !playerId; attempt++) {
+        const name = attempt < 3 ? await freeName(wanted) : numberedName(wanted, crypto.randomInt(100, 100000));
+        const { data: row, error: insErr } = await db
+          .from('players')
+          .insert({ name, name_key: nameKey(name), google_sub: identity.sub, email: identity.email || null, coins: COINS.welcome, avatar: randomFreeAvatar() })
+          .select('id')
+          .single();
+        if (insErr && insErr.code === '23505' && String(insErr.constraint || insErr.message).includes('name_key') && attempt < 5) continue;
+        if (insErr) throw dbError(insErr, 'players.login.create');
+        playerId = row.id;
+      }
     }
     created = true;
     if (onCreated) await onCreated(playerId);
@@ -131,17 +150,22 @@ async function loginWithGoogle(identity, guestToken, { onCreated } = {}) {
   return { player: await findById(playerId), token, created };
 }
 
+// Cambiar de nombre: cuesta COINS.rename (gratis si solo cambian mayúsculas o acentos).
 async function rename(playerId, name) {
   const { value, error } = validatePlayerName(name);
   if (error) throw httpError(400, error);
-  const { data, error: dbErr } = await getDb()
-    .from('players')
-    .update({ name: value })
-    .eq('id', playerId)
-    .select(PUBLIC_FIELDS)
-    .single();
+  const { data, error: dbErr } = await getDb().rpc('rename_player', {
+    p_id: playerId,
+    p_name: value,
+    p_key: nameKey(value),
+    p_cost: COINS.rename,
+  });
   if (dbErr) throw dbError(dbErr, 'players.rename');
-  return toPublic(data);
+  const r = data && data[0];
+  if (!r) throw httpError(404, 'Jugador no encontrado');
+  if (r.reason === 'taken') throw httpError(409, 'Ese nombre ya lo tiene otro jugador');
+  if (r.reason === 'coins') throw httpError(409, `Cambiar de nombre cuesta ${COINS.rename} monedas y no tienes suficientes`);
+  return { ...(await findById(playerId)), cost: r.cost };
 }
 
 async function profile(player) {
@@ -225,4 +249,4 @@ async function leaderboard(limit = 20, mode = 'duel') {
   }));
 }
 
-module.exports = { create, findByToken, findById, rename, profile, leaderboard, hashToken, loginWithGoogle, createSession, logout };
+module.exports = { checkName, findByToken, findById, rename, profile, leaderboard, hashToken, loginWithGoogle, createSession, logout };

@@ -25,6 +25,7 @@ function createFakeDb() {
     update(obj) { this.op = 'update'; this.payload = obj; return this; }
     delete() { this.op = 'delete'; return this; }
     eq(c, v) { this.filters.push((r) => r[c] === v); return this; }
+    neq(c, v) { this.filters.push((r) => r[c] !== v); return this; }
     is(c, v) { this.filters.push((r) => (r[c] ?? null) === v); return this; }
     not(c, op, v) { this.filters.push((r) => (r[c] ?? null) !== v); return this; }
     in(c, values) { this.filters.push((r) => values.includes(r[c])); return this; }
@@ -52,6 +53,9 @@ function createFakeDb() {
           ...defaults(this.table),
           ...structuredClone(row),
         }));
+        if (this.table === 'players' && list.some((n) => n.name_key && rows.some((r) => r.name_key === n.name_key))) {
+          return { data: null, error: { code: '23505', constraint: 'players_name_key_idx', message: 'duplicate key value violates unique constraint "players_name_key_idx"' } };
+        }
         rows.push(...list);
         data = list;
       } else if (this.op === 'update') {
@@ -176,6 +180,20 @@ function createFakeDb() {
       }
       const player = (id) => tables.players.find((x) => x.id === id);
       const ledger = (id, amount, reason) => tables.coin_ledger.push({ player_id: id, amount, reason, created_at: new Date().toISOString() });
+      if (name === 'rename_player') {
+        const p = player(args.p_id);
+        if (!p) return { data: [], error: null };
+        if (tables.players.some((x) => x.id !== p.id && x.name_key === args.p_key)) {
+          return { data: [{ ok: false, reason: 'taken', cost: 0, coins_left: p.coins }], error: null };
+        }
+        const cost = p.name_key === args.p_key ? 0 : args.p_cost;
+        if (p.coins < cost) return { data: [{ ok: false, reason: 'coins', cost, coins_left: p.coins }], error: null };
+        p.coins -= cost;
+        p.name = args.p_name;
+        p.name_key = args.p_key;
+        if (cost) ledger(p.id, -cost, 'rename');
+        return { data: [{ ok: true, reason: null, cost, coins_left: p.coins }], error: null };
+      }
       if (name === 'pay_coins') {
         const p = player(args.p_id);
         if (!p || p.coins < args.p_amount) return { data: [{ ok: false, balance: p ? p.coins : null }], error: null };

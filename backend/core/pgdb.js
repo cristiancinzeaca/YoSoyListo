@@ -65,6 +65,10 @@ class Query {
     this.where.push(`${ident(c)} = ${this.param(v)}`);
     return this;
   }
+  neq(c, v) {
+    this.where.push(`${ident(c)} <> ${this.param(v)}`);
+    return this;
+  }
   gt(c, v) {
     this.where.push(`${ident(c)} > ${this.param(v)}`);
     return this;
