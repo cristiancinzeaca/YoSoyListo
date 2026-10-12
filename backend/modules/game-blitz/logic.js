@@ -1,4 +1,5 @@
 // Reglas del modo Blitz. Funciones puras: sin base de datos, fáciles de probar.
+const { validatePlayerName } = require('../players/names');
 
 const BLITZ = {
   durationMs: 60_000,
@@ -38,17 +39,6 @@ function acceptsAnswers(endsAtMs, nowMs) {
 // Se puede cerrar la partida cuando se acaba el tiempo o no quedan preguntas.
 function canFinish({ endsAtMs, answeredCount, totalQuestions }, nowMs) {
   return nowMs >= endsAtMs - BLITZ.graceMs || answeredCount >= totalQuestions;
-}
-
-const NAME_RE = /^[\p{L}\p{N} _.-]{2,20}$/u;
-
-function validatePlayerName(name) {
-  if (typeof name !== 'string') return { error: 'Escribe un nombre' };
-  const value = name.trim().replace(/\s+/g, ' ');
-  if (!NAME_RE.test(value)) {
-    return { error: 'El nombre debe tener entre 2 y 20 letras, números, espacios, puntos o guiones' };
-  }
-  return { value };
 }
 
 module.exports = { BLITZ, multiplierFor, applyAnswer, acceptsAnswers, canFinish, validatePlayerName };

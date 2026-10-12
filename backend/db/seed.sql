@@ -1,6 +1,8 @@
 -- Preguntas de ejemplo para poder jugar desde el primer día.
--- Ejecutar DESPUÉS de schema.sql. Se pueden editar o borrar desde el panel de administración.
-insert into questions (text, options, correct_index, category, difficulty) values
+-- Ejecutar DESPUÉS de schema.sql. Si se ejecuta otra vez, no duplica las preguntas que ya existen.
+insert into questions (text, options, correct_index, category, difficulty)
+select v.text, v.options, v.correct_index, v.category, v.difficulty
+from (values
 -- Geografía
 ('¿Cuál es la capital de Australia?', array['Sídney', 'Melbourne', 'Canberra', 'Perth'], 2, 'geografia', 2),
 ('¿En qué continente está Egipto?', array['África', 'Asia', 'Europa', 'Oceanía'], 0, 'geografia', 1),
@@ -59,4 +61,6 @@ insert into questions (text, options, correct_index, category, difficulty) value
 ('¿Cuántas patas tiene una araña?', array['6', '10', '8', '12'], 2, 'general', 1),
 ('¿Qué idioma tiene más hablantes nativos en el mundo?', array['Chino mandarín', 'Inglés', 'Español', 'Hindi'], 0, 'general', 2),
 ('¿Cuál es la moneda oficial de Japón?', array['Yuan', 'Won', 'Rupia', 'Yen'], 3, 'general', 1),
-('¿Cuál es el mamífero más grande del mundo?', array['Elefante africano', 'Ballena azul', 'Cachalote', 'Jirafa'], 1, 'general', 1);
+('¿Cuál es el mamífero más grande del mundo?', array['Elefante africano', 'Ballena azul', 'Cachalote', 'Jirafa'], 1, 'general', 1)
+) as v (text, options, correct_index, category, difficulty)
+where not exists (select 1 from questions q where q.text = v.text);

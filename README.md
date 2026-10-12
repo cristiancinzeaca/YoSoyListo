@@ -20,10 +20,9 @@ Sigue estos pasos EN ORDEN. Todo se puede hacer desde el móvil.
 3. Región: elige una en Europa (más rápido para España)
 4. Espera 1-2 minutos a que se cree el proyecto
 5. Ve a "SQL Editor" (menú lateral)
-6. Ejecuta estos tres archivos, uno detrás de otro y en este orden (para cada uno: "New query", copia y pega el contenido completo y pulsa "Run"):
-   1. `backend/modules/questions/schema.sql` — crea la tabla de preguntas
-   2. `backend/modules/game-blitz/schema.sql` — crea la tabla de partidas del modo Blitz
-   3. `backend/modules/questions/seed.sql` — añade 53 preguntas de ejemplo para poder jugar ya (opcional)
+6. Ejecuta estos dos archivos, uno detrás de otro y en este orden (para cada uno: "New query", copia y pega el contenido completo y pulsa "Run"):
+   1. `backend/db/schema.sql` — crea todas las tablas
+   2. `backend/db/seed.sql` — añade 53 preguntas de ejemplo para poder jugar ya (opcional)
 
 ## 3. Obtener las claves de Supabase
 
@@ -55,7 +54,7 @@ Ahora abre la URL base (`https://TU-URL-DE-RAILWAY.up.railway.app/`): esa es la 
 
 ## 6. Conectar el panel de administración
 
-1. Abre el archivo `admin/index.html` — de momento puedes abrirlo directamente desde tu móvil (o subirlo también a algún hosting estático simple más adelante)
+1. Abre `https://TU-URL-DE-RAILWAY.up.railway.app/admin/` (también funciona abriendo el archivo `backend/public/admin/index.html`)
 2. En el campo "URL del backend" arriba del todo, pega tu URL de Railway (sin `/health` al final, solo la URL base)
 3. En "Clave de administrador" pon el mismo valor que `ADMIN_KEY` en Railway y pulsa "Guardar". Debe aparecer "✓ Conectado"
 4. Ya puedes añadir, editar, borrar o importar preguntas (en JSON, hasta 500 de golpe)
@@ -67,7 +66,7 @@ Ahora abre la URL base (`https://TU-URL-DE-RAILWAY.up.railway.app/`): esa es la 
 - `backend/modules/game-blitz/` — modo Blitz: partida individual de 60 segundos con rachas y ranking
 - `backend/public/` — la web que ven los jugadores (portada, juego y ranking)
 - `backend/test/` — pruebas automáticas (`npm test` dentro de `backend/`)
-- `admin/` — panel de administración (una sola página HTML, sin instalación)
+- `backend/public/admin/` — panel de administración (una sola página HTML)
 
 ## Cómo funciona el modo Blitz
 
