@@ -10,7 +10,7 @@ router.post('/', rateLimit({ windowMs: 60 * 60_000, max: 20 }), async (req, res)
 });
 
 router.get('/leaderboard', async (req, res) => {
-  res.json({ entries: await service.leaderboard(req.query.limit) });
+  res.json({ entries: await service.leaderboard(req.query.limit, req.query.mode === 'conquista' ? 'conquista' : 'duel') });
 });
 
 router.get('/me', requirePlayer, async (req, res) => {

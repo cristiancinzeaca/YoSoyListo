@@ -144,6 +144,42 @@ create table if not exists match_players (
 create index if not exists match_players_player_idx on match_players (player_id);
 
 -- ---------------------------------------------------------------------
+-- Preguntas de aproximación (respuesta numérica) para el modo Conquista
+-- ---------------------------------------------------------------------
+create table if not exists numeric_questions (
+  id uuid primary key default gen_random_uuid(),
+  text text not null check (char_length(text) between 5 and 500),
+  answer double precision not null,
+  unit text,
+  category text not null default 'general',
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create or replace function random_numeric_questions(p_limit int)
+returns setof numeric_questions
+language sql stable as $$
+  select * from numeric_questions where active order by random() limit p_limit;
+$$;
+
+-- Estadísticas del modo Conquista.
+alter table players add column if not exists conquista_played int not null default 0;
+alter table players add column if not exists conquista_won int not null default 0;
+
+create or replace function apply_conquista_result(p_id uuid, p_won int)
+returns void
+language sql as $$
+  update players set
+    conquista_played = conquista_played + 1,
+    conquista_won = conquista_won + p_won,
+    last_seen_at = now()
+  where id = p_id;
+$$;
+
+alter table matches drop constraint if exists matches_mode_check;
+alter table matches add constraint matches_mode_check check (mode in ('duel', 'room', 'conquista'));
+
+-- ---------------------------------------------------------------------
 -- Seguridad: activar RLS sin políticas. Así solo el backend
 -- (service_role) puede leer y escribir; la anon key no ve nada.
 -- ---------------------------------------------------------------------
@@ -153,3 +189,4 @@ alter table players enable row level security;
 alter table blitz_sessions enable row level security;
 alter table matches enable row level security;
 alter table match_players enable row level security;
+alter table numeric_questions enable row level security;

@@ -41,7 +41,11 @@
     rankingEmpty.hidden = true;
     try {
       let rows;
-      if (board === 'elo') {
+      if (board === 'conquista') {
+        const { entries } = await api.get('/api/players/leaderboard?mode=conquista');
+        rows = entries.map((e) => row(e.rank, e.name, `${e.won} 👑`));
+        rankingEmpty.textContent = 'Todavía nadie ha ganado una Conquista. ¡Sé el primero!';
+      } else if (board === 'elo') {
         const { entries } = await api.get('/api/players/leaderboard');
         rows = entries.map((e) => row(e.rank, e.name, `${e.rating} ELO`));
         rankingEmpty.textContent = 'Todavía nadie ha jugado un duelo. ¡Estrénalo!';

@@ -21,12 +21,14 @@
   $('st-blitz').textContent = me.bestBlitz;
   $('st-duels').textContent = `${me.duelsWon} / ${me.duelsPlayed}`;
   $('st-rooms').textContent = `${me.roomsWon} / ${me.roomsPlayed}`;
+  $('st-cq').textContent = `${me.conquistaWon} / ${me.conquistaPlayed}`;
 
   const list = $('history');
   for (const m of me.recentMatches) {
     const li = document.createElement('li');
     const left = document.createElement('div');
-    const what = m.mode === 'duel' ? (m.vsBot ? 'Duelo contra bot' : 'Duelo') : 'Sala privada';
+    const what =
+      m.mode === 'conquista' ? 'Conquista' : m.mode === 'duel' ? (m.vsBot ? 'Duelo contra bot' : 'Duelo') : 'Sala privada';
     left.textContent = `${m.position === 1 ? '🏆' : `${m.position}º`} · ${what}`;
     const when = document.createElement('div');
     when.className = 'when';
