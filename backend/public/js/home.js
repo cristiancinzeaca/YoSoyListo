@@ -32,7 +32,7 @@
     const pts = document.createElement('span');
     pts.className = 'pts';
     pts.textContent = value;
-    li.append(pos, n, pts);
+    li.append(pos, FX.avatar(name), n, pts);
     return li;
   }
 
