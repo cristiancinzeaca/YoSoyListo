@@ -20,6 +20,8 @@
   // ---------- utilidades de pantalla ----------
   function show(id) {
     for (const s of SCREENS) $(s).hidden = s !== id;
+    if (state.shown !== id) FX.screen($(id));
+    state.shown = id;
   }
 
   let bannerTimer;
@@ -435,7 +437,9 @@
       FX.burst(buttons[msg.correctIndex], { amount: mine.points >= 900 ? 34 : 22 });
       FX.float(`+${mine.points}`, buttons[msg.correctIndex], mine.points >= 900 ? 'big' : '');
       FX.bump($('g-score'));
+      FX.mascot('gana');
     } else if (mine) {
+      FX.mascot('falla');
       FX.play('wrong');
       FX.vibrate([60, 40, 60]);
       FX.shake($('g-card'));
@@ -459,6 +463,7 @@
     const won = me && me.position === 1;
     const tie = won && msg.ranking.filter((r) => r.position === 1).length > 1;
     $('end-title').textContent = tie ? '🤝 ¡Empate!' : won ? '🏆 ¡Has ganado!' : me ? `Has quedado ${me.position}º` : 'Fin de la partida';
+    FX.endMascot($('s-end').querySelector('.card'), !!(me && me.position <= (msg.mode === 'duel' ? 1 : 3)));
     if (won) {
       FX.play('victory');
       FX.flash('gold');

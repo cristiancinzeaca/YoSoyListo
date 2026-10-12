@@ -369,6 +369,46 @@
     return img;
   }
 
+  // Animal del jugador (el avatar elegido o, si no, el que le toca por nombre).
+  function myAnimal() {
+    try {
+      const d = JSON.parse(localStorage.getItem('ysl:player') || 'null');
+      if (d && d.avatar && ANIMALS.includes(d.avatar)) return d.avatar;
+      return avatarKey(d && d.name);
+    } catch {
+      return 'buho';
+    }
+  }
+
+  // Mascota que asoma por la esquina: kind = 'gana' | 'falla'.
+  let mascotTimer = 0;
+  function mascot(kind = 'gana', { side = 'right', animal } = {}) {
+    if (reduceMotion) return;
+    const now = Date.now();
+    if (now - mascotTimer < 1200) return;
+    mascotTimer = now;
+    const img = document.createElement('img');
+    img.className = `fx-mascot ${side === 'left' ? 'left' : ''}`.trim();
+    img.src = `/img/mascota-${kind}-${animal || myAnimal()}.webp`;
+    img.alt = '';
+    document.body.appendChild(img);
+    setTimeout(() => img.remove(), 1600);
+  }
+
+  // Mascota grande encima de la tarjeta de resultado.
+  function endMascot(card, won, animal) {
+    if (!card) return;
+    card.querySelector(':scope > .end-mascot')?.remove();
+    const img = document.createElement('img');
+    img.className = 'end-mascot';
+    img.src = `/img/mascota-${won ? 'gana' : 'falla'}-${animal || myAnimal()}.webp`;
+    img.alt = '';
+    card.prepend(img);
+  }
+
+  // Una pantalla que aparece: entrada suave.
+  const screen = (el) => retrigger(el, 'screen-in', 450);
+
   const CASTLE_BY_COLOR = { '#e5484d': 'rojo', '#3e8ef7': 'azul', '#2fbf71': 'verde' };
   const castleSrc = (color) => `/img/castillo-${CASTLE_BY_COLOR[String(color).toLowerCase()] || 'rojo'}.webp`;
 
@@ -438,6 +478,10 @@
     shake,
     bump,
     enter,
+    mascot,
+    endMascot,
+    screen,
+    myAnimal,
     flash,
     bigText,
     countUp,

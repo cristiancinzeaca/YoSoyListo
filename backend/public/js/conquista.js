@@ -7,6 +7,8 @@
 
   function show(id) {
     for (const s of SCREENS) $(s).hidden = s !== id;
+    if (state.shown !== id) FX.screen($(id));
+    state.shown = id;
   }
 
   let bannerTimer;
@@ -228,7 +230,7 @@
 
   function colorOf(id) {
     const p = state.s.players.find((x) => x.id === id);
-    return p ? p.color : '#3a2d63';
+    return p ? p.color : '#e6d3a3';
   }
 
   function renderMap() {
@@ -239,7 +241,7 @@
     const target = s.attack ? s.attack.region : null;
     for (const [id, p] of Object.entries(m.paths)) {
       const owner = s.owner[id];
-      p.setAttribute('fill', owner ? colorOf(owner) : '#3a2d63');
+      p.setAttribute('fill', owner ? colorOf(owner) : '#e6d3a3');
       p.classList.toggle('free', !owner);
       p.classList.toggle('pickable', myPick && s.options.includes(id));
       p.classList.toggle('target', id === target);
@@ -610,6 +612,7 @@
     if ((s.phase === 'exp_result' || s.phase === 'bat_tie_result') && s.result && s.result.ranking.length) {
       const first = s.result.ranking[0].playerId;
       if (first === me) {
+        FX.mascot('gana');
         FX.play('correct');
         FX.vibrate(30);
         FX.burst($('cq-panel'), { amount: 30 });
@@ -626,10 +629,12 @@
       const buttons = [...$('cq-panel').querySelectorAll('.option')];
       if (mine !== undefined && mine !== null) {
         if (mine === r.correctIndex) {
+          FX.mascot('gana');
           FX.play('correct');
           FX.vibrate(25);
           FX.burst(buttons[r.correctIndex], { amount: 26 });
         } else {
+          FX.mascot('falla');
           FX.play('wrong');
           FX.vibrate([60, 40, 60]);
           FX.shake($('cq-panel'));
@@ -650,6 +655,7 @@
     $('end-title').textContent = tie ? '🤝 ¡Empate en cabeza!' : me && me.position === 1 ? '👑 ¡Has conquistado España!' : me ? `Has quedado ${me.position}º` : 'Fin de la partida';
     if (state.endShown !== s.code) {
       state.endShown = s.code;
+      FX.endMascot($('s-end').querySelector('.card'), !!(me && me.position <= 2));
       if (me && me.position === 1) {
         FX.play('victory');
         FX.flash('gold');

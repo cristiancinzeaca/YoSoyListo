@@ -21,6 +21,7 @@
 
   function show(name) {
     for (const [key, el] of Object.entries(screens)) el.hidden = key !== name;
+    FX.screen(screens[name]);
   }
 
   function showError(message) {
@@ -174,6 +175,7 @@
       FX.float(`+${res.points}${res.multiplier > 1 ? ` x${res.multiplier}` : ''}`, buttons[res.correctIndex], res.multiplier > 1 ? 'big' : '');
       FX.bump($('score'));
       if (res.streak === 3 || res.streak === 6) {
+        FX.mascot('gana');
         FX.play('streak');
         FX.bigText(res.streak === 3 ? '🔥 ¡Racha x2!' : '🔥🔥 ¡Racha x3!');
       }
@@ -181,6 +183,7 @@
       FX.play('wrong');
       FX.vibrate([60, 40, 60]);
       FX.shake(card);
+      if (state.streak >= 3) FX.mascot('falla');
       FX.float('✗', buttons[optionIndex], 'bad');
     }
 
@@ -236,6 +239,7 @@
 
   function renderResult(result) {
     show('result');
+    FX.endMascot($('screen-result').querySelector('.card'), result.score > 0);
     FX.countUp($('result-score'), result.score, 1200);
     if (result.score > 0) {
       FX.play('victory');
