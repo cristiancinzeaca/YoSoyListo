@@ -128,6 +128,15 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 
 **Configurarea Google (o singură dată):** în console.cloud.google.com → proiect nou → „OAuth consent screen” (External, nume „Yo Soy Listo”, email de suport, publicare) → „Credentials” → „Create OAuth client ID” → Web application → *Authorized redirect URI*: `https://<adresa-site-ului>/auth/google/callback` → se copiază Client ID și Client secret în Railway (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) plus `PUBLIC_URL`. Dacă se schimbă domeniul, se adaugă noul redirect URI în Google și se schimbă `PUBLIC_URL`.
 
+## 5c. Conquista el mundo — cumpără o țară (ramura `paises`)
+
+- Pagina `/mundo`; codul în `modules/countries/` (`catalog.js` are toate regulile și prețurile), întrebările în `db/countries/<id>.json` (30 pe țară: `[text, corect, [3 greșite]]`; primele 10 sunt fixe).
+- 17 țări, prețuri pe mărime: Andorra 1000; Portugalia/Grecia/Maroc 2500; Columbia/Argentina/Egipt 3500; Mexic/Italia 5000; Regatul Unit/Franța/Germania/Japonia/Brazilia 7000; Spania 10 000; China 12 000; SUA 15 000. O țară are un singur proprietar.
+- Proprietarul: primește **5 %/zi** din valoarea țării (se acumulează max. 3 zile, se încasează cu „Cobrar”); poate **studia** toate întrebările cu răspunsuri; alege cele **10 întrebări de apărare**; poate **fortifica** (+5 întrebări, costă prețul țării, max. 2 ori).
+- Atacul costă **100 monede**; trebuie să răspunzi corect la **toate** (10 fixe + 10 alese + 5 pe fortificație), 12 s pe întrebare. Dacă greșești: cele 100 merg la proprietar și valoarea țării crește cu 100; un jucător poate ataca aceeași țară o dată la 24 h. Dacă reușești: țara e a ta, iar fostul proprietar primește **50 %** din valoare ca despăgubire.
+- În Conquista, cine are țări poate cere, la rândul lui de atac, o întrebare din țara aleasă (aliat).
+- Totul e atomic în SQL: `buy_country`, `collect_income`, `conquer_country`, `defend_country`, `pay_coins`, `add_coins`; tabele `country_owners`, `country_attacks`.
+
 ## 6. Alte idei în așteptare
 
 - **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).

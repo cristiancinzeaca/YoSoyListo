@@ -5,7 +5,7 @@ const crypto = require('crypto');
 function createFakeDb() {
   const tables = {
     questions: [], numeric_questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [],
-    player_sessions: [], player_items: [], coin_ledger: [],
+    player_sessions: [], player_items: [], coin_ledger: [], country_owners: [], country_attacks: [],
   };
 
   class Query {
@@ -92,6 +92,11 @@ function createFakeDb() {
         token_hash: null, google_sub: null, email: null, coins: 0, avatar: null,
       };
     }
+    if (table === 'country_owners') {
+      const now = new Date().toISOString();
+      return { defense: [], fortify: 0, income_at: now, bought_at: now, defenses_won: 0 };
+    }
+    if (table === 'country_attacks') return { current: 0, status: 'active' };
     if (table !== 'blitz_sessions') return {};
     return {
       answers: {}, score: 0, correct_count: 0, answered_count: 0, streak: 0, best_streak: 0,
@@ -168,6 +173,67 @@ function createFakeDb() {
         if (!row) return { data: [], error: null };
         row.qty -= 1;
         return { data: [{ item_left: row.qty }], error: null };
+      }
+      const player = (id) => tables.players.find((x) => x.id === id);
+      const ledger = (id, amount, reason) => tables.coin_ledger.push({ player_id: id, amount, reason, created_at: new Date().toISOString() });
+      if (name === 'pay_coins') {
+        const p = player(args.p_id);
+        if (!p || p.coins < args.p_amount) return { data: [{ ok: false, balance: p ? p.coins : null }], error: null };
+        p.coins -= args.p_amount;
+        ledger(p.id, -args.p_amount, args.p_reason);
+        return { data: [{ ok: true, balance: p.coins }], error: null };
+      }
+      if (name === 'add_coins') {
+        const p = player(args.p_id);
+        if (!p) return { data: [], error: null };
+        p.coins += args.p_amount;
+        ledger(p.id, args.p_amount, args.p_reason);
+        return { data: [{ balance: p.coins }], error: null };
+      }
+      if (name === 'buy_country') {
+        const p = player(args.p_id);
+        if (!p) return { data: [], error: null };
+        if (tables.country_owners.some((o) => o.country === args.p_country)) return { data: [{ ok: false, reason: 'taken', coins_left: p.coins }], error: null };
+        if (p.coins < args.p_price) return { data: [{ ok: false, reason: 'coins', coins_left: p.coins }], error: null };
+        p.coins -= args.p_price;
+        const now = new Date().toISOString();
+        tables.country_owners.push({ country: args.p_country, player_id: p.id, value: args.p_price, defense: [], fortify: 0, income_at: now, bought_at: now, defenses_won: 0 });
+        ledger(p.id, -args.p_price, `country:buy:${args.p_country}`);
+        return { data: [{ ok: true, reason: 'ok', coins_left: p.coins }], error: null };
+      }
+      if (name === 'collect_income') {
+        const p = player(args.p_id);
+        if (!p) return { data: [], error: null };
+        let total = 0;
+        const now = Date.now();
+        for (const o of tables.country_owners.filter((x) => x.player_id === p.id)) {
+          total += Math.floor(o.value * args.p_rate * Math.min((now - Date.parse(o.income_at)) / 86400000, args.p_max_days));
+          o.income_at = new Date(now).toISOString();
+        }
+        p.coins += total;
+        if (total) ledger(p.id, total, 'country:income');
+        return { data: [{ amount: total, balance: p.coins }], error: null };
+      }
+      if (name === 'conquer_country') {
+        const o = tables.country_owners.find((x) => x.country === args.p_country && x.player_id === args.p_owner);
+        if (!o) return { data: [{ ok: false, compensation: 0 }], error: null };
+        const comp = Math.floor(o.value * args.p_compensation);
+        Object.assign(o, { player_id: args.p_attacker, defense: [], fortify: 0, income_at: new Date().toISOString(), defenses_won: 0 });
+        const prev = player(args.p_owner);
+        if (prev) prev.coins += comp;
+        ledger(args.p_owner, comp, `country:compensation:${args.p_country}`);
+        return { data: [{ ok: true, compensation: comp }], error: null };
+      }
+      if (name === 'defend_country') {
+        const o = tables.country_owners.find((x) => x.country === args.p_country && x.player_id === args.p_owner);
+        if (o) {
+          o.value += args.p_gain;
+          o.defenses_won += 1;
+          const p = player(args.p_owner);
+          if (p) p.coins += args.p_fee;
+          ledger(args.p_owner, args.p_fee, `country:defense:${args.p_country}`);
+        }
+        return { data: null, error: null };
       }
       if (name === 'question_categories') {
         const counts = {};

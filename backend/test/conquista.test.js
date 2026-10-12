@@ -68,6 +68,50 @@ test('una partida solo de bots termina con todo el mapa repartido', async () => 
   assert.equal(total, 17);
 });
 
+test('el dueño de un país puede usarlo como aliado al atacar', async () => {
+  const andorra = { id: 'ad', name: 'Andorra', flag: '🇦🇩' };
+  const players = [
+    { id: 'h', name: 'Humana', countries: [andorra] },
+    ...['a', 'b'].map((id) => ({ id, name: `Bot ${id}`, isBot: true, skill: 0.6 })),
+  ];
+  let asked = null;
+  let seen = null;
+  await new Promise((resolve, reject) => {
+    let sentAlly = false;
+    const game = new ConquistaGame({
+      code: 'CALLY',
+      players,
+      send: (id, s) => {
+        assert.deepEqual(s.myCountries, [andorra]);
+        if (s.phase === 'bat_pick' && s.picker === 'h' && !sentAlly) {
+          sentAlly = true;
+          setImmediate(() => game.handle('h', { t: 'cq_ally', country: 'ad' }));
+        }
+        if (s.phase === 'bat_question' && s.attack?.attackerId === 'h' && !seen) {
+          seen = s;
+          game.destroy();
+          clearTimeout(timer);
+          resolve();
+        }
+      },
+      loadNumeric: async (n) => numeric(n),
+      loadChoice: async (n) => choice(n),
+      allyQuestion: (id) => {
+        asked = id;
+        return { text: '🇦🇩 Pregunta de Andorra', options: ['W', 'X', 'Y', 'Z'], correctIndex: 2, category: 'general' };
+      },
+      onFinished: async (g, r) => r,
+      onEmpty: () => {},
+    });
+    const timer = setTimeout(() => reject(new Error('la humana nunca atacó')), 30_000);
+    game.run().catch(() => {});
+  });
+  assert.equal(asked, 'ad');
+  assert.equal(seen.ally.id, 'ad');
+  assert.equal(seen.question.text, '🇦🇩 Pregunta de Andorra');
+  assert.match(seen.event, /aliado 🇦🇩 Andorra/);
+});
+
 // ---------- partidas reales por WebSocket ----------
 let server;
 let base;
