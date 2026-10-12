@@ -12,13 +12,14 @@ const blitzRoutes = require('../modules/game-blitz/routes');
 const playersRoutes = require('../modules/players/routes');
 const shopRoutes = require('../modules/shop/routes');
 const authRoutes = require('../modules/auth/routes');
+const countriesRoutes = require('../modules/countries/routes');
 const { attachMultiplayer } = require('../modules/multiplayer/hub');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
 
 // Páginas que queremos que Google indexe.
-const SITEMAP_PAGES = ['/', '/conquista', '/privacidad'];
+const SITEMAP_PAGES = ['/', '/conquista', '/mundo', '/privacidad'];
 
 function baseUrl(req) {
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, '');
@@ -65,6 +66,7 @@ function createApp() {
   app.use('/api/players', playersRoutes);
   app.use('/api/shop', shopRoutes);
   app.use('/api/auth', authRoutes.api);
+  app.use('/api/countries', countriesRoutes);
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
   app.use('/auth', authRoutes.pages);

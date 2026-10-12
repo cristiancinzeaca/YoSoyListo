@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Conquista el mundo · Yo Soy Listo</title>
+  <meta name="description" content="Compra países, defiéndelos con preguntas y conquista los de otros jugadores.">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a class="logo" href="/" aria-label="Yo Soy Listo · Inicio"><img src="/img/logo.webp" alt="Yo Soy Listo" width="900" height="580"></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
+    </header>
+    <main id="mundo">
+      <section class="card world-hero">
+        <img class="world-globe" src="/img/ic-mundo.webp" alt="" width="190" height="192">
+        <div>
+          <h1 class="game-title">Conquista el mundo</h1>
+          <p>Compra un país, defiéndelo con preguntas y cobra el 5&nbsp;% de su valor cada día. ¡O arrebátaselo a otro jugador!</p>
+        </div>
+      </section>
+
+      <section class="card my-countries" id="w-mine" hidden>
+        <h2 class="ribbon">Mis países</h2>
+        <div class="income-row">
+          <div><small>Rentas acumuladas</small><strong id="w-pending">0</strong></div>
+          <button class="btn btn-green" type="button" id="w-collect">Cobrar</button>
+        </div>
+        <div class="mine-list" id="w-mine-list"></div>
+      </section>
+
+      <div class="tabs world-tabs" role="tablist">
+        <button class="tab active" type="button" data-f="all">Todos</button>
+        <button class="tab" type="button" data-f="free">Libres</button>
+        <button class="tab" type="button" data-f="taken">Con dueño</button>
+      </div>
+      <div class="country-grid" id="w-grid"></div>
+
+      <details class="rules">
+        <summary>¿Cómo funciona?</summary>
+        <ul>
+          <li><strong>Comprar:</strong> cada país libre tiene un precio según su tamaño. Solo puede tener un dueño.</li>
+          <li><strong>Rentas:</strong> tu país te da cada día el 5&nbsp;% de su valor. Se acumulan hasta 3 días: ¡vuelve a cobrarlas!</li>
+          <li><strong>Estudiar:</strong> al comprarlo ves sus 10 preguntas fijas y eliges otras 10 para defenderlo.</li>
+          <li><strong>Atacar:</strong> cuesta 100 monedas. Tienes que acertar todas las preguntas del país (12&nbsp;s cada una). Si fallas una, el dueño se queda tus 100 monedas y el país vale más. Solo puedes atacar el mismo país una vez al día.</li>
+          <li><strong>Conquistar:</strong> si las aciertas todas, el país es tuyo y el antiguo dueño cobra una indemnización del 50&nbsp;% de su valor.</li>
+          <li><strong>Fortificar:</strong> por el precio del país añades 5 preguntas más a su defensa.</li>
+          <li><strong>Aliado:</strong> en Conquista, cuando te toque atacar, puedes pedir una pregunta de tu país.</li>
+        </ul>
+      </details>
+    </main>
+
+    <footer class="site-footer">© Yo Soy Listo · <a href="/privacidad">Privacidad</a></footer>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+
+  <script src="/js/fx.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/mundo.js"></script>
+</body>
+</html>

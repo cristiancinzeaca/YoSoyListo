@@ -764,3 +764,86 @@ label { color: #fff; }
 .cq-map .region { stroke: #3b2a12; stroke-width: 1.8; }
 .cq-map svg { filter: drop-shadow(0 6px 0 rgba(10,4,30,0.6)) drop-shadow(0 0 10px rgba(255,230,160,0.25)); }
 .cq-map .frame { stroke: rgba(255,230,160,0.6); }
+
+/* =====================================================================
+   Conquista el mundo
+   ===================================================================== */
+.world-hero { display: flex; align-items: center; gap: 14px; }
+.world-globe { width: 92px; height: auto; flex: 0 0 auto; animation: globe-spin 6s ease-in-out infinite; filter: drop-shadow(0 6px 0 rgba(10,4,30,0.5)); }
+@keyframes globe-spin { 50% { transform: rotate(-10deg) scale(1.05); } }
+.world-hero h1 { margin: 0 0 4px; font-size: 1.6rem; font-weight: 1000; }
+.world-hero p { margin: 0; }
+.world-tabs { margin-top: 18px; }
+.country-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
+@media (min-width: 520px) { .country-grid { grid-template-columns: repeat(3, 1fr); } }
+.country-card {
+  font: inherit; color: #fff; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px 10px;
+  border-radius: 18px; border: 3px solid var(--ink);
+  background: linear-gradient(180deg, var(--panel-1), var(--panel-2));
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.15), 0 5px 0 var(--ink); animation: fx-enter 0.45s cubic-bezier(.2,1.3,.4,1) both;
+  transition: transform 0.15s;
+}
+.country-card:hover { transform: translateY(-3px); }
+.country-card:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.country-card.free { background: linear-gradient(180deg, #2d6b55, #173d31); }
+.country-card.mine { background: linear-gradient(180deg, #7a5a12, #3d2c06); border-color: var(--primary); }
+.country-card .flag { font-size: 2.6rem; line-height: 1; filter: drop-shadow(0 3px 0 rgba(10,4,30,0.5)); }
+.country-card .nm { font-size: 1rem; text-shadow: 0 2px 0 var(--ink); }
+.country-card .val { font-weight: 900; color: var(--primary); }
+.country-card .who { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 800; color: #e3dafc; max-width: 100%; overflow: hidden; }
+.country-card .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.country-card .who .avatar { width: 20px; height: 20px; }
+.shields { display: flex; gap: 2px; }
+.shields img { width: 16px; height: 16px; }
+.shields img.off { filter: grayscale(1) opacity(0.35); }
+.coin-tag { display: inline-flex; align-items: center; gap: 2px; font-weight: 900; color: var(--primary); white-space: nowrap; }
+.coin-tag .coin-img { width: 1.1em; height: 1.1em; }
+
+.income-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--inset); border-radius: 14px; padding: 10px 12px; }
+.income-row small { display: block; color: var(--muted); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; }
+.income-row strong { font-size: 1.5rem; }
+.income-row .btn { width: auto; margin: 0; padding: 10px 18px; }
+.mine-list { display: grid; gap: 8px; margin-top: 10px; }
+.mine-row { font: inherit; color: #fff; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); cursor: pointer; }
+.mine-row .flag { font-size: 1.6rem; }
+.mine-row .nm { flex: 1; text-align: left; font-weight: 900; }
+.mine-row .meta { font-size: 0.85rem; color: var(--muted); font-weight: 800; }
+
+/* Ventanas tipo «hoja» */
+.overlay.sheet { align-items: flex-end; padding: 0; }
+.sheet-card { width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; border-radius: 26px 26px 0 0; margin: 0; padding-top: 18px; animation: sheet-up 0.35s cubic-bezier(.2,1,.3,1) both; position: relative; }
+@keyframes sheet-up { from { transform: translateY(100%); } }
+@media (min-width: 600px) { .overlay.sheet { align-items: center; padding: 16px; } .sheet-card { border-radius: 26px; } }
+.sheet-close { position: absolute; top: 10px; right: 12px; width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--ink); background: rgba(255,255,255,0.12); color: #fff; font-size: 1.1rem; cursor: pointer; }
+.sheet-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.sheet-head h2 { margin: 0; }
+.flag.big { font-size: 3rem; line-height: 1; }
+.owner-line { display: flex; align-items: center; gap: 6px; color: #fff !important; font-weight: 800; }
+.owner-line .avatar { width: 30px; height: 30px; }
+.study-list { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 8px; }
+.study-list li { position: relative; display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: start; padding: 10px 12px; border-radius: 12px; background: var(--inset); }
+.study-list li.base { grid-template-columns: 1fr; padding-right: 54px; border: 2px solid rgba(255,203,43,0.3); }
+.study-list input { width: 22px; height: 22px; margin-top: 2px; accent-color: #ffcb2b; grid-row: span 2; }
+.study-list .q { font-weight: 800; color: #fff; }
+.study-list .a { color: #6ff0a8; font-weight: 800; font-size: 0.9rem; margin-top: 2px; }
+.study-list .tag { position: absolute; right: 10px; top: 10px; font-size: 0.7rem; font-weight: 900; padding: 2px 8px; border-radius: 99px; background: var(--primary); color: #3b2600; }
+.pick-count { font-weight: 900; color: #ffb0b2 !important; }
+.pick-count.ok { color: #6ff0a8 !important; }
+
+/* Pantalla de ataque */
+.overlay.attack-screen { background: radial-gradient(circle at 50% 30%, rgba(229,72,77,0.25), rgba(10,4,30,0.92) 70%); }
+.attack-card { width: 100%; max-width: 520px; }
+.attack-top { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; }
+.attack-top .flag { font-size: 2rem; }
+.attack-progress { display: grid; grid-template-columns: repeat(auto-fit, minmax(8px, 1fr)); gap: 3px; margin: 10px 0 6px; }
+.attack-progress span { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.15); }
+.attack-progress span.done { background: #2fbf71; }
+.attack-progress span.now { background: var(--primary); animation: timer-pulse 0.6s ease-in-out infinite alternate; }
+.attack-card .question-text { margin: 14px 0; }
+
+/* Conquista: elegir país aliado */
+.ally-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+.ally-row small { width: 100%; color: var(--muted); font-weight: 800; }
+.ally-chip { font: inherit; font-weight: 900; font-size: 0.9rem; padding: 6px 10px; border-radius: 99px; border: 2px solid var(--ink); background: rgba(255,255,255,0.1); color: #fff; cursor: pointer; box-shadow: 0 3px 0 var(--ink); }
+.ally-chip.on { background: linear-gradient(180deg, #ffe680, #f5b400); color: #3b2600; }
+.world-banner .coin-big { background-image: url("/img/ic-mundo.webp") !important; }

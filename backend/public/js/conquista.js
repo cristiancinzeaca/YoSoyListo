@@ -341,7 +341,7 @@
   function renderPanel() {
     const s = state.s;
     // Si solo ha cambiado quién ha respondido, no se redibuja (para no borrar lo que estás escribiendo).
-    const key = [s.phase, s.round, s.question?.text, s.myAnswer, s.picker, s.options?.length, !!s.result].join('|');
+    const key = [s.phase, s.round, s.question?.text, s.myAnswer, s.picker, s.options?.length, !!s.result, s.myAlly?.id].join('|');
     if (key === state.panelKey) {
       const chips = $('cq-answered');
       if (chips) chips.replaceWith(answeredChips(s));
@@ -419,6 +419,21 @@
         el('h3', '', mine ? `👆 Toca en el mapa la región que quieres ${verb}` : `${nameOf(s.picker)} está eligiendo qué ${verb}…`),
         el('p', 'muted', mine ? 'Las regiones posibles parpadean en amarillo.' : 'Espera tu turno.')
       );
+      // Al atacar, el dueño de países puede pedir una pregunta de uno de ellos.
+      if (mine && s.phase === 'bat_pick' && s.myCountries && s.myCountries.length) {
+        const row = el('div', 'ally-row');
+        row.appendChild(el('small', '', '🌍 Aliado: pide una pregunta de tu país'));
+        for (const c of s.myCountries) {
+          const b = el('button', `ally-chip${s.myAlly && s.myAlly.id === c.id ? ' on' : ''}`, `${c.flag} ${c.name}`);
+          b.type = 'button';
+          b.addEventListener('click', () => {
+            FX.play('click');
+            socket.send({ t: 'cq_ally', country: s.myAlly && s.myAlly.id === c.id ? null : c.id });
+          });
+          row.appendChild(b);
+        }
+        panel.appendChild(row);
+      }
       return;
     }
 

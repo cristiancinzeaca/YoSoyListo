@@ -41,12 +41,14 @@ function gaussian() {
 // Partida del modo Conquista (estilo Honfoglaló / Conquistador) para 3 jugadores.
 // Igual que Room, no sabe nada de WebSockets ni de la base de datos.
 class ConquistaGame {
-  constructor({ code, players, send, loadNumeric, loadChoice, onFinished, onEmpty }) {
+  constructor({ code, players, send, loadNumeric, loadChoice, allyQuestion = null, onFinished, onEmpty }) {
     this.code = code;
     this.mode = 'conquista';
     this.send = send;
     this.loadNumeric = loadNumeric;
     this.loadChoice = loadChoice;
+    this.allyQuestion = allyQuestion;
+    this.allyPick = new Map();
     this.onFinished = onFinished;
     this.onEmpty = onEmpty;
 
@@ -54,6 +56,7 @@ class ConquistaGame {
       id: p.id,
       name: p.name,
       avatar: p.avatar || null,
+      countries: p.countries || [],
       isBot: !!p.isBot,
       skill: p.skill ?? 0.6,
       color: COLORS[i],
@@ -144,6 +147,8 @@ class ConquistaGame {
       participants: pending ? pending.participants : [],
       answered: pending ? [...pending.answers.keys()] : [],
       myAnswer: mine ? mine.value : null,
+      myCountries: this.player(playerId)?.countries || [],
+      myAlly: this.allyPick.get(playerId) || null,
       ...this.view,
       event: this.event,
       result: this.result,
@@ -228,6 +233,14 @@ class ConquistaGame {
   handle(playerId, msg) {
     const pending = this.pending;
     if (!pending) return;
+    if (msg.t === 'cq_ally' && this.phase === 'bat_pick' && this.view.picker === playerId) {
+      const p = this.player(playerId);
+      const choice = msg.country ? p.countries.find((c) => c.id === msg.country) : null;
+      if (choice) this.allyPick.set(playerId, choice);
+      else this.allyPick.delete(playerId);
+      this.broadcast();
+      return;
+    }
     if (msg.t === 'cq_pick' && this.phase.endsWith('_pick')) {
       if (pending.options && pending.options.includes(msg.region)) this.submit(playerId, msg.region);
     } else if (msg.t === 'cq_choice' && this.phase === 'bat_question') {
@@ -418,13 +431,17 @@ class ConquistaGame {
       ? `¡${attacker.name} ataca el castillo de ${defender.name}!`
       : `${attacker.name} ataca ${NAMES[target]} (de ${defender.name})`;
 
-    // Pregunta con opciones para atacante y defensor.
-    const q = await this.nextChoice();
+    // Pregunta con opciones para atacante y defensor (o de su país aliado, si lo ha elegido).
+    const ally = this.allyPick.get(attacker.id);
+    this.allyPick.delete(attacker.id);
+    const allyQ = ally && this.allyQuestion ? this.allyQuestion(ally.id) : null;
+    if (allyQ) this.event = `${this.event} · aliado ${ally.flag} ${ally.name}`;
+    const q = allyQ || (await this.nextChoice());
     if (this.destroyed) throw new Cancelled();
     this.currentChoice = q;
     this.phase = 'bat_question';
     this.result = null;
-    this.view = { attack, question: { kind: 'choice', text: q.text, options: q.options, category: q.category } };
+    this.view = { attack, ally: allyQ ? ally : null, question: { kind: 'choice', text: q.text, options: q.options, category: q.category } };
     const answers = await this.collect([attacker.id, defender.id], CQ.choiceMs, {
       botAnswer: (p) => {
         const right = Math.random() < p.skill;

@@ -289,6 +289,150 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------
+-- «Compra un país»: dueños, ataques y funciones de monedas
+-- ---------------------------------------------------------------------
+create table if not exists country_owners (
+  country text primary key,
+  player_id uuid not null references players (id) on delete cascade,
+  value int not null,
+  defense int[] not null default '{}', -- preguntas elegidas por el dueño (posición en el banco)
+  fortify int not null default 0,
+  income_at timestamptz not null default now(),
+  bought_at timestamptz not null default now(),
+  defenses_won int not null default 0
+);
+create index if not exists country_owners_player_idx on country_owners (player_id);
+
+create table if not exists country_attacks (
+  id uuid primary key default gen_random_uuid(),
+  country text not null,
+  attacker_id uuid not null references players (id) on delete cascade,
+  owner_id uuid references players (id) on delete set null,
+  seqs int[] not null,
+  perms jsonb not null,
+  current int not null default 0,
+  deadline timestamptz not null,
+  status text not null default 'active' check (status in ('active', 'won', 'lost')),
+  created_at timestamptz not null default now()
+);
+create index if not exists country_attacks_attacker_idx on country_attacks (attacker_id, country, created_at);
+
+-- Cobra monedas si hay saldo suficiente.
+create or replace function pay_coins(p_id uuid, p_amount int, p_reason text)
+returns table (ok boolean, balance int)
+language plpgsql as $$
+declare
+  bal int;
+begin
+  update players set coins = coins - p_amount where id = p_id and coins >= p_amount returning coins into bal;
+  if not found then
+    return query select false, (select p.coins from players p where p.id = p_id);
+    return;
+  end if;
+  insert into coin_ledger (player_id, amount, reason) values (p_id, -p_amount, p_reason);
+  return query select true, bal;
+end;
+$$;
+
+-- Da monedas fuera del tope diario (rentas de países, defensas, indemnizaciones).
+create or replace function add_coins(p_id uuid, p_amount int, p_reason text)
+returns table (balance int)
+language plpgsql as $$
+declare
+  bal int;
+begin
+  update players set coins = coins + p_amount where id = p_id returning coins into bal;
+  if not found then return; end if;
+  insert into coin_ledger (player_id, amount, reason) values (p_id, p_amount, p_reason);
+  return query select bal;
+end;
+$$;
+
+-- Compra atómica de un país libre.
+create or replace function buy_country(p_id uuid, p_country text, p_price int)
+returns table (ok boolean, reason text, coins_left int)
+language plpgsql as $$
+declare
+  bal int;
+begin
+  perform 1 from players where id = p_id for update;
+  if not found then return; end if;
+  if exists (select 1 from country_owners where country = p_country) then
+    return query select false, 'taken'::text, (select p.coins from players p where p.id = p_id);
+    return;
+  end if;
+  update players set coins = coins - p_price where id = p_id and coins >= p_price returning coins into bal;
+  if not found then
+    return query select false, 'coins'::text, (select p.coins from players p where p.id = p_id);
+    return;
+  end if;
+  begin
+    insert into country_owners (country, player_id, value) values (p_country, p_id, p_price);
+  exception when unique_violation then
+    update players set coins = coins + p_price where id = p_id returning coins into bal;
+    return query select false, 'taken'::text, bal;
+    return;
+  end;
+  insert into coin_ledger (player_id, amount, reason) values (p_id, -p_price, 'country:buy:' || p_country);
+  return query select true, 'ok'::text, bal;
+end;
+$$;
+
+-- Cobra las rentas acumuladas de todos los países del jugador (máx. p_max_days días).
+create or replace function collect_income(p_id uuid, p_rate double precision, p_max_days double precision)
+returns table (amount int, balance int)
+language plpgsql as $$
+declare
+  total int := 0;
+  bal int;
+begin
+  perform 1 from players where id = p_id for update;
+  if not found then return; end if;
+  select coalesce(sum(floor(o.value * p_rate * least(extract(epoch from now() - o.income_at) / 86400.0, p_max_days))), 0)::int
+    into total from country_owners o where o.player_id = p_id;
+  update country_owners set income_at = now() where player_id = p_id;
+  update players set coins = coins + total where id = p_id returning coins into bal;
+  if total > 0 then insert into coin_ledger (player_id, amount, reason) values (p_id, total, 'country:income'); end if;
+  return query select total, bal;
+end;
+$$;
+
+-- El atacante conquista el país (solo si el dueño no ha cambiado entretanto).
+create or replace function conquer_country(p_country text, p_attacker uuid, p_owner uuid, p_compensation double precision)
+returns table (ok boolean, compensation int)
+language plpgsql as $$
+declare
+  v int;
+  comp int;
+begin
+  select o.value into v from country_owners o where o.country = p_country and o.player_id = p_owner for update;
+  if not found then
+    return query select false, 0;
+    return;
+  end if;
+  comp := floor(v * p_compensation)::int;
+  update country_owners set player_id = p_attacker, defense = '{}', fortify = 0, income_at = now(), bought_at = now(), defenses_won = 0
+    where country = p_country;
+  update players set coins = coins + comp where id = p_owner;
+  insert into coin_ledger (player_id, amount, reason) values (p_owner, comp, 'country:compensation:' || p_country);
+  return query select true, comp;
+end;
+$$;
+
+-- Ataque fallido: el dueño se queda el coste del ataque y el país sube de valor.
+create or replace function defend_country(p_country text, p_owner uuid, p_fee int, p_gain int)
+returns void
+language plpgsql as $$
+begin
+  update country_owners set value = value + p_gain, defenses_won = defenses_won + 1 where country = p_country and player_id = p_owner;
+  if found then
+    update players set coins = coins + p_fee where id = p_owner;
+    insert into coin_ledger (player_id, amount, reason) values (p_owner, p_fee, 'country:defense:' || p_country);
+  end if;
+end;
+$$;
+
+-- ---------------------------------------------------------------------
 -- Seguridad: activar RLS sin políticas. Así solo el backend
 -- (service_role) puede leer y escribir; la anon key no ve nada.
 -- ---------------------------------------------------------------------
@@ -302,3 +446,5 @@ alter table numeric_questions enable row level security;
 alter table player_sessions enable row level security;
 alter table player_items enable row level security;
 alter table coin_ledger enable row level security;
+alter table country_owners enable row level security;
+alter table country_attacks enable row level security;

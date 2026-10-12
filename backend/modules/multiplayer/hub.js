@@ -10,6 +10,7 @@ const { ConquistaGame } = require('../conquista/game');
 const { CQ } = require('../conquista/config');
 const cqPersist = require('../conquista/persist');
 const shop = require('../shop/service');
+const countries = require('../countries/service');
 
 function shuffleList(list) {
   const a = [...list];
@@ -35,6 +36,8 @@ function attachMultiplayer(server, deps = {}) {
   const loadChoice = deps.loadChoice || cqPersist.loadChoice;
   const saveConquista = deps.saveConquista || cqPersist.saveConquista;
   const useItem = deps.useItem || shop.useItem;
+  const loadOwned = deps.loadOwned || countries.ownedBy;
+  const allyQuestion = deps.allyQuestion || countries.allyQuestion;
 
   const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 4096 });
   const clients = new Map(); // playerId → conexión
@@ -110,7 +113,7 @@ function attachMultiplayer(server, deps = {}) {
     for (const id of cqQueue.keys()) send(id, { t: 'cq_queued', waiting: cqQueue.size, needed: CQ.players, startsInMs });
   }
 
-  function startConquista() {
+  async function startConquista() {
     clearTimeout(cqTimer?.handle);
     cqTimer = null;
     const ids = [...cqQueue.keys()].filter((id) => clients.has(id)).slice(0, CQ.players);
@@ -120,7 +123,15 @@ function attachMultiplayer(server, deps = {}) {
       for (const id of ids) send(id, { t: 'error', message: 'El servidor está lleno, inténtalo en un rato' });
       return;
     }
-    const participants = ids.map((id) => clients.get(id).player);
+    // Países de cada jugador (para usarlos como aliados al atacar).
+    let owned = {};
+    try {
+      owned = await loadOwned(ids);
+    } catch (err) {
+      console.error('[conquista] países', err.context || '', err.cause || err);
+    }
+    const participants = ids.filter((id) => clients.has(id)).map((id) => ({ ...clients.get(id).player, countries: owned[id] || [] }));
+    if (participants.length === 0) return;
     const taken = participants.map((p) => p.name);
     while (participants.length < CQ.players) {
       const bot = createBot(taken);
@@ -133,6 +144,7 @@ function attachMultiplayer(server, deps = {}) {
       send,
       loadNumeric,
       loadChoice,
+      allyQuestion,
       onFinished: saveConquista,
       onEmpty,
     });
@@ -146,14 +158,14 @@ function attachMultiplayer(server, deps = {}) {
   function armCqTimer() {
     if (cqTimer) return;
     const at = Date.now() + CQ.botWaitMs;
-    cqTimer = { at, handle: setTimeout(startConquista, CQ.botWaitMs) };
+    cqTimer = { at, handle: setTimeout(() => startConquista().catch((e) => console.error('[conquista] inicio', e)), CQ.botWaitMs) };
   }
 
   function joinCqQueue(conn) {
     const me = conn.player;
     ensureFree(me.id);
     cqQueue.set(me.id, Date.now());
-    if (cqQueue.size >= CQ.players) return startConquista();
+    if (cqQueue.size >= CQ.players) return startConquista().catch((e) => console.error('[conquista] inicio', e));
     armCqTimer();
     cqQueueStatus();
   }
@@ -279,6 +291,9 @@ function attachMultiplayer(server, deps = {}) {
       handlers.cq_pick(conn, msg);
     },
     cq_guess(conn, msg) {
+      handlers.cq_pick(conn, msg);
+    },
+    cq_ally(conn, msg) {
       handlers.cq_pick(conn, msg);
     },
     answer(conn, msg) {
