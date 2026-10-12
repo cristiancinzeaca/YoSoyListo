@@ -53,17 +53,63 @@
   }
   $('history-empty').hidden = me.recentMatches.length > 0;
 
+  // Nombre único: se comprueba mientras se escribe y se avisa del precio.
+  const hint = $('name-hint');
+  const btn = $('rename-btn');
+  let checkTimer = null;
+  let checkSeq = 0;
+  const setHint = (text, cls = '') => {
+    hint.textContent = text;
+    hint.className = `name-hint ${cls}`;
+  };
+  const defaultHint = () => setHint('Tu nombre es único. Cambiarlo cuesta 🪙 100.');
+  const checkName = async () => {
+    const value = $('name').value.trim();
+    const seq = ++checkSeq;
+    if (value === me.name) {
+      btn.disabled = true;
+      return defaultHint();
+    }
+    try {
+      const r = await api.get(`/api/players/name-check?name=${encodeURIComponent(value)}`);
+      if (seq !== checkSeq) return;
+      if (!r.available) {
+        btn.disabled = true;
+        return setHint(r.error, 'bad');
+      }
+      btn.disabled = false;
+      setHint(r.cost ? `✓ Está libre · cuesta 🪙 ${r.cost}` : '✓ Solo cambian mayúsculas o acentos · gratis', 'ok');
+    } catch {
+      btn.disabled = false;
+      defaultHint();
+    }
+  };
+  btn.disabled = true;
+  $('name').addEventListener('input', () => {
+    $('rename-ok').hidden = true;
+    $('rename-error').hidden = true;
+    clearTimeout(checkTimer);
+    checkTimer = setTimeout(checkName, 350);
+  });
+
   $('rename-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     $('rename-error').hidden = true;
     $('rename-ok').hidden = true;
+    if (btn.disabled) return;
+    btn.disabled = true;
     try {
-      await Player.rename($('name').value);
+      const player = await Player.rename($('name').value);
+      me = { ...me, ...player };
+      $('name').value = player.name;
+      FX.countUp($('p-coins'), player.coins);
       $('rename-ok').hidden = false;
+      defaultHint();
       FX.bump($('p-avatar'));
     } catch (err) {
       $('rename-error').textContent = err.message;
       $('rename-error').hidden = false;
+      btn.disabled = false;
     }
   });
 })();

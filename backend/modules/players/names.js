@@ -27,10 +27,27 @@ function validatePlayerName(name) {
   if (!NAME_RE.test(value)) {
     return { error: 'El nombre debe tener entre 2 y 20 letras, números, espacios, puntos o guiones' };
   }
+  if (nameKey(value).length < 2) return { error: 'El nombre necesita al menos 2 letras o números' };
   const simple = simplify(value);
   if (BLOCKED.some((word) => simple.includes(word))) return { error: 'Ese nombre no está permitido' };
   if (/^bot\b/i.test(value)) return { error: 'Ese nombre está reservado' };
   return { value };
 }
 
-module.exports = { validatePlayerName };
+// Clave para que dos nombres no se parezcan: sin mayúsculas, acentos ni separadores.
+// «Cristián», «cristian» y «Cris-tian» son el mismo nombre.
+function nameKey(name) {
+  return String(name)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s_.-]/g, '');
+}
+
+// Variante libre de un nombre ocupado: «Ana» → «Ana2», «Ana3»… sin pasar de 20 caracteres.
+function numberedName(name, n) {
+  const suffix = String(n);
+  return name.slice(0, 20 - suffix.length).trimEnd() + suffix;
+}
+
+module.exports = { validatePlayerName, nameKey, numberedName };

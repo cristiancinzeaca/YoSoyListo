@@ -39,6 +39,8 @@ const COINS = {
   conquista: [50, 25, 10],
   // En duelos y salas contra bots se gana menos.
   botFactor: 0.6,
+  // Cambiar de nombre (los cambios solo de mayúsculas o acentos son gratis).
+  rename: 100,
 };
 
 const avatarItem = (key) => `avatar:${key}`;
