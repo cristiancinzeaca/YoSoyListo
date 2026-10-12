@@ -65,6 +65,7 @@
       page = 1;
       loadList();
       loadReports();
+      loadChatReports();
     } catch (err) {
       status.className = 'status err';
       status.textContent = err.message;
@@ -373,7 +374,68 @@
     }
   }
 
+  // ---------- Chat: mensajes reportados ----------
+  async function loadChatReports() {
+    if (!cfg.url || !cfg.key) return;
+    const box = $('chat-reports');
+    try {
+      const { items } = await api('/api/chat/admin/reports');
+      box.replaceChildren();
+      $('chat-total').textContent = `(${items.length})`;
+      if (items.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'hint';
+        empty.textContent = 'No hay mensajes reportados. 🎉';
+        box.appendChild(empty);
+      }
+      for (const it of items) {
+        const item = document.createElement('div');
+        item.className = 'q-item';
+        const text = document.createElement('div');
+        text.className = 'q-text';
+        text.textContent = `${it.message.from.name}: «${it.message.text}»`;
+        const meta = document.createElement('ul');
+        meta.className = 'q-meta';
+        const info = document.createElement('li');
+        info.textContent = `Chat ${it.message.channel} · ${new Date(it.message.at).toLocaleString('es-ES')} · ${it.message.hidden ? 'oculto' : 'visible'}`;
+        meta.appendChild(info);
+        for (const r of it.reports) {
+          const li = document.createElement('li');
+          li.textContent = `Reporte: ${r.reason} · ${new Date(r.at).toLocaleString('es-ES')}`;
+          meta.appendChild(li);
+        }
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+        for (const [action, label, cls] of [
+          ['dismiss', 'Falso aviso', 'secondary small'],
+          ['hide', 'Ocultar', 'small'],
+          ['mute', 'Ocultar y silenciar 7 días', 'small'],
+        ]) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = cls;
+          b.textContent = label;
+          b.addEventListener('click', async () => {
+            try {
+              await api(`/api/chat/admin/reports/${it.message.id}`, { method: 'POST', body: JSON.stringify({ action }) });
+              loadChatReports();
+            } catch (err) {
+              message($('chat-msg'), err.message, false);
+            }
+          });
+          actions.appendChild(b);
+        }
+        item.append(text, meta, actions);
+        box.appendChild(item);
+      }
+      message($('chat-msg'), '');
+    } catch (err) {
+      message($('chat-msg'), err.message, false);
+    }
+  }
+
   resetForm();
   loadList();
   loadReports();
+  loadChatReports();
 })();

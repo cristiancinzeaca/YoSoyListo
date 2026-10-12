@@ -11,6 +11,7 @@ const { CQ } = require('../conquista/config');
 const cqPersist = require('../conquista/persist');
 const shop = require('../shop/service');
 const countries = require('../countries/service');
+const chat = require('../chat/service');
 
 function shuffleList(list) {
   const a = [...list];
@@ -38,6 +39,7 @@ function attachMultiplayer(server, deps = {}) {
   const useItem = deps.useItem || shop.useItem;
   const loadOwned = deps.loadOwned || countries.ownedBy;
   const allyQuestion = deps.allyQuestion || countries.allyQuestion;
+  const postMatchChat = deps.postMatchChat || chat.postMatch;
 
   const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 4096 });
   const clients = new Map(); // playerId → conexión
@@ -321,11 +323,32 @@ function attachMultiplayer(server, deps = {}) {
     rematch(conn) {
       requireRoom(conn).rematch(conn.player.id);
     },
+    // Chat de la partida: se guarda (para poder reportarlo) y se reparte a los jugadores de la sala,
+    // salvo a quien haya bloqueado al autor.
+    async chat(conn, msg) {
+      const room = currentRoom(conn.player.id);
+      if (!room) throw new GameError('No estás en ninguna partida');
+      let message;
+      try {
+        message = await postMatchChat(conn.player.id, room.code, msg.text);
+      } catch (err) {
+        if (err.status) throw new GameError(err.message);
+        throw err;
+      }
+      for (const id of humanIds(room)) {
+        if (id === conn.player.id || !chat.hides(id, conn.player.id)) send(id, { t: 'chat', message });
+      }
+    },
     leave(conn) {
       leaveEverything(conn.player.id);
       sendTo(conn, { t: 'left' });
     },
   };
+
+  function humanIds(room) {
+    const list = room.players instanceof Map ? [...room.players.values()] : room.players;
+    return list.filter((p) => !p.isBot && !p.left).map((p) => p.id);
+  }
 
   function requireRoom(conn) {
     const room = currentRoom(conn.player.id);
@@ -356,6 +379,8 @@ function attachMultiplayer(server, deps = {}) {
     }
     conn.player = player;
     clients.set(player.id, conn);
+    // Carga sus bloqueos para filtrar el chat de partida.
+    chat.blockedBy(player.id).catch((err) => console.error('[multiplayer] bloqueos', err.message));
 
     let room = currentRoom(player.id);
     // Una partida ya terminada no se retoma: al volver, empieza de cero.

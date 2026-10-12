@@ -144,6 +144,14 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Jucătorii vechi cu nume repetate se separă singuri la pornire (`fillNameKeys` în `core/migrate.js`): cel mai vechi păstrează numele.
 - Schimbarea numelui costă **100 monede** (`COINS.rename`); doar majuscule/accente = gratis. Atomic în SQL (`rename_player`). În profil se verifică pe loc dacă numele e liber (`GET /api/players/name-check`).
 
+## 5e. Chat (ramura `chat`)
+
+- Buton 💬 în antetul tuturor paginilor (după login), cu 3 file: **Partida** (doar când ești într-o sală/partidă, în timp real prin WebSocket, cu fraze rapide), **General** (sala deschisă tuturor) și **Privados** (unu la unu, căutare după nume). General și privatele se citesc din API la fiecare 3 s cât panoul e deschis; cu panoul închis se verifică privatele la 30 s (insignă + notificare mică).
+- Codul: `modules/chat/` (`filter.js` = filtrul de cuvinte, linkuri, emailuri, telefoane; `service.js` = toate regulile, în `CHAT`), `public/js/chat.js`, mesaj WebSocket `chat`.
+- Limite: 200 de caractere; minim 1,5 s între mesaje, max. 6 la 30 s, fără același mesaj repetat într-un minut.
+- Atingi un mesaj → **Mensaje privado**, **Reportar** (motiv), **Bloquear**. Blocatul nu-ți mai apare nicăieri și nu-ți poate scrie în privat. Oricine poate închide privatele din „Ajustes del chat”.
+- 3 reportări de la persoane diferite ascund mesajul; cine are 3 mesaje ascunse în 7 zile nu poate scrie 24 h. În panoul de admin (`/admin`) există secțiunea „Chat: mensajes reportados” (fals aviz / ascunde / ascunde și reduce la tăcere 7 zile).
+- Mesajele publice se șterg după 7 zile, cele private după 90 (`prune_chat`, la pornire și la fiecare 6 h). Tabele: `chat_messages`, `chat_reports`, `chat_blocks`, `chat_reads`.
 ## 6. Alte idei în așteptare
 
 - **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).
