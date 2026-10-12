@@ -39,8 +39,10 @@
       const span = document.createElement('span');
       span.textContent = n;
       screens.countdown.replaceChildren(span);
+      FX.play('tick');
       await wait(800);
     }
+    FX.play('go');
   }
 
   async function begin() {
@@ -71,7 +73,12 @@
     const left = Math.max(0, state.endAt - performance.now());
     $('timer-bar').style.transform = `scaleX(${left / state.durationMs})`;
     $('timer-bar').classList.toggle('low', left < 10000);
-    $('timer-text').textContent = Math.ceil(left / 1000);
+    const secs = Math.ceil(left / 1000);
+    $('timer-text').textContent = secs;
+    if (secs <= 5 && secs > 0 && secs !== state.lastTick) {
+      state.lastTick = secs;
+      FX.play('tick');
+    }
     if (left <= 0) {
       end();
       return;
@@ -83,6 +90,7 @@
     const q = state.questions[state.index];
     $('question-cat').textContent = categoryLabel(q.category);
     $('question-text').textContent = q.text;
+    FX.enter($('question-card'));
     const options = $('options');
     options.replaceChildren();
     q.options.forEach((text, i) => {
@@ -93,14 +101,6 @@
       btn.addEventListener('click', () => choose(i));
       options.appendChild(btn);
     });
-  }
-
-  function popPoints(text, miss) {
-    const pop = document.createElement('div');
-    pop.className = miss ? 'points-pop miss' : 'points-pop';
-    pop.textContent = text;
-    $('question-card').appendChild(pop);
-    setTimeout(() => pop.remove(), 700);
   }
 
   async function choose(optionIndex) {
@@ -135,7 +135,23 @@
         explanation: res.explanation,
       });
     }
-    popPoints(res.correct ? `+${res.points}${res.multiplier > 1 ? ` x${res.multiplier}` : ''}` : '✗', !res.correct);
+    const card = $('question-card');
+    if (res.correct) {
+      FX.play('correct');
+      FX.vibrate(25);
+      FX.burst(buttons[res.correctIndex], { amount: res.multiplier > 1 ? 36 : 22 });
+      FX.float(`+${res.points}${res.multiplier > 1 ? ` x${res.multiplier}` : ''}`, buttons[res.correctIndex], res.multiplier > 1 ? 'big' : '');
+      FX.bump($('score'));
+      if (res.streak === 3 || res.streak === 6) {
+        FX.play('streak');
+        FX.bigText(res.streak === 3 ? '🔥 ¡Racha x2!' : '🔥🔥 ¡Racha x3!');
+      }
+    } else {
+      FX.play('wrong');
+      FX.vibrate([60, 40, 60]);
+      FX.shake(card);
+      FX.float('✗', buttons[optionIndex], 'bad');
+    }
 
     state.score = res.score;
     state.streak = res.streak;
@@ -170,7 +186,13 @@
 
   function renderResult(result) {
     show('result');
-    $('result-score').textContent = result.score;
+    FX.countUp($('result-score'), result.score, 1200);
+    if (result.score > 0) {
+      FX.play('victory');
+      setTimeout(() => FX.confetti(Math.min(220, 60 + result.correctCount * 12)), 300);
+    } else {
+      FX.play('defeat');
+    }
     $('result-correct').textContent = result.correctCount;
     $('result-answered').textContent = result.answeredCount;
     $('result-streak').textContent = result.bestStreak;
@@ -228,6 +250,8 @@
       $('name-form').hidden = true;
       $('rank-msg').textContent = `¡Guardado! Estás en el puesto ${result.rank} del ranking histórico.`;
       $('rank-msg').hidden = false;
+      FX.play('streak');
+      FX.burst($('rank-msg'), { amount: 30 });
     } catch (err) {
       errorEl.textContent = err.message;
       errorEl.hidden = false;

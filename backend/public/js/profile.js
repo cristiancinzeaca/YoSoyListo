@@ -17,7 +17,8 @@
 
   $('profile').hidden = false;
   $('name').value = me.name;
-  $('st-rating').textContent = me.rating;
+  $('p-avatar').src = FX.avatar(me.name).src;
+  FX.countUp($('st-rating'), me.rating);
   $('st-blitz').textContent = me.bestBlitz;
   $('st-duels').textContent = `${me.duelsWon} / ${me.duelsPlayed}`;
   $('st-rooms').textContent = `${me.roomsWon} / ${me.roomsPlayed}`;
@@ -54,6 +55,8 @@
     try {
       await Player.rename($('name').value);
       $('rename-ok').hidden = false;
+      $('p-avatar').src = FX.avatar($('name').value).src;
+      FX.bump($('p-avatar'));
     } catch (err) {
       $('rename-error').textContent = err.message;
       $('rename-error').hidden = false;

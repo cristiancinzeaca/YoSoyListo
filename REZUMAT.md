@@ -87,7 +87,18 @@ npm run dev              # http://localhost:3000
 
 ---
 
-## 5. Următorul pas: GRAFICA
+## 5. GRAFICA (în lucru)
+
+**Făcut (12 octombrie 2026, ramura `grafica-y-efectos`)**
+- Imagini generate cu ChatGPT, stil unitar (vector „flat”, contur gros `#1b1035`, galben/violet), în `backend/public/img/` (WebP, 10–130 KB): `logo.webp`, `hero.webp`, `og-image.jpg` (1200×630), `castillo-{rojo,azul,verde}.webp`, `avatar-{buho,zorro,gato,loro,toro,tortuga,erizo,mapache}.webp`, `modo-{conquista,blitz,duelo,sala}.webp`, iconițe noi (`icon-192/512.png`, `icon.svg`, `img/favicon-48.png`, `img/apple-touch-icon.png`).
+- Avatare: boții au animalul lor (Einstein→bufniță, Curie→vulpe, Cervantes→pisică, Frida→papagal, Lorca→tăuraș, Hipatia→țestoasă, Ramón y Cajal→arici, Lovelace→raton); oamenii primesc unul după nume (`FX.avatar(name)`).
+- `public/js/fx.js` (inclus pe toate paginile): sunete sintetizate cu Web Audio (fără fișiere), vibrații, confetti, chispe, texte flotante, carteluri mari, buton 🔊/🔇 în antet (`localStorage ysl:sound`). Respectă `prefers-reduced-motion`.
+- Efecte în Blitz, Duel/Sală, Conquista (cucerire, torre derribată, castel căzut, rândul tău, victorie) și pe prima pagină (fundal cu stele, carduri animate, butoane cu sclipire).
+- Pentru probe locale fără bază de date se poate porni serverul cu baza falsă din `test/fakeDb.js`.
+
+**Rămas**: textură/relief pe hartă, steaguri pe regiuni, ilustrații pe categorii; `og:image` trebuie făcut URL absolut după ce există domeniul.
+
+### Planul inițial
 
 Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în ordinea impactului:
 

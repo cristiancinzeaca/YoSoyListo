@@ -171,6 +171,8 @@
       history.replaceState(null, '', `/sala?${params}`);
     }
     if (room.status === 'lobby') {
+      if (state.phase === 'lobby' && room.players.length > (state.lobbySize || 0)) FX.play('turn');
+      state.lobbySize = room.players.length;
       state.phase = 'lobby';
       renderLobby();
       show('s-lobby');
@@ -191,7 +193,7 @@
       const name = document.createElement('span');
       name.className = 'grow';
       name.textContent = p.name + (state.me && p.id === state.me.id ? ' (tú)' : '');
-      li.appendChild(name);
+      li.append(FX.avatar(p.name), name);
       if (p.id === room.hostId) {
         const tag = document.createElement('span');
         tag.className = 'tag';
@@ -281,6 +283,7 @@
       const span = document.createElement('span');
       span.textContent = left > 0 ? left : '¡Ya!';
       $('s-countdown').replaceChildren(span);
+      FX.play(left > 0 ? 'tick' : 'go');
       if (left > 0) setTimeout(step, ((end - Date.now()) % 1000) || 1000);
     };
     step();
@@ -303,6 +306,7 @@
     $('g-score').textContent = myScore();
     $('g-cat').textContent = categoryLabel(msg.question.category);
     $('g-text').textContent = msg.question.text;
+    FX.enter($('g-card'));
     $('g-note').hidden = true;
     $('g-report').hidden = true;
     const options = $('g-options');
@@ -338,6 +342,11 @@
     const left = Math.max(0, state.deadline - performance.now());
     $('g-timer').style.transform = `scaleX(${left / state.duration})`;
     $('g-timer').classList.toggle('low', left < 4000);
+    const secs = Math.ceil(left / 1000);
+    if (secs <= 3 && secs > 0 && state.myAnswer === null && secs !== state.lastTick) {
+      state.lastTick = secs;
+      FX.play('tick');
+    }
     if (left > 0) requestAnimationFrame(tick);
   }
 
@@ -359,7 +368,7 @@
       const s = document.createElement('span');
       s.className = 's';
       s.textContent = p.score;
-      chip.append(n, s);
+      chip.append(FX.avatar(p.name), n, s);
       strip.appendChild(chip);
     }
   }
@@ -381,11 +390,18 @@
     const mine = msg.results.find((r) => r.playerId === state.me.id);
     if (mine && mine.option !== null && !mine.correct) buttons[mine.option].classList.add('wrong');
 
-    const pop = document.createElement('div');
-    pop.className = mine && mine.correct ? 'points-pop' : 'points-pop miss';
-    pop.textContent = mine && mine.correct ? `+${mine.points}` : mine && mine.option === null ? '⏱' : '✗';
-    $('g-card').appendChild(pop);
-    setTimeout(() => pop.remove(), 700);
+    if (mine && mine.correct) {
+      FX.play('correct');
+      FX.vibrate(25);
+      FX.burst(buttons[msg.correctIndex], { amount: mine.points >= 900 ? 34 : 22 });
+      FX.float(`+${mine.points}`, buttons[msg.correctIndex], mine.points >= 900 ? 'big' : '');
+      FX.bump($('g-score'));
+    } else if (mine) {
+      FX.play('wrong');
+      FX.vibrate([60, 40, 60]);
+      FX.shake($('g-card'));
+      FX.float(mine.option === null ? '⏱' : '✗', mine.option === null ? $('g-card') : buttons[mine.option], 'bad');
+    }
 
     if (mine) $('g-score').textContent = mine.score;
     const correctCount = msg.results.filter((r) => r.correct).length;
@@ -404,6 +420,16 @@
     const won = me && me.position === 1;
     const tie = won && msg.ranking.filter((r) => r.position === 1).length > 1;
     $('end-title').textContent = tie ? '🤝 ¡Empate!' : won ? '🏆 ¡Has ganado!' : me ? `Has quedado ${me.position}º` : 'Fin de la partida';
+    if (won) {
+      FX.play('victory');
+      FX.flash('gold');
+      FX.confetti(180);
+    } else if (me && me.position <= 3) {
+      FX.play('streak');
+      FX.confetti(50);
+    } else {
+      FX.play('defeat');
+    }
 
     const list = $('end-ranking');
     list.replaceChildren();
@@ -419,7 +445,7 @@
       const pts = document.createElement('span');
       pts.className = 'pts';
       pts.textContent = `${r.score}`;
-      li.append(pos, name, pts);
+      li.append(pos, FX.avatar(r.name), name, pts);
       if (r.ratingBefore !== null && r.ratingAfter !== null) {
         const diff = r.ratingAfter - r.ratingBefore;
         const elo = document.createElement('span');

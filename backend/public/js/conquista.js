@@ -189,15 +189,19 @@
       const castleOf = s.players.find((p) => p.castle === r.id);
       if (castleOf) {
         const g = document.createElementNS(SVG, 'g');
-        g.setAttribute('class', 'castle');
-        const icon = document.createElementNS(SVG, 'text');
-        icon.setAttribute('x', r.cx);
-        icon.setAttribute('y', r.cy - 6);
-        icon.textContent = '🏰';
+        g.setAttribute('class', castleOf.eliminated ? 'castle dead' : 'castle');
+        g.dataset.player = castleOf.id;
+        const icon = document.createElementNS(SVG, 'image');
+        icon.setAttribute('class', 'castle-img');
+        icon.setAttribute('href', FX.castleSrc(castleOf.color));
+        icon.setAttribute('x', r.cx - 55);
+        icon.setAttribute('y', r.cy - 92);
+        icon.setAttribute('width', 110);
+        icon.setAttribute('height', 110);
         const towers = document.createElementNS(SVG, 'text');
         towers.setAttribute('class', 'towers');
         towers.setAttribute('x', r.cx);
-        towers.setAttribute('y', r.cy + 20);
+        towers.setAttribute('y', r.cy + 40);
         towers.textContent = castleOf.eliminated ? '✖' : '▮'.repeat(Math.max(0, castleOf.towers));
         g.append(icon, towers);
         m.labels.appendChild(g);
@@ -205,7 +209,7 @@
         const t = document.createElementNS(SVG, 'text');
         t.setAttribute('class', 'value');
         t.setAttribute('x', r.cx);
-        t.setAttribute('y', r.cy + 5);
+        t.setAttribute('y', r.cy + 11);
         t.textContent = s.value[r.id];
         m.labels.appendChild(t);
       }
@@ -225,6 +229,8 @@
     }
     for (const p of s.players) {
       const card = el('div', 'cq-player');
+      card.dataset.id = p.id;
+      card.appendChild(FX.avatar(p.name));
       if (p.id === state.me.id) card.classList.add('me');
       if (turnIds.has(p.id)) card.classList.add('turn');
       if (p.eliminated || p.left) card.classList.add('out');
@@ -280,6 +286,7 @@
     state.panelKey = key;
     const panel = $('cq-panel');
     panel.replaceChildren();
+    FX.enter(panel);
     const me = state.me.id;
     const q = s.question;
     const isParticipant = s.participants.includes(me);
@@ -411,11 +418,18 @@
     const bar = $('cq-timer');
     bar.style.transform = `scaleX(${state.duration ? left / state.duration : 0})`;
     bar.classList.toggle('low', left < 4000 && left > 0);
+    const secs = Math.ceil(left / 1000);
+    const s = state.s;
+    if (s && secs <= 3 && secs > 0 && secs !== state.lastTick && s.participants.includes(state.me.id) && s.myAnswer === null && !s.phase.endsWith('_result')) {
+      state.lastTick = secs;
+      FX.play('tick');
+    }
     if (left > 0) requestAnimationFrame(tick);
   }
 
   // ---------- estado ----------
   function onState(s) {
+    const prev = state.s && state.s.code === s.code ? state.s : null;
     state.s = s;
     if (!state.me) return;
     if (s.phase === 'end') return renderEnd(s);
@@ -433,6 +447,130 @@
     state.duration = s.durationMs;
     state.deadline = performance.now() + s.timeLeftMs;
     requestAnimationFrame(tick);
+    try {
+      effects(prev, s);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  // ---------- efectos (sonido, chispas, carteles) ----------
+  function regionPoint(id) {
+    const p = state.map && state.map.paths[id];
+    if (!p) return null;
+    const r = p.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  function effects(prev, s) {
+    const me = state.me.id;
+    const fxKey = [s.phase, s.round, s.question?.text, s.picker, !!s.result].join('|');
+    const newStep = fxKey !== state.fxKey;
+    state.fxKey = fxKey;
+    if (!prev) return;
+
+    // Regiones que cambian de dueño.
+    let conquered = 0;
+    for (const [id, owner] of Object.entries(s.owner)) {
+      if (!owner || prev.owner[id] === owner) continue;
+      const path = state.map.paths[id];
+      if (path) {
+        path.classList.remove('fx-captured');
+        void path.getBoundingClientRect();
+        path.classList.add('fx-captured');
+      }
+      const color = colorOf(owner);
+      FX.burst(regionPoint(id), { colors: [color, '#ffffff', '#ffcb2b'], amount: prev.owner[id] ? 40 : 22, power: prev.owner[id] ? 9 : 6 });
+      if (prev.owner[id]) conquered += 1;
+      else FX.play('turn');
+    }
+
+    // Castillos: torres perdidas y eliminaciones.
+    let castleFell = false;
+    for (const p of s.players) {
+      const before = prev.players.find((x) => x.id === p.id);
+      if (!before) continue;
+      if (p.towers < before.towers || (p.eliminated && !before.eliminated)) {
+        castleFell = true;
+        const g = state.map.labels.querySelector(`.castle[data-player="${CSS.escape(p.id)}"]`);
+        if (g) {
+          g.classList.add('fx-hit');
+          FX.burst(g.getBoundingClientRect ? g : null, { colors: ['#ffffff', '#c9c2d9', p.color], amount: 34, power: 9 });
+        }
+        FX.play('boom');
+        if (p.id === me) {
+          FX.vibrate([120, 60, 120]);
+          FX.flash('bad');
+        } else FX.vibrate(60);
+        if (p.eliminated && !before.eliminated) FX.bigText(p.id === me ? '💥 ¡Han tomado tu castillo!' : `💥 ¡Cae el castillo de ${p.name}!`, p.id === me ? 'bad' : '');
+        else FX.bigText(p.id === me ? '¡Te han derribado una torre!' : '🏰 ¡Torre derribada!', p.id === me ? 'bad' : '');
+      }
+      if (p.score > before.score) {
+        const sc = $('cq-players').querySelector(`.cq-player[data-id="${CSS.escape(p.id)}"] .sc`);
+        FX.bump(sc);
+      }
+    }
+    if (conquered && !castleFell) {
+      FX.play('conquer');
+      const attacker = s.attack ? s.attack.attackerId : prev.attack ? prev.attack.attackerId : null;
+      if (attacker === me) {
+        FX.vibrate([30, 30, 30]);
+        FX.bigText('⚔️ ¡Conquistada!');
+      }
+    }
+
+    if (!newStep) return;
+
+    // Te toca elegir en el mapa.
+    const myPick = s.phase.endsWith('_pick') && s.picker === me && s.myAnswer === null;
+    if (myPick) {
+      FX.play('turn');
+      FX.vibrate([40, 30, 40]);
+      FX.bigText(s.phase === 'exp_pick' ? '👆 ¡Elige región!' : '⚔️ ¡Elige a quién atacar!', 'cool');
+    }
+
+    // Empieza una pregunta en la que participas.
+    if ((s.phase === 'exp_question' || s.phase === 'bat_question' || s.phase === 'bat_tiebreak') && s.participants.includes(me)) {
+      state.lastTick = null;
+      FX.play('go');
+      if (s.phase === 'bat_question' && s.attack) {
+        FX.bigText(s.attack.attackerId === me ? '⚔️ ¡Al ataque!' : s.attack.defenderId === me ? '🛡️ ¡Defiéndete!' : '⚔️ ¡Combate!', 'cool');
+      }
+    }
+
+    // Resultado de aproximación.
+    if ((s.phase === 'exp_result' || s.phase === 'bat_tie_result') && s.result && s.result.ranking.length) {
+      const first = s.result.ranking[0].playerId;
+      if (first === me) {
+        FX.play('correct');
+        FX.vibrate(30);
+        FX.burst($('cq-panel'), { amount: 30 });
+        FX.float('🥇 ¡El más cerca!', $('cq-panel'), 'big');
+      } else if (s.result.ranking.some((g) => g.playerId === me)) {
+        FX.play('wrong');
+      }
+    }
+
+    // Resultado del combate.
+    if (s.phase === 'bat_result' && s.result) {
+      const r = s.result;
+      const mine = r.answers ? r.answers[me] : undefined;
+      const buttons = [...$('cq-panel').querySelectorAll('.option')];
+      if (mine !== undefined && mine !== null) {
+        if (mine === r.correctIndex) {
+          FX.play('correct');
+          FX.vibrate(25);
+          FX.burst(buttons[r.correctIndex], { amount: 26 });
+        } else {
+          FX.play('wrong');
+          FX.vibrate([60, 40, 60]);
+          FX.shake($('cq-panel'));
+        }
+      } else if (r.outcome === 'defender') FX.play('defend');
+      if (r.outcome === 'defender' && s.attack && s.attack.defenderId === me) {
+        FX.float('🛡️ ¡Defendida!', $('cq-panel'), 'big');
+      }
+    }
   }
 
   function renderEnd(s) {
@@ -442,6 +580,20 @@
     const me = ranking.find((r) => r.playerId === state.me.id);
     const tie = me && me.position === 1 && ranking.filter((r) => r.position === 1).length > 1;
     $('end-title').textContent = tie ? '🤝 ¡Empate en cabeza!' : me && me.position === 1 ? '👑 ¡Has conquistado España!' : me ? `Has quedado ${me.position}º` : 'Fin de la partida';
+    if (state.endShown !== s.code) {
+      state.endShown = s.code;
+      if (me && me.position === 1) {
+        FX.play('victory');
+        FX.flash('gold');
+        FX.confetti(220);
+        setTimeout(() => FX.confetti(120), 1400);
+      } else if (me && me.position === 2) {
+        FX.play('streak');
+        FX.confetti(50);
+      } else {
+        FX.play('defeat');
+      }
+    }
     const list = $('end-ranking');
     list.replaceChildren();
     for (const r of ranking) {
@@ -451,6 +603,7 @@
       dot.style.background = r.color;
       li.append(
         el('span', 'pos', r.position <= 3 ? ['🥇', '🥈', '🥉'][r.position - 1] : r.position),
+        FX.avatar(r.name),
         dot,
         el('span', 'name', `${r.name}${r.eliminated ? ' (eliminado)' : ''}`),
         el('span', 'pts', `${r.score}`)

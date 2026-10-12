@@ -8,15 +8,19 @@
   <meta property="og:title" content="¡Juega conmigo a Yo Soy Listo!">
   <meta property="og:description" content="Entra en mi sala y a ver quién sabe más.">
   <meta name="robots" content="noindex">
+  <meta property="og:image" content="/img/og-image.jpg">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <div class="container">
     <header class="site-header">
-      <a class="logo" href="/">Yo Soy <span>Listo</span></a>
+      <a class="logo" href="/" aria-label="Yo Soy Listo · Inicio"><img src="/img/logo.webp" alt="Yo Soy Listo" width="900" height="580"></a>
       <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
     </header>
 
@@ -100,6 +104,7 @@
   </div>
   <div class="banner" id="banner" hidden></div>
 
+  <script src="/js/fx.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/player.js"></script>
   <script src="/js/online.js"></script>

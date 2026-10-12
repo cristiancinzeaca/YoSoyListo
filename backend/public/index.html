@@ -8,22 +8,27 @@
   <meta property="og:title" content="Yo Soy Listo · ¿Eres listo de verdad?">
   <meta property="og:description" content="Trivial online gratis: reta a otros jugadores o crea una sala con tus amigos.">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="/icon.svg">
+  <meta property="og:image" content="/img/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <div class="container">
     <header class="site-header">
-      <a class="logo" href="/">Yo Soy <span>Listo</span></a>
+      <a class="logo" href="/" aria-label="Yo Soy Listo · Inicio"><img src="/img/logo.webp" alt="Yo Soy Listo" width="900" height="580"></a>
       <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
     </header>
 
     <main>
       <section class="hero">
+        <img class="hero-art" src="/img/hero.webp" alt="Las mascotas de Yo Soy Listo celebran alrededor de un mapa con castillos" width="1200" height="800" fetchpriority="high">
         <h1>¿Eres <span>listo</span> de verdad?</h1>
         <p>Preguntas de cultura general contra el reloj y contra otros jugadores. Gratis, sin registro y desde el móvil.</p>
       </section>
@@ -31,14 +36,14 @@
       <div class="modes">
         <section class="card featured" aria-labelledby="cq-title">
           <span class="mode-badge star">🏰 Modo estrella · 3 jugadores</span>
-          <h2 id="cq-title">Conquista</h2>
+          <div class="mode-head"><img class="mode-icon" src="/img/modo-conquista.webp" alt="" width="256" height="256"><h2 id="cq-title">Conquista</h2></div>
           <p>Repartíos el mapa de España con preguntas de aproximación y luego atacad las comunidades de los rivales. Si tomas un castillo, te quedas con todo su territorio.</p>
           <a class="btn" href="/conquista">¡Conquistar España!</a>
         </section>
 
         <section class="card" aria-labelledby="blitz-title">
           <span class="mode-badge">⚡ Solo · 60 segundos</span>
-          <h2 id="blitz-title">Modo Blitz</h2>
+          <div class="mode-head"><img class="mode-icon" src="/img/modo-blitz.webp" alt="" width="256" height="256" loading="lazy"><h2 id="blitz-title">Modo Blitz</h2></div>
           <p>Responde todas las preguntas que puedas en un minuto. Las rachas multiplican tus puntos.</p>
           <form id="play-form" action="/blitz" method="get">
             <label for="category">Categoría</label>
@@ -51,14 +56,14 @@
 
         <section class="card" aria-labelledby="duel-title">
           <span class="mode-badge online">🌐 Online · 1 contra 1</span>
-          <h2 id="duel-title">Duelo</h2>
+          <div class="mode-head"><img class="mode-icon" src="/img/modo-duelo.webp" alt="" width="256" height="256" loading="lazy"><h2 id="duel-title">Duelo</h2></div>
           <p>Te emparejamos con otro jugador: mismas preguntas, gana quien acierte más y más rápido. Suma puntos ELO para el ranking.</p>
           <a class="btn" href="/duelo">Buscar rival</a>
         </section>
 
         <section class="card" aria-labelledby="room-title">
           <span class="mode-badge friends">👥 Con amigos · hasta 8</span>
-          <h2 id="room-title">Sala privada</h2>
+          <div class="mode-head"><img class="mode-icon" src="/img/modo-sala.webp" alt="" width="256" height="256" loading="lazy"><h2 id="room-title">Sala privada</h2></div>
           <p>Crea una sala, comparte el código y jugad todos a la vez desde vuestros móviles.</p>
           <a class="btn" href="/sala?crear=1">Crear sala</a>
           <p class="or">o únete con un código</p>
@@ -96,6 +101,7 @@
     <footer class="site-footer">© Yo Soy Listo · <a href="/privacidad">Privacidad</a></footer>
   </div>
 
+  <script src="/js/fx.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/player.js"></script>
   <script src="/js/home.js"></script>
