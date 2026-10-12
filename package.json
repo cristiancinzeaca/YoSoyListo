@@ -1,0 +1,14 @@
+{
+  "name": "yosoylisto",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Yo Soy Listo: el código está en backend/. Este archivo permite desplegar desde la raíz del repositorio.",
+  "scripts": {
+    "build": "npm --prefix backend ci --omit=dev",
+    "start": "npm --prefix backend start",
+    "test": "npm --prefix backend test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
