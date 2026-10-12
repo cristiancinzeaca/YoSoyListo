@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Admin · Yo Soy Listo</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>🧠 Yo Soy Listo · Administración</h1>
+
+  <section class="card">
+    <h2>Conexión</h2>
+    <label for="cfg-url">URL del backend</label>
+    <input type="url" id="cfg-url" placeholder="https://yosoylisto-backend.up.railway.app">
+    <label for="cfg-key">Clave de administrador (ADMIN_KEY)</label>
+    <input type="password" id="cfg-key" autocomplete="off">
+    <div class="actions">
+      <button type="button" id="cfg-save">Guardar</button>
+      <span class="status" id="cfg-status"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 id="form-title">Nueva pregunta</h2>
+    <form id="q-form" novalidate>
+      <label for="q-text">Pregunta</label>
+      <textarea id="q-text" maxlength="500" required></textarea>
+
+      <label>Opciones <span class="hint">(marca la correcta)</span></label>
+      <div id="q-options"></div>
+      <button type="button" class="secondary small" id="add-option">+ Añadir opción</button>
+
+      <div class="row">
+        <div>
+          <label for="q-category">Categoría</label>
+          <input type="text" id="q-category" list="category-list" placeholder="general">
+          <datalist id="category-list">
+            <option value="general"><option value="geografia"><option value="historia">
+            <option value="ciencia"><option value="arte"><option value="deportes">
+          </datalist>
+        </div>
+        <div>
+          <label for="q-difficulty">Dificultad</label>
+          <select id="q-difficulty">
+            <option value="1">1 · Fácil</option>
+            <option value="2" selected>2 · Media</option>
+            <option value="3">3 · Difícil</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="q-explanation">Explicación (opcional, se muestra al fallar)</label>
+      <textarea id="q-explanation" maxlength="1000"></textarea>
+
+      <label><input type="checkbox" id="q-active" checked> Activa (aparece en las partidas)</label>
+
+      <div class="actions">
+        <button type="submit" id="q-submit">Añadir pregunta</button>
+        <button type="button" class="secondary" id="q-cancel" hidden>Cancelar edición</button>
+      </div>
+      <div id="form-msg"></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>Importar varias preguntas (JSON)</summary>
+      <p class="hint">Pega una lista con este formato (máximo 500 por importación):</p>
+      <p class="hint"><code>[{"text": "¿Capital de Francia?", "options": ["París", "Roma", "Berlín"], "correctIndex": 0, "category": "geografia", "difficulty": 1}]</code></p>
+      <textarea id="bulk-json" class="tall" placeholder="[ ... ]"></textarea>
+      <div class="actions"><button type="button" id="bulk-import">Importar</button></div>
+      <div id="bulk-msg"></div>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2>Avisos de errores <span class="hint" id="reports-total"></span></h2>
+    <p class="hint">Preguntas que los jugadores han marcado como incorrectas. Corrígelas con «Editar» y luego pulsa «Resuelto».</p>
+    <div id="reports-msg"></div>
+    <div id="reports"></div>
+  </section>
+
+  <section class="card">
+    <h2>Preguntas <span class="hint" id="list-total"></span></h2>
+    <div class="row">
+      <input type="search" id="filter-search" placeholder="Buscar texto…">
+      <input type="text" id="filter-category" list="category-list" placeholder="Categoría (todas)">
+    </div>
+    <div id="list-msg"></div>
+    <div id="q-list"></div>
+    <div class="pager">
+      <button type="button" class="secondary small" id="prev-page">← Anterior</button>
+      <span class="hint" id="page-info"></span>
+      <button type="button" class="secondary small" id="next-page">Siguiente →</button>
+    </div>
+  </section>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

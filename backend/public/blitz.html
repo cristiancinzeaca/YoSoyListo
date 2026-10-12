@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modo Blitz · Yo Soy Listo</title>
+  <meta name="description" content="60 segundos, todas las preguntas que puedas. Juega al modo Blitz de Yo Soy Listo.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a class="logo" href="/">Yo Soy <span>Listo</span></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
+    </header>
+
+    <!-- Cuenta atrás -->
+    <section id="screen-countdown" class="countdown" aria-live="assertive"></section>
+
+    <!-- Partida -->
+    <section id="screen-game" hidden>
+      <div class="game-top">
+        <div class="stat"><small>Puntos</small><span id="score">0</span></div>
+        <div class="stat streak" id="streak-box"><small>Racha</small><span id="streak">0</span></div>
+      </div>
+      <div class="timer" aria-hidden="true"><div class="timer-bar" id="timer-bar"></div></div>
+      <div class="timer-text"><span id="timer-text">60</span> s</div>
+
+      <div class="question-card" id="question-card">
+        <div class="question-cat" id="question-cat"></div>
+        <div class="question-text" id="question-text" aria-live="polite"></div>
+        <div class="options" id="options"></div>
+      </div>
+    </section>
+
+    <!-- Resultado -->
+    <section id="screen-result" hidden>
+      <div class="card">
+        <p class="result-label">¡Tiempo!</p>
+        <div class="result-score" id="result-score">0</div>
+        <p class="result-label">puntos</p>
+        <div class="result-stats">
+          <div><span id="result-correct">0</span><small>aciertos</small></div>
+          <div><span id="result-answered">0</span><small>respondidas</small></div>
+          <div><span id="result-streak">0</span><small>mejor racha</small></div>
+        </div>
+
+        <form id="name-form" novalidate>
+          <label for="player-name">Guarda tu puntuación en el ranking</label>
+          <input type="text" id="player-name" maxlength="20" placeholder="Tu nombre" autocomplete="nickname">
+          <button class="btn" type="submit" id="save-btn">Guardar</button>
+          <p class="form-error" id="name-error" hidden></p>
+        </form>
+        <p class="rank-msg" id="rank-msg" hidden></p>
+
+        <a class="btn" id="again-btn" href="/blitz">Jugar otra vez</a>
+        <a class="btn btn-secondary" href="/">Volver al inicio</a>
+      </div>
+
+      <div class="card" id="review-card" hidden>
+        <h2>Repasa tus fallos</h2>
+        <ul class="review" id="review"></ul>
+      </div>
+    </section>
+
+    <div class="error-box" id="error-box" hidden></div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/blitz.js"></script>
+</body>
+</html>
