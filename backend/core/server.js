@@ -16,7 +16,7 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
 
 // Páginas que queremos que Google indexe.
-const SITEMAP_PAGES = ['/', '/privacidad'];
+const SITEMAP_PAGES = ['/', '/conquista', '/privacidad'];
 
 function baseUrl(req) {
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, '');
@@ -78,6 +78,10 @@ function createApp() {
   });
 
   // Duelos y salas usan la misma página; el código de sala va en ?c=XXXXX.
+  app.get('/conquista', (req, res) => {
+    res.set('Cache-Control', 'no-cache').sendFile(path.join(PUBLIC_DIR, 'conquista.html'));
+  });
+
   app.get(['/duelo', '/sala'], (req, res) => {
     res.set('Cache-Control', 'no-cache').sendFile(path.join(PUBLIC_DIR, 'online.html'));
   });

@@ -6,6 +6,18 @@ const { createBot } = require('./bot');
 const { normalizeCategory } = require('../questions/validate');
 const players = require('../players/service');
 const persist = require('./persist');
+const { ConquistaGame } = require('../conquista/game');
+const { CQ } = require('../conquista/config');
+const cqPersist = require('../conquista/persist');
+
+function shuffleList(list) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = crypto.randomInt(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_CONNECTIONS_PER_IP = 10;
@@ -18,12 +30,17 @@ function attachMultiplayer(server, deps = {}) {
   const findPlayer = deps.findPlayer || players.findByToken;
   const loadQuestions = deps.loadQuestions || persist.loadQuestions;
   const saveMatch = deps.saveMatch || persist.saveMatch;
+  const loadNumeric = deps.loadNumeric || cqPersist.loadNumeric;
+  const loadChoice = deps.loadChoice || cqPersist.loadChoice;
+  const saveConquista = deps.saveConquista || cqPersist.saveConquista;
 
   const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 4096 });
   const clients = new Map(); // playerId → conexión
   const membership = new Map(); // playerId → código de sala
   const rooms = new Map(); // código → Room
   const queue = new Map(); // playerId → { since, botTimer }
+  const cqQueue = new Map(); // playerId → desde cuándo espera una partida de Conquista
+  let cqTimer = null;
   const ipCounts = new Map();
 
   // ---------- envío ----------
@@ -45,6 +62,11 @@ function attachMultiplayer(server, deps = {}) {
     }
   }
 
+  function onEmpty(r) {
+    rooms.delete(r.code);
+    for (const [pid, code] of membership) if (code === r.code) membership.delete(pid);
+  }
+
   function createRoom(options) {
     if (rooms.size >= config.maxRooms) throw new GameError('El servidor está lleno, inténtalo en un rato');
     const room = new Room({
@@ -52,10 +74,7 @@ function attachMultiplayer(server, deps = {}) {
       send,
       loadQuestions,
       onFinished: saveMatch,
-      onEmpty: (r) => {
-        rooms.delete(r.code);
-        for (const [pid, code] of membership) if (code === r.code) membership.delete(pid);
-      },
+      onEmpty,
     });
     rooms.set(room.code, room);
     return room;
@@ -83,7 +102,68 @@ function attachMultiplayer(server, deps = {}) {
   }
 
   // ---------- duelos ----------
+  // ---------- Conquista (3 jugadores) ----------
+  function cqQueueStatus() {
+    const startsInMs = cqTimer ? Math.max(0, cqTimer.at - Date.now()) : null;
+    for (const id of cqQueue.keys()) send(id, { t: 'cq_queued', waiting: cqQueue.size, needed: CQ.players, startsInMs });
+  }
+
+  function startConquista() {
+    clearTimeout(cqTimer?.handle);
+    cqTimer = null;
+    const ids = [...cqQueue.keys()].filter((id) => clients.has(id)).slice(0, CQ.players);
+    for (const id of ids) cqQueue.delete(id);
+    if (ids.length === 0) return;
+    if (rooms.size >= config.maxRooms) {
+      for (const id of ids) send(id, { t: 'error', message: 'El servidor está lleno, inténtalo en un rato' });
+      return;
+    }
+    const participants = ids.map((id) => clients.get(id).player);
+    const taken = participants.map((p) => p.name);
+    while (participants.length < CQ.players) {
+      const bot = createBot(taken);
+      taken.push(bot.name);
+      participants.push(bot);
+    }
+    const game = new ConquistaGame({
+      code: newCode('C'),
+      players: shuffleList(participants),
+      send,
+      loadNumeric,
+      loadChoice,
+      onFinished: saveConquista,
+      onEmpty,
+    });
+    rooms.set(game.code, game);
+    for (const id of ids) membership.set(id, game.code);
+    game.run();
+    // Si quedaron jugadores esperando, empieza otra cuenta atrás para ellos.
+    if (cqQueue.size > 0) armCqTimer();
+  }
+
+  function armCqTimer() {
+    if (cqTimer) return;
+    const at = Date.now() + CQ.botWaitMs;
+    cqTimer = { at, handle: setTimeout(startConquista, CQ.botWaitMs) };
+  }
+
+  function joinCqQueue(conn) {
+    const me = conn.player;
+    ensureFree(me.id);
+    cqQueue.set(me.id, Date.now());
+    if (cqQueue.size >= CQ.players) return startConquista();
+    armCqTimer();
+    cqQueueStatus();
+  }
+
   function leaveQueue(playerId) {
+    if (cqQueue.delete(playerId)) {
+      if (cqQueue.size === 0) {
+        clearTimeout(cqTimer?.handle);
+        cqTimer = null;
+      }
+      cqQueueStatus();
+    }
     const entry = queue.get(playerId);
     if (!entry) return;
     clearTimeout(entry.botTimer);
@@ -182,9 +262,26 @@ function attachMultiplayer(server, deps = {}) {
     async start(conn) {
       await requireRoom(conn).start(conn.player.id);
     },
+    cq_queue(conn) {
+      joinCqQueue(conn);
+    },
+    cq_cancel(conn) {
+      leaveQueue(conn.player.id);
+      sendTo(conn, { t: 'queue_cancelled' });
+    },
+    cq_pick(conn, msg) {
+      const room = currentRoom(conn.player.id);
+      if (room && room.mode === 'conquista') room.handle(conn.player.id, msg);
+    },
+    cq_choice(conn, msg) {
+      handlers.cq_pick(conn, msg);
+    },
+    cq_guess(conn, msg) {
+      handlers.cq_pick(conn, msg);
+    },
     answer(conn, msg) {
       const room = currentRoom(conn.player.id);
-      if (room) room.answer(conn.player.id, Number(msg.index), Number(msg.option));
+      if (room && room.mode !== 'conquista') room.answer(conn.player.id, Number(msg.index), Number(msg.option));
     },
     rematch(conn) {
       requireRoom(conn).rematch(conn.player.id);
@@ -197,7 +294,7 @@ function attachMultiplayer(server, deps = {}) {
 
   function requireRoom(conn) {
     const room = currentRoom(conn.player.id);
-    if (!room) throw new GameError('No estás en ninguna sala');
+    if (!room || room.mode === 'conquista') throw new GameError('No estás en ninguna sala');
     return room;
   }
 
@@ -323,11 +420,12 @@ function attachMultiplayer(server, deps = {}) {
 
   return {
     wss,
-    stats: () => ({ connections: wss.clients.size, players: clients.size, rooms: rooms.size, queue: queue.size }),
+    stats: () => ({ connections: wss.clients.size, players: clients.size, rooms: rooms.size, queue: queue.size, cqQueue: cqQueue.size }),
     close() {
       clearInterval(heartbeat);
       clearInterval(cleanup);
       for (const entry of queue.values()) clearTimeout(entry.botTimer);
+      clearTimeout(cqTimer?.handle);
       for (const room of [...rooms.values()]) room.destroy();
       for (const ws of wss.clients) ws.close(1001, 'server shutting down');
       wss.close();

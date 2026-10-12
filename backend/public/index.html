@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Yo Soy Listo · Juego de preguntas de cultura general online</title>
-  <meta name="description" content="Juego de preguntas de cultura general gratis: Blitz de 60 segundos, duelos online contra otros jugadores y salas privadas para jugar con amigos.">
+  <title>Yo Soy Listo · Conquista España a base de preguntas</title>
+  <meta name="description" content="Juego de preguntas online gratis: conquista el mapa de España contra otros dos jugadores, reta a un rival en un duelo o juega con amigos en una sala privada.">
   <meta property="og:title" content="Yo Soy Listo · ¿Eres listo de verdad?">
   <meta property="og:description" content="Trivial online gratis: reta a otros jugadores o crea una sala con tus amigos.">
   <meta property="og:type" content="website">
@@ -29,6 +29,13 @@
       </section>
 
       <div class="modes">
+        <section class="card featured" aria-labelledby="cq-title">
+          <span class="mode-badge star">🏰 Modo estrella · 3 jugadores</span>
+          <h2 id="cq-title">Conquista</h2>
+          <p>Repartíos el mapa de España con preguntas de aproximación y luego atacad las comunidades de los rivales. Si tomas un castillo, te quedas con todo su territorio.</p>
+          <a class="btn" href="/conquista">¡Conquistar España!</a>
+        </section>
+
         <section class="card" aria-labelledby="blitz-title">
           <span class="mode-badge">⚡ Solo · 60 segundos</span>
           <h2 id="blitz-title">Modo Blitz</h2>
@@ -68,6 +75,7 @@
           <button class="tab active" type="button" role="tab" data-board="week" aria-selected="true">Blitz semana</button>
           <button class="tab" type="button" role="tab" data-board="all" aria-selected="false">Blitz histórico</button>
           <button class="tab" type="button" role="tab" data-board="elo" aria-selected="false">Duelos</button>
+          <button class="tab" type="button" role="tab" data-board="conquista" aria-selected="false">Conquista</button>
         </div>
         <ol class="ranking" id="ranking"></ol>
         <p class="empty" id="ranking-empty" hidden></p>
@@ -76,6 +84,7 @@
       <section class="rules">
         <h2>Cómo se juega</h2>
         <ul>
+          <li><strong>Conquista:</strong> primero os repartís España: quien más se acerque a la respuesta elige 2 comunidades y el segundo, 1. Después, por turnos, atacáis comunidades vecinas: atacante y defensor responden la misma pregunta. Cada castillo aguanta 3 ataques.</li>
           <li><strong>Blitz:</strong> 60 segundos. Cada acierto vale 10 puntos; con 3 seguidos valen el doble y con 6, el triple.</li>
           <li><strong>Duelo y salas:</strong> todos ven la misma pregunta a la vez y tienen 15 segundos. Acertar da entre 500 y 1000 puntos: cuanto más rápido, más puntos.</li>
           <li><strong>Ranking de duelos:</strong> ganar a otro jugador sube tu ELO y perder lo baja. Los duelos contra bots no cuentan.</li>

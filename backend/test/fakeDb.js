@@ -3,7 +3,7 @@
 const crypto = require('crypto');
 
 function createFakeDb() {
-  const tables = { questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [] };
+  const tables = { questions: [], numeric_questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [] };
 
   class Query {
     constructor(table) {
@@ -84,7 +84,7 @@ function createFakeDb() {
   function defaults(table) {
     if (table === 'questions') return { category: 'general', difficulty: 2, explanation: null, active: true };
     if (table === 'players') {
-      return { rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0 };
+      return { rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0, conquista_played: 0, conquista_won: 0 };
     }
     if (table !== 'blitz_sessions') return {};
     return {
@@ -110,6 +110,17 @@ function createFakeDb() {
           p.duels_won += args.p_duel_wins;
           p.rooms_played += args.p_rooms;
           p.rooms_won += args.p_room_wins;
+        }
+        return { data: null, error: null };
+      }
+      if (name === 'random_numeric_questions') {
+        return { data: structuredClone(tables.numeric_questions.slice(0, args.p_limit)), error: null };
+      }
+      if (name === 'apply_conquista_result') {
+        const p = tables.players.find((x) => x.id === args.p_id);
+        if (p) {
+          p.conquista_played += 1;
+          p.conquista_won += args.p_won;
         }
         return { data: null, error: null };
       }

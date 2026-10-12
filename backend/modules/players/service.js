@@ -3,7 +3,8 @@ const { getDb, dbError } = require('../../core/db');
 const { httpError } = require('../../core/http');
 const { validatePlayerName } = require('./names');
 
-const PUBLIC_FIELDS = 'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, created_at';
+const PUBLIC_FIELDS =
+  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at';
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -18,6 +19,8 @@ function toPublic(row) {
     duelsWon: row.duels_won,
     roomsPlayed: row.rooms_played,
     roomsWon: row.rooms_won,
+    conquistaPlayed: row.conquista_played ?? 0,
+    conquistaWon: row.conquista_won ?? 0,
     createdAt: row.created_at,
   };
 }
@@ -108,8 +111,21 @@ async function profile(player) {
   return { ...player, bestBlitz: best.data[0]?.score ?? 0, recentMatches: matches };
 }
 
-async function leaderboard(limit = 20) {
+async function conquistaLeaderboard(limit) {
+  const { data, error } = await getDb()
+    .from('players')
+    .select('name, conquista_played, conquista_won')
+    .gt('conquista_won', 0)
+    .order('conquista_won', { ascending: false })
+    .order('conquista_played', { ascending: true })
+    .limit(limit);
+  if (error) throw dbError(error, 'players.conquistaLeaderboard');
+  return data.map((r, i) => ({ rank: i + 1, name: r.name, won: r.conquista_won, played: r.conquista_played }));
+}
+
+async function leaderboard(limit = 20, mode = 'duel') {
   limit = Math.min(50, Math.max(1, Number.parseInt(limit, 10) || 20));
+  if (mode === 'conquista') return conquistaLeaderboard(limit);
   const { data, error } = await getDb()
     .from('players')
     .select('name, rating, duels_played, duels_won')

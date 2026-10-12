@@ -2,6 +2,7 @@
 
 Juego de preguntas de cultura general en español, pensado para el móvil:
 
+- **Conquista** (modo estrella, 3 jugadores, al estilo Conquistador/Honfoglaló): un mapa de España por comunidades autónomas y un castillo con 3 torres para cada jugador. Primero se reparte el mapa con preguntas de aproximación (quien más se acerque elige 2 comunidades, el segundo 1); después, en 3 rondas, cada jugador ataca una comunidad vecina: atacante y defensor responden la misma pregunta y, si los dos aciertan, desempata una de aproximación. Si cae un castillo, el atacante se queda con todo el territorio de ese jugador. Si no hay 3 personas en 15 segundos, se completa con bots.
 - **Blitz** (solo): 60 segundos, rachas que multiplican puntos, ranking semanal e histórico.
 - **Duelo online** (1 contra 1): emparejamiento automático con otro jugador; si nadie aparece en 12 segundos, juegas contra un bot. Ranking ELO.
 - **Sala privada** (hasta 8): creas una sala, compartes el código o el enlace y jugáis todos a la vez. Se pueden añadir bots.
@@ -54,7 +55,7 @@ En lugar de `DATABASE_URL`, pon `SUPABASE_URL` y `SUPABASE_SERVICE_KEY` (clave s
 
 ## Añadir preguntas
 
-El juego ya trae 473 preguntas (geografía, historia, ciencia, arte y literatura, deportes y cultura general). Para añadir más hay dos caminos:
+El juego ya trae 473 preguntas con opciones (geografía, historia, ciencia, arte y literatura, deportes y cultura general) y 119 de aproximación para la Conquista (`backend/db/numeric/aproximacion.json`: `[texto, respuesta, unidad, categoría]`). Para añadir más hay dos caminos:
 
 **Desde el panel** (lo más fácil):
 
@@ -87,7 +88,7 @@ En `/admin/` → **Importar varias preguntas (JSON)**, pega una lista con este f
 ```bash
 cd backend
 npm install
-npm test          # 24 pruebas: preguntas, Blitz, perfiles, duelos, salas, reconexión
+npm test          # 28 pruebas: preguntas, Blitz, perfiles, duelos, salas, reconexión
 cp .env.example .env   # rellena las variables
 npm run dev       # http://localhost:3000
 ```
@@ -100,6 +101,7 @@ npm run dev       # http://localhost:3000
 - `backend/modules/game-blitz/` — modo Blitz
 - `backend/modules/players/` — perfiles de invitado (nombre + token guardado en el navegador)
 - `backend/modules/multiplayer/` — partidas en tiempo real por WebSocket (`/ws`): emparejamiento, salas, bots, ELO
+- `backend/modules/conquista/` — modo Conquista: reglas, mapa y bots (el mapa está en `backend/public/map/espana.json`, generado con límites del IGN)
 - `backend/public/` — la web (HTML, CSS y JavaScript sin compilación) y el panel `admin/`
 - `backend/test/` — pruebas automáticas
 

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conquista · Yo Soy Listo</title>
+  <meta name="description" content="Conquista España pregunta a pregunta: tres jugadores, un mapa y un castillo para cada uno.">
+  <meta property="og:title" content="Conquista · Yo Soy Listo">
+  <meta property="og:description" content="¿Quién conquistará España? Juego de preguntas online para 3 jugadores.">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container wide">
+    <header class="site-header">
+      <a class="logo" href="/">Yo Soy <span>Listo</span></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
+    </header>
+
+    <section id="s-connecting" class="center-screen">
+      <div class="spinner"></div>
+      <h1>Conectando…</h1>
+    </section>
+
+    <section id="s-queue" class="center-screen" hidden>
+      <div class="spinner"></div>
+      <h1>Buscando rivales…</h1>
+      <p><strong id="q-waiting">1</strong> de 3 jugadores</p>
+      <p id="q-bots">Si no aparece nadie, completaremos la partida con bots.</p>
+      <a class="btn btn-secondary" href="/" id="q-cancel">Cancelar</a>
+    </section>
+
+    <section id="s-game" hidden>
+      <div class="cq-players" id="cq-players"></div>
+      <p class="cq-event" id="cq-event" aria-live="polite"></p>
+      <div class="cq-map" id="cq-map"></div>
+      <div class="timer" aria-hidden="true"><div class="timer-bar" id="cq-timer"></div></div>
+      <div class="cq-panel card" id="cq-panel"></div>
+      <p class="cq-attrib" id="cq-attrib"></p>
+    </section>
+
+    <section id="s-end" hidden>
+      <div class="card">
+        <h1 class="end-title" id="end-title"></h1>
+        <ol class="podium" id="end-ranking"></ol>
+        <button class="btn" type="button" id="end-again">Otra partida</button>
+        <a class="btn btn-secondary" href="/">Volver al inicio</a>
+      </div>
+    </section>
+
+    <section id="s-fatal" class="center-screen" hidden>
+      <h1 id="fatal-title">Vaya…</h1>
+      <p id="fatal-text"></p>
+      <a class="btn" href="/">Volver al inicio</a>
+    </section>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/conquista.js"></script>
+</body>
+</html>
