@@ -10,7 +10,7 @@ async function loadSession(id) {
   return data;
 }
 
-async function start({ category } = {}) {
+async function start({ category, playerId } = {}) {
   const cat = category ? normalizeCategory(category) : null;
   const { data: questions, error } = await getDb().rpc('random_questions', {
     p_limit: BLITZ.questionsPerGame,
@@ -24,6 +24,7 @@ async function start({ category } = {}) {
     .from('blitz_sessions')
     .insert({
       category: cat,
+      player_id: playerId || null,
       question_ids: questions.map((q) => q.id),
       started_at: new Date(now).toISOString(),
       ends_at: new Date(now + BLITZ.durationMs).toISOString(),

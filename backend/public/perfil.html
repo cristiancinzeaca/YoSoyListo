@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Mi perfil · Yo Soy Listo</title>
+  <meta name="robots" content="noindex">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a class="logo" href="/">Yo Soy <span>Listo</span></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
+    </header>
+    <main id="profile" hidden>
+      <section class="card">
+        <h2>Mi perfil</h2>
+        <form id="rename-form" novalidate>
+          <label for="name">Nombre</label>
+          <input type="text" id="name" maxlength="20" autocomplete="nickname">
+          <button class="btn btn-secondary" type="submit">Cambiar nombre</button>
+          <p class="form-error" id="rename-error" hidden></p>
+          <p class="rank-msg" id="rename-ok" hidden>✓ Nombre cambiado</p>
+        </form>
+      </section>
+      <section class="card">
+        <h2>Estadísticas</h2>
+        <div class="stats-grid">
+          <div><span id="st-rating">1000</span><small>ELO de duelos</small></div>
+          <div><span id="st-blitz">0</span><small>Mejor Blitz</small></div>
+          <div><span id="st-duels">0</span><small>Duelos ganados / jugados</small></div>
+          <div><span id="st-rooms">0</span><small>Salas ganadas / jugadas</small></div>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Últimas partidas online</h2>
+        <ul class="history" id="history"></ul>
+        <p class="empty" id="history-empty" hidden>Todavía no has jugado online.</p>
+      </section>
+      <section class="card">
+        <p>Tu perfil se guarda solo en este navegador. Si borras los datos del navegador o cambias de móvil, empezarás con un perfil nuevo.</p>
+      </section>
+    </main>
+    <footer class="site-footer">© Yo Soy Listo · <a href="/privacidad">Privacidad</a></footer>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/profile.js"></script>
+</body>
+</html>

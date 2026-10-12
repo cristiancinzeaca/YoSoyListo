@@ -7,16 +7,15 @@
   <meta name="description" content="60 segundos, todas las preguntas que puedas. Juega al modo Blitz de Yo Soy Listo.">
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#1b1035">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <div class="container">
     <header class="site-header">
       <a class="logo" href="/">Yo Soy <span>Listo</span></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
     </header>
 
     <!-- Cuenta atrás -->
@@ -72,6 +71,7 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
   <script src="/js/blitz.js"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@
   "main": "core/server.js",
   "scripts": {
     "start": "node core/server.js",
-    "dev": "node --watch core/server.js",
+    "dev": "node --env-file=.env --watch core/server.js",
     "test": "node --test \"test/**/*.test.js\""
   },
   "engines": {

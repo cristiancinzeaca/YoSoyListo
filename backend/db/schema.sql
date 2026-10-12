@@ -75,6 +75,21 @@ create table if not exists players (
 
 create index if not exists players_rating_idx on players (rating desc) where duels_played > 0;
 
+-- Suma el resultado de una partida a las estadísticas del jugador (de forma atómica).
+create or replace function apply_player_result(
+  p_id uuid, p_rating int, p_duels int, p_duel_wins int, p_rooms int, p_room_wins int
+) returns void
+language sql as $$
+  update players set
+    rating = coalesce(p_rating, rating),
+    duels_played = duels_played + p_duels,
+    duels_won = duels_won + p_duel_wins,
+    rooms_played = rooms_played + p_rooms,
+    rooms_won = rooms_won + p_room_wins,
+    last_seen_at = now()
+  where id = p_id;
+$$;
+
 -- ---------------------------------------------------------------------
 -- Modo Blitz (partida individual de 60 segundos)
 -- ---------------------------------------------------------------------

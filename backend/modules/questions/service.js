@@ -76,3 +76,46 @@ async function categories() {
 }
 
 module.exports = { list, create, createMany, update, remove, categories };
+
+// ---------- Avisos de errores en preguntas ----------
+async function report(questionId, reason, playerId) {
+  const text = typeof reason === 'string' ? reason.trim() : '';
+  if (text.length < 2 || text.length > 300) throw httpError(400, 'Explica el error en 2-300 caracteres');
+  const { data: exists, error: qErr } = await getDb().from('questions').select('id').eq('id', questionId).maybeSingle();
+  if (qErr) throw dbError(qErr, 'questions.report.check');
+  if (!exists) throw httpError(404, 'Pregunta no encontrada');
+  const { error } = await getDb()
+    .from('question_reports')
+    .insert({ question_id: questionId, reason: text, player_id: playerId || null });
+  if (error) throw dbError(error, 'questions.report');
+}
+
+async function listReports() {
+  const { data: reports, error } = await getDb()
+    .from('question_reports')
+    .select('id, question_id, reason, created_at')
+    .order('created_at', { ascending: false })
+    .limit(300);
+  if (error) throw dbError(error, 'questions.listReports');
+  if (reports.length === 0) return [];
+  const ids = [...new Set(reports.map((r) => r.question_id))];
+  const { data: questions, error: qErr } = await getDb().from('questions').select('*').in('id', ids);
+  if (qErr) throw dbError(qErr, 'questions.listReports.questions');
+  const byId = new Map(questions.map((q) => [q.id, fromDb(q)]));
+  const grouped = new Map();
+  for (const r of reports) {
+    if (!byId.has(r.question_id)) continue;
+    if (!grouped.has(r.question_id)) grouped.set(r.question_id, { question: byId.get(r.question_id), reports: [] });
+    grouped.get(r.question_id).reports.push({ id: r.id, reason: r.reason, createdAt: r.created_at });
+  }
+  return [...grouped.values()];
+}
+
+async function clearReports(questionId) {
+  const { error } = await getDb().from('question_reports').delete().eq('question_id', questionId);
+  if (error) throw dbError(error, 'questions.clearReports');
+}
+
+module.exports.report = report;
+module.exports.listReports = listReports;
+module.exports.clearReports = clearReports;

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Partida online · Yo Soy Listo</title>
+  <meta name="description" content="Juega en tiempo real contra otros jugadores o con tus amigos en Yo Soy Listo.">
+  <meta property="og:title" content="¡Juega conmigo a Yo Soy Listo!">
+  <meta property="og:description" content="Entra en mi sala y a ver quién sabe más.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a class="logo" href="/">Yo Soy <span>Listo</span></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
+    </header>
+
+    <section id="s-connecting" class="center-screen">
+      <div class="spinner"></div>
+      <h1>Conectando…</h1>
+    </section>
+
+    <section id="s-queue" class="center-screen" hidden>
+      <div class="spinner"></div>
+      <h1>Buscando rival…</h1>
+      <p>Si en unos segundos no aparece nadie, jugarás contra un bot.</p>
+      <p><strong id="queue-time">0</strong> s</p>
+      <a class="btn btn-secondary" href="/" id="queue-cancel">Cancelar</a>
+    </section>
+
+    <section id="s-lobby" hidden>
+      <div class="card">
+        <p class="result-label">Código de la sala</p>
+        <div class="room-code" id="lobby-code"></div>
+        <button class="btn" type="button" id="share-btn">📨 Invitar amigos</button>
+        <p class="waiting-note" id="share-note" hidden></p>
+      </div>
+      <div class="card">
+        <h2>Jugadores <span class="hint" id="lobby-count"></span></h2>
+        <ul class="player-list" id="lobby-players"></ul>
+
+        <div id="host-controls" hidden>
+          <div class="field">
+            <label for="lobby-category">Categoría</label>
+            <select id="lobby-category"><option value="">Todas las categorías</option></select>
+          </div>
+          <div class="field">
+            <label>Preguntas</label>
+            <div class="seg" id="lobby-count-seg">
+              <button type="button" data-n="5">5</button>
+              <button type="button" data-n="10">10</button>
+              <button type="button" data-n="15">15</button>
+            </div>
+          </div>
+          <button class="btn btn-secondary" type="button" id="add-bot">🤖 Añadir bot</button>
+          <button class="btn" type="button" id="start-btn">Empezar partida</button>
+        </div>
+        <p class="waiting-note" id="guest-note" hidden>Esperando a que el anfitrión empiece la partida…</p>
+        <p class="waiting-note" id="lobby-settings"></p>
+      </div>
+      <button class="btn btn-secondary" type="button" id="leave-btn">Salir de la sala</button>
+    </section>
+
+    <section id="s-countdown" class="countdown" hidden></section>
+
+    <section id="s-game" hidden>
+      <div class="game-top">
+        <div class="progress" id="g-progress"></div>
+        <div class="stat"><small>Puntos</small><span id="g-score">0</span></div>
+      </div>
+      <div class="timer" aria-hidden="true"><div class="timer-bar" id="g-timer"></div></div>
+      <div class="strip" id="g-strip"></div>
+      <div class="question-card" id="g-card">
+        <div class="question-cat" id="g-cat"></div>
+        <div class="question-text" id="g-text" aria-live="polite"></div>
+        <div class="options" id="g-options"></div>
+        <div class="reveal-note" id="g-note" hidden></div>
+        <button class="link-btn" type="button" id="g-report" hidden>⚑ Avisar de un error en esta pregunta</button>
+      </div>
+    </section>
+
+    <section id="s-end" hidden>
+      <div class="card">
+        <h1 class="end-title" id="end-title"></h1>
+        <ol class="podium" id="end-ranking"></ol>
+        <div id="end-actions"></div>
+      </div>
+    </section>
+
+    <section id="s-fatal" class="center-screen" hidden>
+      <h1 id="fatal-title">Vaya…</h1>
+      <p id="fatal-text"></p>
+      <a class="btn" href="/">Volver al inicio</a>
+    </section>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/online.js"></script>
+</body>
+</html>

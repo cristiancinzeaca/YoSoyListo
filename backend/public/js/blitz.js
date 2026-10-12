@@ -128,6 +128,7 @@
     if (!res.correct) {
       buttons[optionIndex].classList.add('wrong');
       state.mistakes.push({
+        id: q.id,
         text: q.text,
         yours: q.options[optionIndex],
         right: q.options[res.correctIndex],
@@ -174,7 +175,7 @@
     $('result-answered').textContent = result.answeredCount;
     $('result-streak').textContent = result.bestStreak;
 
-    const lastName = storage.get('ysl:name');
+    const lastName = Player.data ? Player.data.name : storage.get('ysl:name');
     if (lastName) $('player-name').value = lastName;
     if (result.score === 0) $('name-form').hidden = true;
 
@@ -192,12 +193,18 @@
         right.className = 'right';
         right.textContent = `Correcta: ${m.right}`;
         li.append(q, yours, right);
+        const report = document.createElement('button');
+        report.type = 'button';
+        report.className = 'link-btn';
+        report.textContent = '⚑ Avisar de un error';
+        report.addEventListener('click', () => reportQuestion(m.id));
         if (m.explanation) {
           const expl = document.createElement('div');
           expl.className = 'expl';
           expl.textContent = m.explanation;
           li.appendChild(expl);
         }
+        li.appendChild(report);
         list.appendChild(li);
       }
       $('review-card').hidden = false;
@@ -217,7 +224,7 @@
     $('save-btn').disabled = true;
     try {
       const result = await api.post(`/api/blitz/${state.sessionId}/finish`, { name });
-      storage.set('ysl:name', result.playerName);
+      if (!Player.data) storage.set('ysl:name', result.playerName);
       $('name-form').hidden = true;
       $('rank-msg').textContent = `¡Guardado! Estás en el puesto ${result.rank} del ranking histórico.`;
       $('rank-msg').hidden = false;

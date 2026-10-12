@@ -3,69 +3,92 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Yo Soy Listo · Juego de preguntas de cultura general</title>
-  <meta name="description" content="Juego de preguntas de cultura general gratis. Responde todas las que puedas en 60 segundos, encadena rachas y entra en el ranking semanal.">
-  <meta property="og:title" content="Yo Soy Listo · ¿Cuántas preguntas aciertas en 60 segundos?">
-  <meta property="og:description" content="Trivial de cultura general gratis: geografía, historia, ciencia, arte y deportes.">
+  <title>Yo Soy Listo · Juego de preguntas de cultura general online</title>
+  <meta name="description" content="Juego de preguntas de cultura general gratis: Blitz de 60 segundos, duelos online contra otros jugadores y salas privadas para jugar con amigos.">
+  <meta property="og:title" content="Yo Soy Listo · ¿Eres listo de verdad?">
+  <meta property="og:description" content="Trivial online gratis: reta a otros jugadores o crea una sala con tus amigos.">
   <meta property="og:type" content="website">
+  <meta property="og:image" content="/icon.svg">
   <meta name="theme-color" content="#1b1035">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <div class="container">
     <header class="site-header">
       <a class="logo" href="/">Yo Soy <span>Listo</span></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
     </header>
 
     <main>
       <section class="hero">
         <h1>¿Eres <span>listo</span> de verdad?</h1>
-        <p>Preguntas de cultura general contra el reloj. Gratis, sin registro y desde el móvil.</p>
+        <p>Preguntas de cultura general contra el reloj y contra otros jugadores. Gratis, sin registro y desde el móvil.</p>
       </section>
 
-      <section class="card" aria-labelledby="blitz-title">
-        <span class="mode-badge">⚡ 60 segundos</span>
-        <h2 id="blitz-title">Modo Blitz</h2>
-        <p>Responde todas las preguntas que puedas en un minuto. Encadena aciertos para multiplicar tus puntos.</p>
-        <form id="play-form" action="/blitz" method="get">
-          <label for="category">Categoría</label>
-          <select id="category" name="cat">
-            <option value="">Todas las categorías</option>
-          </select>
-          <button class="btn" type="submit">¡Jugar!</button>
-        </form>
-      </section>
+      <div class="modes">
+        <section class="card" aria-labelledby="blitz-title">
+          <span class="mode-badge">⚡ Solo · 60 segundos</span>
+          <h2 id="blitz-title">Modo Blitz</h2>
+          <p>Responde todas las preguntas que puedas en un minuto. Las rachas multiplican tus puntos.</p>
+          <form id="play-form" action="/blitz" method="get">
+            <label for="category">Categoría</label>
+            <select id="category" name="cat">
+              <option value="">Todas las categorías</option>
+            </select>
+            <button class="btn" type="submit">¡Jugar!</button>
+          </form>
+        </section>
+
+        <section class="card" aria-labelledby="duel-title">
+          <span class="mode-badge online">🌐 Online · 1 contra 1</span>
+          <h2 id="duel-title">Duelo</h2>
+          <p>Te emparejamos con otro jugador: mismas preguntas, gana quien acierte más y más rápido. Suma puntos ELO para el ranking.</p>
+          <a class="btn" href="/duelo">Buscar rival</a>
+        </section>
+
+        <section class="card" aria-labelledby="room-title">
+          <span class="mode-badge friends">👥 Con amigos · hasta 8</span>
+          <h2 id="room-title">Sala privada</h2>
+          <p>Crea una sala, comparte el código y jugad todos a la vez desde vuestros móviles.</p>
+          <a class="btn" href="/sala?crear=1">Crear sala</a>
+          <p class="or">o únete con un código</p>
+          <form class="join-row" id="join-form" action="/sala" method="get">
+            <input type="text" name="c" id="join-code" maxlength="5" placeholder="CÓDIGO" autocomplete="off" aria-label="Código de la sala" required>
+            <button class="btn btn-secondary" type="submit">Entrar</button>
+          </form>
+        </section>
+      </div>
 
       <section class="card" aria-labelledby="ranking-title">
         <h2 id="ranking-title">🏆 Ranking</h2>
         <div class="tabs" role="tablist">
-          <button class="tab active" type="button" role="tab" data-period="week" aria-selected="true">Esta semana</button>
-          <button class="tab" type="button" role="tab" data-period="all" aria-selected="false">Histórico</button>
+          <button class="tab active" type="button" role="tab" data-board="week" aria-selected="true">Blitz semana</button>
+          <button class="tab" type="button" role="tab" data-board="all" aria-selected="false">Blitz histórico</button>
+          <button class="tab" type="button" role="tab" data-board="elo" aria-selected="false">Duelos</button>
         </div>
         <ol class="ranking" id="ranking"></ol>
-        <p class="empty" id="ranking-empty" hidden>Todavía no hay puntuaciones. ¡Sé el primero!</p>
+        <p class="empty" id="ranking-empty" hidden></p>
       </section>
 
       <section class="rules">
         <h2>Cómo se juega</h2>
         <ul>
-          <li>Tienes <strong>60 segundos</strong> para responder todas las preguntas que puedas.</li>
-          <li>Cada acierto vale <strong>10 puntos</strong>.</li>
-          <li>Con <strong>3 aciertos seguidos</strong> tus puntos valen el doble, y con 6 seguidos, el triple.</li>
-          <li>Un fallo rompe la racha, pero no resta puntos.</li>
-          <li>Al terminar, guarda tu nombre y entra en el ranking.</li>
+          <li><strong>Blitz:</strong> 60 segundos. Cada acierto vale 10 puntos; con 3 seguidos valen el doble y con 6, el triple.</li>
+          <li><strong>Duelo y salas:</strong> todos ven la misma pregunta a la vez y tienen 15 segundos. Acertar da entre 500 y 1000 puntos: cuanto más rápido, más puntos.</li>
+          <li><strong>Ranking de duelos:</strong> ganar a otro jugador sube tu ELO y perder lo baja. Los duelos contra bots no cuentan.</li>
+          <li>¿Has visto una pregunta con un error? Avísanos con el botón ⚑ al ver la respuesta.</li>
         </ul>
       </section>
     </main>
 
-    <footer class="site-footer">© Yo Soy Listo</footer>
+    <footer class="site-footer">© Yo Soy Listo · <a href="/privacidad">Privacidad</a></footer>
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
   <script src="/js/home.js"></script>
 </body>
 </html>

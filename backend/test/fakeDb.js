@@ -3,7 +3,7 @@
 const crypto = require('crypto');
 
 function createFakeDb() {
-  const tables = { questions: [], blitz_sessions: [] };
+  const tables = { questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [] };
 
   class Query {
     constructor(table) {
@@ -24,6 +24,7 @@ function createFakeDb() {
     eq(c, v) { this.filters.push((r) => r[c] === v); return this; }
     is(c, v) { this.filters.push((r) => (r[c] ?? null) === v); return this; }
     not(c, op, v) { this.filters.push((r) => (r[c] ?? null) !== v); return this; }
+    in(c, values) { this.filters.push((r) => values.includes(r[c])); return this; }
     gt(c, v) { this.filters.push((r) => r[c] > v); return this; }
     gte(c, v) { this.filters.push((r) => r[c] >= v); return this; }
     ilike(c, pattern) {
@@ -82,6 +83,10 @@ function createFakeDb() {
 
   function defaults(table) {
     if (table === 'questions') return { category: 'general', difficulty: 2, explanation: null, active: true };
+    if (table === 'players') {
+      return { rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0 };
+    }
+    if (table !== 'blitz_sessions') return {};
     return {
       answers: {}, score: 0, correct_count: 0, answered_count: 0, streak: 0, best_streak: 0,
       finished_at: null, player_name: null, category: null,
@@ -96,6 +101,17 @@ function createFakeDb() {
       if (name === 'random_questions') {
         const pool = active.filter((q) => !args.p_category || q.category === args.p_category);
         return { data: structuredClone(pool.slice(0, args.p_limit)), error: null };
+      }
+      if (name === 'apply_player_result') {
+        const p = tables.players.find((x) => x.id === args.p_id);
+        if (p) {
+          if (args.p_rating !== null && args.p_rating !== undefined) p.rating = args.p_rating;
+          p.duels_played += args.p_duels;
+          p.duels_won += args.p_duel_wins;
+          p.rooms_played += args.p_rooms;
+          p.rooms_won += args.p_room_wins;
+        }
+        return { data: null, error: null };
       }
       if (name === 'question_categories') {
         const counts = {};

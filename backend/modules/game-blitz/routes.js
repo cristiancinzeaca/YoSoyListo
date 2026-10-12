@@ -2,6 +2,7 @@ const express = require('express');
 const { isUuid, httpError } = require('../../core/http');
 const { rateLimit } = require('../../core/rateLimit');
 const { BLITZ } = require('./logic');
+const { optionalPlayer } = require('../players/auth');
 const service = require('./service');
 
 const router = express.Router();
@@ -25,8 +26,8 @@ router.get('/leaderboard', async (req, res) => {
   res.json({ period, entries: await service.leaderboard({ period, limit: req.query.limit }) });
 });
 
-router.post('/start', rateLimit({ windowMs: 60_000, max: 20 }), async (req, res) => {
-  res.status(201).json(await service.start({ category: req.body?.category }));
+router.post('/start', rateLimit({ windowMs: 60_000, max: 20 }), optionalPlayer, async (req, res) => {
+  res.status(201).json(await service.start({ category: req.body?.category, playerId: req.player?.id }));
 });
 
 router.post('/:id/answer', rateLimit({ windowMs: 60_000, max: 300 }), async (req, res) => {

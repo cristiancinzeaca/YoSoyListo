@@ -21,29 +21,37 @@
     }
   }
 
-  async function loadRanking(period) {
+  function row(rank, name, value) {
+    const li = document.createElement('li');
+    const pos = document.createElement('span');
+    pos.className = 'pos';
+    pos.textContent = rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : rank;
+    const n = document.createElement('span');
+    n.className = 'name';
+    n.textContent = name;
+    const pts = document.createElement('span');
+    pts.className = 'pts';
+    pts.textContent = value;
+    li.append(pos, n, pts);
+    return li;
+  }
+
+  async function loadRanking(board) {
     rankingList.textContent = '';
     rankingEmpty.hidden = true;
     try {
-      const { entries } = await api.get(`/api/blitz/leaderboard?period=${period}`);
-      if (entries.length === 0) {
-        rankingEmpty.hidden = false;
-        return;
+      let rows;
+      if (board === 'elo') {
+        const { entries } = await api.get('/api/players/leaderboard');
+        rows = entries.map((e) => row(e.rank, e.name, `${e.rating} ELO`));
+        rankingEmpty.textContent = 'Todavía nadie ha jugado un duelo. ¡Estrénalo!';
+      } else {
+        const { entries } = await api.get(`/api/blitz/leaderboard?period=${board}`);
+        rows = entries.map((e) => row(e.rank, e.name, `${e.score} pts`));
+        rankingEmpty.textContent = 'Todavía no hay puntuaciones. ¡Sé el primero!';
       }
-      for (const e of entries) {
-        const li = document.createElement('li');
-        const pos = document.createElement('span');
-        pos.className = 'pos';
-        pos.textContent = e.rank <= 3 ? ['🥇', '🥈', '🥉'][e.rank - 1] : e.rank;
-        const name = document.createElement('span');
-        name.className = 'name';
-        name.textContent = e.name;
-        const pts = document.createElement('span');
-        pts.className = 'pts';
-        pts.textContent = `${e.score} pts`;
-        li.append(pos, name, pts);
-        rankingList.appendChild(li);
-      }
+      rankingList.append(...rows);
+      rankingEmpty.hidden = rows.length > 0;
     } catch {
       rankingEmpty.textContent = 'No se ha podido cargar el ranking.';
       rankingEmpty.hidden = false;
@@ -56,12 +64,17 @@
         t.classList.toggle('active', t === tab);
         t.setAttribute('aria-selected', String(t === tab));
       });
-      loadRanking(tab.dataset.period);
+      loadRanking(tab.dataset.board);
     });
   });
 
   document.getElementById('play-form').addEventListener('submit', () => {
     storage.set('ysl:category', select.value);
+  });
+
+  const joinCode = document.getElementById('join-code');
+  joinCode.addEventListener('input', () => {
+    joinCode.value = joinCode.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   });
 
   loadCategories();

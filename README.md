@@ -1,86 +1,115 @@
-# Yo Soy Listo — Configuración inicial
+# Yo Soy Listo
 
-Sigue estos pasos EN ORDEN. Todo se puede hacer desde el móvil.
+Juego de preguntas de cultura general en español, pensado para el móvil:
 
-## 1. Subir este código a GitHub
+- **Blitz** (solo): 60 segundos, rachas que multiplican puntos, ranking semanal e histórico.
+- **Duelo online** (1 contra 1): emparejamiento automático con otro jugador; si nadie aparece en 12 segundos, juegas contra un bot. Ranking ELO.
+- **Sala privada** (hasta 8): creas una sala, compartes el código o el enlace y jugáis todos a la vez. Se pueden añadir bots.
+- **Perfil sin registro**: solo un nombre. Estadísticas, historial de partidas y ELO.
+- **Avisos de errores**: los jugadores marcan preguntas incorrectas y tú las revisas en el panel.
+- **Panel de administración** en `/admin/`: añadir, editar, borrar e importar preguntas en bloque.
 
-1. Entra en github.com (con tu cuenta ya creada)
-2. Botón verde "New" (nuevo repositorio)
-3. Nombre: `yosoylisto` → Create repository
-4. Dentro del repo vacío, usa "uploading an existing file"
-5. Sube TODOS los archivos y carpetas de este proyecto (backend/, admin/, README.md), manteniendo la misma estructura de carpetas
-6. Commit changes
+Todo funciona con un solo servidor (Railway) y una base de datos (Supabase), ambos con plan gratuito para empezar.
 
-(Si el código ya está en GitHub, salta este paso.)
+---
 
-## 2. Crear la base de datos en Supabase
+## Ponerlo online (paso a paso, se puede hacer desde el móvil)
 
-1. Entra en supabase.com → New project
-2. Ponle nombre "yosoylisto", elige una contraseña para la base de datos (guárdala)
-3. Región: elige una en Europa (más rápido para España)
-4. Espera 1-2 minutos a que se cree el proyecto
-5. Ve a "SQL Editor" (menú lateral)
-6. Ejecuta estos dos archivos, uno detrás de otro y en este orden (para cada uno: "New query", copia y pega el contenido completo y pulsa "Run"):
-   1. `backend/db/schema.sql` — crea todas las tablas
-   2. `backend/db/seed.sql` — añade 53 preguntas de ejemplo para poder jugar ya (opcional)
+### 1. Base de datos en Supabase
 
-## 3. Obtener las claves de Supabase
-
-1. Dentro de tu proyecto Supabase → Settings (engranaje) → API
-2. Copia dos valores, los necesitarás en el paso 4:
+1. Entra en [supabase.com](https://supabase.com) → **New project**
+2. Nombre `yosoylisto`, inventa una contraseña para la base de datos (guárdala) y elige una región de **Europa**
+3. Espera 1-2 minutos a que se cree
+4. Menú lateral → **SQL Editor** → **New query**. Copia y pega **todo** el contenido de [`backend/db/schema.sql`](backend/db/schema.sql) y pulsa **Run**
+5. Otra **New query** con [`backend/db/seed.sql`](backend/db/seed.sql) → **Run** (53 preguntas de ejemplo para poder jugar ya)
+6. **Project Settings** (engranaje) → **API**. Copia:
    - **Project URL** (algo como `https://xxxxx.supabase.co`)
-   - **service_role key** (en la sección "Project API keys" — NO la "anon" key, la "service_role")
+   - la clave **service_role** (¡no la `anon`!). Es secreta: no la pegues en ningún sitio público.
 
-## 4. Desplegar el backend en Railway
+Los dos archivos SQL se pueden volver a ejecutar sin problema (no borran ni duplican nada). Cuando haya cambios en la base de datos en el futuro, basta con ejecutar de nuevo `schema.sql`.
 
-1. Entra en railway.app → New Project
-2. "Deploy from GitHub repo" → autoriza acceso a GitHub si te lo pide → elige el repo `yosoylisto`
-3. Railway detectará que hay una carpeta `backend/` — si pregunta el "root directory", pon `backend`
-4. Ve a la pestaña "Variables" del proyecto en Railway y añade:
-   - `SUPABASE_URL` = (el Project URL del paso 3)
-   - `SUPABASE_SERVICE_KEY` = (la service_role key del paso 3)
-   - `ADMIN_KEY` = una contraseña larga inventada por ti (protege el panel de administración; no la compartas)
-5. Railway hará el deploy automáticamente. Cuando termine, en "Settings" → "Networking" → "Generate Domain" para obtener una URL pública (algo como `yosoylisto-backend.up.railway.app`)
+### 2. Servidor en Railway
 
-## 5. Comprobar que funciona
+1. Entra en [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo** → elige `yosoylisto`
+2. En el servicio → **Settings** → **Root Directory**: `backend`
+3. Pestaña **Variables** → añade:
+   - `SUPABASE_URL` = la Project URL
+   - `SUPABASE_SERVICE_KEY` = la clave service_role
+   - `ADMIN_KEY` = una contraseña larga inventada por ti (para el panel de administración)
+4. **Settings** → **Networking** → **Generate Domain**. Esa es la dirección de tu juego (algo como `yosoylisto.up.railway.app`)
+5. Deja **1 sola réplica** (es lo que viene por defecto): las partidas online viven en la memoria del servidor
+6. (Recomendado) **Settings** → **Deploy** → **Healthcheck Path**: `/health`. Así Railway no cambia a una versión nueva hasta que esté funcionando
 
-Abre en el navegador: `https://TU-URL-DE-RAILWAY.up.railway.app/health`
+Railway vuelve a desplegar solo cada vez que cambia la rama principal en GitHub.
 
-Deberías ver: `{"status":"ok","service":"yosoylisto-backend"}`
+### 3. Comprobar que funciona
 
-Si ves esto, el backend está funcionando.
+- `https://TU-DOMINIO/health` → debe responder `{"status":"ok","service":"yosoylisto-backend"}`
+- `https://TU-DOMINIO/` → la web del juego. Prueba un Blitz y un duelo (si estás solo, a los 12 segundos te toca un bot)
+- `https://TU-DOMINIO/admin/` → pon tu `ADMIN_KEY` y pulsa **Guardar**. Debe aparecer «✓ Conectado»
 
-Ahora abre la URL base (`https://TU-URL-DE-RAILWAY.up.railway.app/`): esa es la web del juego. Pulsa "¡Jugar!" para probar el modo Blitz.
+### 4. Antes de anunciarlo
 
-## 6. Conectar el panel de administración
+- [ ] Cambia el texto de contacto en `backend/public/privacidad.html` (busca `TODO`) por tu email
+- [ ] Carga muchas más preguntas (ver abajo). Con pocas se repiten enseguida
+- [ ] (Opcional) Dominio propio: en Railway → **Settings** → **Networking** → **Custom Domain**. Después añade la variable `PUBLIC_URL=https://tudominio.es`
+- [ ] (Opcional) Da de alta el dominio en [Google Search Console](https://search.google.com/search-console) y envía `https://tudominio.es/sitemap.xml`
 
-1. Abre `https://TU-URL-DE-RAILWAY.up.railway.app/admin/` (también funciona abriendo el archivo `backend/public/admin/index.html`)
-2. En el campo "URL del backend" arriba del todo, pega tu URL de Railway (sin `/health` al final, solo la URL base)
-3. En "Clave de administrador" pon el mismo valor que `ADMIN_KEY` en Railway y pulsa "Guardar". Debe aparecer "✓ Conectado"
-4. Ya puedes añadir, editar, borrar o importar preguntas (en JSON, hasta 500 de golpe)
+---
 
-## Qué es cada carpeta
+## Añadir preguntas
 
-- `backend/core/` — servidor principal, conexión a la base de datos, seguridad. No tocar salvo que sepas lo que haces.
-- `backend/modules/questions/` — preguntas: tabla, validación, API del panel de administración y preguntas de ejemplo
-- `backend/modules/game-blitz/` — modo Blitz: partida individual de 60 segundos con rachas y ranking
-- `backend/public/` — la web que ven los jugadores (portada, juego y ranking)
-- `backend/test/` — pruebas automáticas (`npm test` dentro de `backend/`)
-- `backend/public/admin/` — panel de administración (una sola página HTML)
+En `/admin/` → **Importar varias preguntas (JSON)**, pega una lista con este formato (hasta 500 cada vez):
 
-## Cómo funciona el modo Blitz
+```json
+[
+  {
+    "text": "¿Cuál es la capital de Francia?",
+    "options": ["París", "Roma", "Berlín", "Madrid"],
+    "correctIndex": 0,
+    "category": "geografia",
+    "difficulty": 1,
+    "explanation": "París es la capital de Francia desde el siglo X."
+  }
+]
+```
 
-- 60 segundos para responder todas las preguntas que puedas (hasta 40 por partida)
-- Cada acierto vale 10 puntos; con 3 aciertos seguidos valen x2 y con 6 seguidos, x3
-- Un fallo rompe la racha pero no resta puntos
-- El servidor comprueba las respuestas y el tiempo: el navegador nunca recibe la respuesta correcta antes de contestar, así que no se puede hacer trampa mirando el código
-- Al terminar, el jugador puede guardar su nombre y entrar en el ranking (semanal e histórico)
-- Al final se muestran las preguntas falladas con la respuesta correcta (y la explicación, si la pregunta tiene una)
+- `correctIndex`: posición de la respuesta correcta, empezando en 0
+- `category`: `geografia`, `historia`, `ciencia`, `arte`, `deportes`, `general` (o una nueva: aparecerá sola en los selectores)
+- `difficulty`: 1 fácil, 2 media, 3 difícil
+- `explanation`: opcional; se muestra al jugador cuando falla
 
-## Próximos pasos
+---
 
-- Más preguntas (lo más importante para que el juego no se repita)
-- `auth` — cuentas de jugador
-- `economy` — monedas y recompensas
-- Modos multijugador (necesitarán matchmaking y WebSockets)
-- SEO: páginas indexables por categoría y por pregunta, sitemap
+## Para desarrolladores
+
+```bash
+cd backend
+npm install
+npm test          # 22 pruebas: preguntas, Blitz, perfiles, duelos, salas, reconexión
+cp .env.example .env   # rellena las variables
+npm run dev       # http://localhost:3000
+```
+
+### Estructura
+
+- `backend/core/` — servidor HTTP, seguridad (cabeceras, límites de peticiones), conexión a Supabase
+- `backend/db/` — `schema.sql` (todas las tablas) y `seed.sql` (preguntas de ejemplo)
+- `backend/modules/questions/` — preguntas, categorías y avisos de errores
+- `backend/modules/game-blitz/` — modo Blitz
+- `backend/modules/players/` — perfiles de invitado (nombre + token guardado en el navegador)
+- `backend/modules/multiplayer/` — partidas en tiempo real por WebSocket (`/ws`): emparejamiento, salas, bots, ELO
+- `backend/public/` — la web (HTML, CSS y JavaScript sin compilación) y el panel `admin/`
+- `backend/test/` — pruebas automáticas
+
+### Seguridad
+
+- La clave service_role solo vive en el servidor; todas las tablas tienen RLS activado sin políticas, así que la clave pública no puede leer nada
+- El navegador nunca recibe la respuesta correcta antes de contestar; el tiempo y la puntuación los calcula el servidor
+- Límites de peticiones por IP y de mensajes por conexión, cabeceras de seguridad (CSP) y fuentes alojadas en el propio servidor (sin Google Fonts)
+
+### Próximas ideas
+
+- Páginas por categoría indexables para SEO
+- Retos diarios y logros
+- Cuentas con email para no perder el perfil al cambiar de móvil
