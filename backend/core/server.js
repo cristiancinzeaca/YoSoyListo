@@ -5,6 +5,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const { errorHandler } = require('./http');
+const { getDb } = require('./db');
+const { migrate } = require('./migrate');
 const questionsRoutes = require('../modules/questions/routes');
 const blitzRoutes = require('../modules/game-blitz/routes');
 const playersRoutes = require('../modules/players/routes');
@@ -110,14 +112,27 @@ function createServer(deps) {
 }
 
 if (require.main === module) {
-  for (const name of ['SUPABASE_URL', 'SUPABASE_SERVICE_KEY', 'ADMIN_KEY']) {
-    if (!process.env[name]) console.warn(`⚠️  Falta la variable de entorno ${name}`);
+  if (!process.env.ADMIN_KEY) console.warn('⚠️  Falta la variable ADMIN_KEY: el panel de administración no funcionará');
+  if (!process.env.DATABASE_URL && !(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)) {
+    console.warn('⚠️  Falta la base de datos: añade DATABASE_URL (o SUPABASE_URL y SUPABASE_SERVICE_KEY)');
   }
   const port = Number(process.env.PORT) || 3000;
   const server = createServer();
-  server.listen(port, () => {
-    console.log(`Yo Soy Listo escuchando en el puerto ${port}`);
-  });
+
+  (async () => {
+    // Con PostgreSQL directo, las tablas y las preguntas se crean solas al arrancar.
+    if (process.env.DATABASE_URL) {
+      try {
+        const total = await migrate(getDb().pool);
+        console.log(`Base de datos lista: ${total} preguntas`);
+      } catch (err) {
+        console.error('❌ No se pudo preparar la base de datos:', err.message);
+      }
+    }
+    server.listen(port, () => {
+      console.log(`Yo Soy Listo escuchando en el puerto ${port}`);
+    });
+  })();
 
   // Railway manda SIGTERM al desplegar una versión nueva: cerramos con orden.
   const shutdown = (signal) => {
