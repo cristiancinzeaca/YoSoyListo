@@ -105,6 +105,9 @@ async function ownerRow(countryId) {
 
 async function buy(playerId, countryId) {
   const c = country(countryId);
+  const { data: me, error: meErr } = await getDb().from('players').select('xp').eq('id', playerId).maybeSingle();
+  if (meErr) throw dbError(meErr, 'countries.buy.level');
+  heroes.requireUnlock(me ? me.xp : 0, 'comprar_paises', 'Comprar países');
   const { data, error } = await getDb().rpc('buy_country', { p_id: playerId, p_country: c.id, p_price: c.price });
   if (error) throw dbError(error, 'countries.buy');
   const row = data && data[0];

@@ -246,7 +246,9 @@
       body.appendChild(list(state.lobby, 'Aún no hay mensajes. ¡Rompe el hielo!'));
       note.textContent = 'Sé amable. No compartas datos personales. Toca un mensaje para reportarlo o bloquear.';
       note.hidden = false;
-      setComposer(!muted, muted ? 'No puedes escribir ahora' : 'Mensaje para todos…');
+      const lvl = (Player.data && Player.data.level) || 1;
+      if (lvl < 2) setComposer(false, '🔒 Podrás escribir aquí desde el nivel 2');
+      else setComposer(!muted, muted ? 'No puedes escribir ahora' : 'Mensaje para todos…');
     } else if (state.tab === 'dm' && state.thread) {
       renderThread();
     } else {

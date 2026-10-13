@@ -172,10 +172,15 @@
 
       if (!c.owner) {
         card.appendChild(el('p', '', `Nadie lo tiene todavía. Te daría ${fmt(Math.floor(c.price * 0.05))} monedas al día.`));
-        const b = el('button', 'btn', `Comprar por ${fmt(c.price)}`);
-        b.type = 'button';
-        b.addEventListener('click', () => buy(c, b, close));
-        card.appendChild(b);
+        const level = (Player.data && Player.data.level) || 1;
+        if (level < 5) {
+          card.appendChild(el('p', 'muted', `🔒 Podrás comprar países desde el nivel 5 (tienes el ${level}). ¡Juega partidas para subir!`));
+        } else {
+          const b = el('button', 'btn', `Comprar por ${fmt(c.price)}`);
+          b.type = 'button';
+          b.addEventListener('click', () => buy(c, b, close));
+          card.appendChild(b);
+        }
       } else if (c.owner.id === meId) {
         card.appendChild(el('p', '', `Es tuyo. Te da ${fmt(mine ? mine.dailyIncome : Math.floor(c.value * 0.05))} monedas al día.`));
         const study = el('button', 'btn btn-secondary', '📖 Estudiar y elegir defensa');

@@ -142,7 +142,7 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Două conturi nu pot avea același nume; se compară fără majuscule, accente și separatori („Cristián” = „cristian” = „Cris-tian”). Coloana `players.name_key` (index unic) o calculează serverul (`nameKey` în `modules/players/names.js`).
 - La intrarea cu Google, dacă numele e ocupat, primește un număr: „Lucía”, „lucia2”, „Lucía3”…
 - Jucătorii vechi cu nume repetate se separă singuri la pornire (`fillNameKeys` în `core/migrate.js`): cel mai vechi păstrează numele.
-- Schimbarea numelui costă **100 monede** (`COINS.rename`); doar majuscule/accente = gratis. Atomic în SQL (`rename_player`). În profil se verifică pe loc dacă numele e liber (`GET /api/players/name-check`).
+- **Prima schimbare de nume e gratuită**; următoarele costă **100 monede** (`COINS.rename`); doar majuscule/accente = gratis. Atomic în SQL (`rename_player`). În profil se verifică pe loc dacă numele e liber (`GET /api/players/name-check`).
 
 ## 5e. Chat (ramura `chat`)
 
@@ -158,7 +158,7 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - **Eroul** (pagina `/heroe`): rasă (om, elf, pitic, orc) × clasă (războinic, mag, explorator) × sex = 24 de portrete în `public/img/heroes/<rasa>-<clasa>-<h|m>.webp` (generate cu ChatGPT, tăiate din 4 planșe). Conturile noi sunt duse la crearea eroului după login („Más tarde” sare peste). Prima creare e gratuită; schimbarea rasei/clasei/sexului costă 300 de monede (păstrează nivelul și echipamentul).
 - **Echipament doar vizual** (nu dă avantaj la întrebări), deblocat pe niveluri: armură → rama portretului; armă → aura; emblemă → insigna; stindard → fundalul cărții; titlu → textul de sub nume. Fiecare piesă adaugă „putere” (poder) = nivel·20 + puterea pieselor.
 - Rivalii văd eroul: în lista din sală, în ecranul „cara a cara” (VS) dinaintea duelului/sălii, la începutul Conquistei, în bara de scor și în clasamentul final. Boții primesc un erou aleator (nivel 1–15). La final apare „+XP”, iar la nivel nou, confetti și piesele deblocate.
-- `UNLOCKS` din catalog e locul pentru opțiunile de joc care se vor debloca pe niveluri (deocamdată gol).
+- **Deblocări pe nivel** (`UNLOCKS` în catalog, verificate pe server cu `heroes.requireUnlock`): nivel 2 → scrii în chatul General; nivel 3 → mesaje private; nivel 5 → cumperi țări. Chatul din partidă e liber.
 
 ## 5g. Data nașterii și modul +18 „Conquista en pareja” (ramura `mas18`)
 

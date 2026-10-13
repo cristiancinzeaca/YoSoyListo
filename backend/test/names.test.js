@@ -61,7 +61,15 @@ test('cambiar de nombre cuesta 100 y no puede repetir otro', async () => {
   assert.equal((await call('PATCH', '/api/players/me', { name: 'pepe' }, juan.token)).status, 409);
   assert.equal(row(juan.player.id).coins, 250, 'no cobra si falla');
 
-  // Libre: cuesta 100.
+  // El primer cambio es gratis.
+  const free = (await call('GET', '/api/players/name-check?name=Juanín', undefined, juan.token)).body;
+  assert.equal(free.cost, 0);
+  assert.equal(free.firstFree, true);
+  const first = await call('PATCH', '/api/players/me', { name: 'Juanín' }, juan.token);
+  assert.equal(first.body.coins, 250);
+  assert.equal(first.body.freeRename, false);
+
+  // Los siguientes cuestan 100.
   assert.equal((await call('GET', '/api/players/name-check?name=Juanito', undefined, juan.token)).body.cost, 100);
   const ok = await call('PATCH', '/api/players/me', { name: 'Juanito' }, juan.token);
   assert.equal(ok.status, 200);
@@ -74,7 +82,8 @@ test('cambiar de nombre cuesta 100 y no puede repetir otro', async () => {
   const caps = await call('PATCH', '/api/players/me', { name: 'JUANITO' }, juan.token);
   assert.equal(caps.body.coins, 150);
 
-  // Sin monedas suficientes.
+  // Sin monedas suficientes (ya gastó su cambio gratis).
+  row(pepe.player.id).free_rename_used = true;
   row(pepe.player.id).coins = 50;
   const poor = await call('PATCH', '/api/players/me', { name: 'Pepito' }, pepe.token);
   assert.equal(poor.status, 409);

@@ -7,7 +7,7 @@ const heroes = require('../heroes/service');
 const age = require('./age');
 
 const PUBLIC_FIELDS =
-  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, password_hash, email_verified, coins, avatar, xp, hero, campaign, birthdate, birthday_gift_year';
+  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, password_hash, email_verified, coins, avatar, xp, hero, campaign, birthdate, birthday_gift_year, free_rename_used';
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -32,6 +32,7 @@ function toPublic(row) {
     ...heroes.summary(row),
     // La fecha no sale nunca del servidor: solo si ya la puso y si es mayor de edad.
     birthdateSet: !!row.birthdate,
+    freeRename: !row.free_rename_used,
     adult: row.birthdate ? age.ageOn(row.birthdate) >= age.ADULT_AGE : false,
   };
 }
@@ -104,7 +105,8 @@ async function checkName(name, player) {
   const { value, error } = validatePlayerName(name);
   if (error) return { available: false, error };
   if (await nameTaken(value, player.id)) return { available: false, error: 'Ese nombre ya lo tiene otro jugador' };
-  return { available: true, name: value, cost: nameKey(value) === nameKey(player.name) ? 0 : COINS.rename };
+  const cost = nameKey(value) === nameKey(player.name) || player.freeRename ? 0 : COINS.rename;
+  return { available: true, name: value, cost, firstFree: cost === 0 && player.freeRename && nameKey(value) !== nameKey(player.name) };
 }
 
 const randomFreeAvatar = () => FREE_AVATARS[crypto.randomInt(FREE_AVATARS.length)];
