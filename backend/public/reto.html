@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Reto diario · Yo Soy Listo</title>
+  <meta name="description" content="10 preguntas de cultura general al día, las mismas para todos. ¿Cuántas aciertas tú? Mantén tu racha y sube en la clasificación.">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a class="logo" href="/" aria-label="Yo Soy Listo · Inicio"><img src="/img/logo.webp" alt="Yo Soy Listo" width="900" height="580"></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
+    </header>
+    <main>
+      <section class="card reto-head">
+        <div>
+          <h1>📅 Reto diario</h1>
+          <p id="r-date"></p>
+        </div>
+        <div class="reto-streak" id="r-streak">
+          <span class="reto-flame">🔥</span>
+          <strong id="r-streak-n">0</strong>
+          <small id="r-streak-txt">días</small>
+        </div>
+      </section>
+
+      <section class="card reto-intro" id="r-intro" hidden>
+        <h2>10 preguntas. Las mismas para todos. Una oportunidad.</h2>
+        <ul class="reto-rules">
+          <li>⏱️ 15 segundos por pregunta: cuanto antes aciertes, más puntos.</li>
+          <li>🔥 Juega cada día para mantener tu racha (premios a los 7, 30 y 100 días).</li>
+          <li>🏆 Compara tu resultado con el de todos los jugadores de hoy.</li>
+        </ul>
+        <button class="btn" type="button" id="r-start">¡Empezar el reto!</button>
+      </section>
+
+      <section class="card reto-play" id="r-play" hidden>
+        <div class="reto-progress" id="r-progress"></div>
+        <div class="timer"><div class="timer-bar" id="r-timer"></div></div>
+        <div class="question-cat" id="r-cat"></div>
+        <h2 class="question-text" id="r-q"></h2>
+        <div class="options" id="r-options"></div>
+        <p class="reto-score">Puntos: <strong id="r-score">0</strong></p>
+      </section>
+
+      <section class="card reto-result" id="r-result" hidden>
+        <h2 id="r-res-title"></h2>
+        <div class="reto-grid" id="r-grid"></div>
+        <div class="reto-stats">
+          <div><strong id="r-res-score">0</strong><small>puntos</small></div>
+          <div><strong id="r-res-correct">0/10</strong><small>aciertos</small></div>
+          <div><strong id="r-res-rank">#1</strong><small>puesto de hoy</small></div>
+        </div>
+        <p class="reto-rewards" id="r-rewards" hidden></p>
+        <div id="r-xp"></div>
+        <button class="btn" type="button" id="r-share">📤 Compartir mi resultado</button>
+        <p class="reto-next" id="r-next"></p>
+      </section>
+
+      <section class="card">
+        <h2 class="ribbon">🏆 Clasificación de hoy</h2>
+        <ol class="ranking reto-board" id="r-board"></ol>
+        <p class="empty" id="r-board-empty" hidden>Todavía nadie ha jugado hoy. ¡Sé el primero!</p>
+      </section>
+    </main>
+    <footer class="site-footer">© Yo Soy Listo · <a href="/privacidad">Privacidad</a></footer>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+
+  <script src="/js/fx.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/chat.js"></script>
+  <script src="/js/hero.js"></script>
+  <script src="/js/reto.js"></script>
+</body>
+</html>
