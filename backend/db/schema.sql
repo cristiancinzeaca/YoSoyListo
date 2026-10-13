@@ -624,3 +624,50 @@ begin
   return query select bal;
 end;
 $$;
+
+-- ---------- Campaña «Las Crónicas de Sapiencia» ----------
+-- players.campaign = { done: [ids de escenas/combates superados], items: [piezas ganadas] }
+alter table players add column if not exists campaign jsonb not null default '{}'::jsonb;
+
+create table if not exists campaign_runs (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null references players (id) on delete cascade,
+  node text not null,
+  questions jsonb not null,
+  current int not null default 0,
+  hearts int not null,
+  enemy_hp int not null,
+  deadline timestamptz not null,
+  status text not null default 'active' check (status in ('active', 'won', 'lost')),
+  created_at timestamptz not null default now()
+);
+create index if not exists campaign_runs_player_idx on campaign_runs (player_id, created_at desc);
+alter table campaign_runs enable row level security;
+
+-- Marca un nodo como superado y añade piezas (sin duplicados). Devuelve si era la primera vez.
+create or replace function campaign_complete(p_id uuid, p_node text, p_items text[])
+returns table (first_time boolean)
+language plpgsql as $$
+declare
+  c jsonb;
+  done jsonb;
+  items jsonb;
+begin
+  select campaign into c from players where id = p_id for update;
+  if not found then return; end if;
+  done := coalesce(c->'done', '[]'::jsonb);
+  items := coalesce(c->'items', '[]'::jsonb);
+  if done ? p_node then
+    return query select false;
+    return;
+  end if;
+  done := done || to_jsonb(p_node);
+  if p_items is not null then
+    for i in 1 .. coalesce(array_length(p_items, 1), 0) loop
+      if not items ? p_items[i] then items := items || to_jsonb(p_items[i]); end if;
+    end loop;
+  end if;
+  update players set campaign = jsonb_build_object('done', done, 'items', items) where id = p_id;
+  return query select true;
+end;
+$$;

@@ -7,7 +7,7 @@ const heroes = require('../heroes/service');
 const age = require('./age');
 
 const PUBLIC_FIELDS =
-  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, coins, avatar, xp, hero, birthdate, birthday_gift_year';
+  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, coins, avatar, xp, hero, campaign, birthdate, birthday_gift_year';
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');

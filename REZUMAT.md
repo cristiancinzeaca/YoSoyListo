@@ -168,6 +168,15 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Se poate juca: **privat cu cod/link** (pentru partener), **cu altă persoană +18** (coadă; după 15 s intră un bot) sau, din așteptarea privată, **contra unui bot**. Serverul verifică `adult` la fiecare intrare. Cardul de pe prima pagină se vede doar pentru adulți. La prima intrare apare un avertisment de conținut explicit.
 - Partidele se salvează cu `mode = 'conquista18'`, dau monede și XP, dar nu contează în clasamentul Conquista normal.
 
+## 5h. Campania „Las Crónicas de Sapiencia” (ramura `lore`)
+
+- Pagina `/campana` (card pe prima pagină). Poveste epică cu umor: lumea **Sapiencia**, unde cunoașterea e magie; răul e **El Olvido**, o ceață care mănâncă amintirile. Ghid: **Maestro Ulula** (bufnița din mascote). Textele sunt în `modules/campaign/story.js` (ușor de editat; `{nombre}` = numele jucătorului).
+- Structură: **prolog pe rasă** (Alejandría Nueva · Bosque de las Mil Páginas · Forja de la Memoria · Estepas del Tambor), apoi **5 capitole comune** (Gran Biblioteca → Mar de la Duda → Ruinas del Tiempo → Torre de los Mil Inventos → Corazón del Olvido). Prologurile celorlalte rase se deschid ca „extra” după al tău. Fiecare capitol: scene → luptă → scenă → luptă → boss → final.
+- Fiecare capitol folosește o categorie de întrebări (general, arte, ciencia, deportes, geografía, historia; finalul le amestecă).
+- **Luptă**: 3 inimi contra vieții inamicului (3–6 la lupte, 5–10 la boși); 15 s pe întrebare; după fiecare răspuns se arată răspunsul corect. Totul se verifică pe server (`campaign_runs`).
+- **Recompense la prima victorie**: luptă +30 XP +10 monede; boss +120 XP +50 monede + o piesă exclusivă de campanie (titluri pe rasă, stindard „Biblioteca”, aura „Marea”, emblema ⏳, armura mecanică); boss-ul final +400 XP +300 monede + aura „Filo del Olvido” și titlul „Vencedor del Olvido”. Progresul e în `players.campaign`.
+- Imagini (ChatGPT): 9 boși, 9 scene de capitol, 4 „Desmemoriados” în `public/img/lore/`.
+
 ## 6. Alte idei în așteptare
 
 - **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).

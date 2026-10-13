@@ -6,7 +6,7 @@ function createFakeDb() {
   const tables = {
     questions: [], numeric_questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [],
     player_sessions: [], player_items: [], coin_ledger: [], country_owners: [], country_attacks: [],
-    chat_messages: [], chat_reports: [], chat_blocks: [], chat_reads: [],
+    chat_messages: [], chat_reports: [], chat_blocks: [], chat_reads: [], campaign_runs: [],
   };
 
   class Query {
@@ -98,12 +98,13 @@ function createFakeDb() {
 
   function defaults(table) {
     if (table === 'chat_messages') return { recipient_id: null, hidden: false };
+    if (table === 'campaign_runs') return { current: 0, status: 'active' };
     if (table === 'chat_reports') return { resolved: false };
     if (table === 'questions') return { category: 'general', difficulty: 2, explanation: null, active: true };
     if (table === 'players') {
       return {
         rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0, conquista_played: 0, conquista_won: 0,
-        token_hash: null, google_sub: null, email: null, coins: 0, avatar: null, xp: 0, hero: null, birthdate: null, birthday_gift_year: null,
+        token_hash: null, google_sub: null, email: null, coins: 0, avatar: null, xp: 0, hero: null, campaign: {}, birthdate: null, birthday_gift_year: null,
       };
     }
     if (table === 'country_owners') {
@@ -243,6 +244,16 @@ function createFakeDb() {
         p.birthday_gift_year = args.p_year;
         ledger(p.id, args.p_amount, 'gift:birthday');
         return { data: [{ balance: p.coins }], error: null };
+      }
+      if (name === 'campaign_complete') {
+        const p = player(args.p_id);
+        if (!p) return { data: [], error: null };
+        const c = p.campaign || {};
+        const done = c.done || [];
+        const items = c.items || [];
+        if (done.includes(args.p_node)) return { data: [{ first_time: false }], error: null };
+        p.campaign = { done: [...done, args.p_node], items: [...items, ...(args.p_items || []).filter((i) => !items.includes(i))] };
+        return { data: [{ first_time: true }], error: null };
       }
       if (name === 'add_xp') {
         const p = player(args.p_id);
