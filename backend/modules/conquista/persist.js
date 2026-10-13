@@ -19,7 +19,7 @@ async function saveConquista(game, ranking) {
   const { data: match, error } = await db
     .from('matches')
     .insert({
-      mode: 'conquista',
+      mode: game.variant === 'x18' ? 'conquista18' : 'conquista',
       category: null,
       question_count: 0,
       vs_bot: ranking.some((r) => r.isBot),
@@ -45,7 +45,8 @@ async function saveConquista(game, ranking) {
   if (mpErr) throw dbError(mpErr, 'conquista.save.players');
 
   const winners = ranking.filter((r) => r.position === 1);
-  await Promise.all(
+  // Las partidas +18 no cuentan para el ranking de Conquista.
+  if (game.variant !== 'x18') await Promise.all(
     humans.map(async (h) => {
       const won = winners.length === 1 && winners[0].playerId === h.playerId ? 1 : 0;
       const { error: e } = await db.rpc('apply_conquista_result', { p_id: h.playerId, p_won: won });

@@ -177,7 +177,7 @@ language sql as $$
 $$;
 
 alter table matches drop constraint if exists matches_mode_check;
-alter table matches add constraint matches_mode_check check (mode in ('duel', 'room', 'conquista'));
+alter table matches add constraint matches_mode_check check (mode in ('duel', 'room', 'conquista', 'conquista18'));
 
 -- ---------------------------------------------------------------------
 -- Cuentas con Google, monedas y tienda
@@ -603,4 +603,24 @@ create or replace function add_xp(p_id uuid, p_amount int)
 returns table (xp int)
 language sql as $$
   update players set xp = players.xp + greatest(p_amount, 0) where id = p_id returning players.xp;
+$$;
+
+-- ---------- Fecha de nacimiento (obligatoria) y regalo de cumpleaños ----------
+alter table players add column if not exists birthdate date;
+alter table players add column if not exists birthday_gift_year int;
+
+-- Regalo de cumpleaños: una sola vez por año.
+create or replace function birthday_gift(p_id uuid, p_year int, p_amount int)
+returns table (balance int)
+language plpgsql as $$
+declare
+  bal int;
+begin
+  update players set coins = coins + p_amount, birthday_gift_year = p_year
+    where id = p_id and (birthday_gift_year is null or birthday_gift_year < p_year)
+    returning coins into bal;
+  if not found then return; end if;
+  insert into coin_ledger (player_id, amount, reason) values (p_id, p_amount, 'gift:birthday');
+  return query select bal;
+end;
 $$;

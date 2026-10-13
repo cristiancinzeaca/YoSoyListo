@@ -1,7 +1,14 @@
 (function () {
   const $ = (id) => document.getElementById(id);
   const SVG = 'http://www.w3.org/2000/svg';
-  const SCREENS = ['s-connecting', 's-queue', 's-game', 's-end', 's-fatal'];
+  const SCREENS = ['s-connecting', 's-x18-gate', 's-x18-warn', 's-x18-menu', 's-x18-wait', 's-queue', 's-game', 's-end', 's-fatal'];
+  // /pareja = Conquista para 2 con preguntas +18.
+  const VARIANT = location.pathname.startsWith('/pareja') ? 'x18' : 'normal';
+  const params = new URLSearchParams(location.search);
+  if (VARIANT === 'x18') {
+    document.body.classList.add('x18');
+    document.title = 'Conquista en pareja (+18) · Yo Soy Listo';
+  }
 
   const state = { me: null, s: null, phase: 'connecting', introDone: false, map: null, deadline: 0, duration: 1 };
 
@@ -135,7 +142,9 @@
   function onMessage(msg) {
     if (msg.t === 'welcome') return onWelcome(msg);
     if (msg.t === 'cq_queued') return onQueued(msg);
+    if (msg.t === 'cq_private') return onPrivate(msg);
     if (msg.t === 'cq_state') return onState(msg);
+    if ((msg.t === 'queue_cancelled' || msg.t === 'left') && VARIANT === 'x18') return x18Menu();
     if (msg.t === 'queue_cancelled' || msg.t === 'left') return (location.href = '/');
     if (msg.t === 'chat') return window.Chat && Chat.match.receive(msg.message);
     if (msg.t === 'helper') return onHelper(msg);
@@ -148,6 +157,8 @@
       if (msg.code === 'replaced') return fatal('Partida abierta en otra pestaña', 'Sigue jugando en la otra pestaña o dispositivo.');
       if (msg.code === 'auth') return;
       banner(msg.message, true);
+      // Código equivocado o caducado: de vuelta al menú del modo +18.
+      if (VARIANT === 'x18' && state.shown === 's-connecting' && state.me) show('s-x18-menu');
     }
   }
 
@@ -165,21 +176,96 @@
       return;
     }
     state.introDone = true;
+    if (VARIANT === 'x18') return x18Start(msg.player);
     socket.send({ t: 'cq_queue' });
+  }
+
+  // ---------- modo +18 ----------
+  const X18_OK = 'ysl:x18-ok';
+  function x18Start(player) {
+    if (!player.adult) {
+      state.phase = 'gate';
+      return show('s-x18-gate');
+    }
+    if (storage.get(X18_OK) !== '1') {
+      state.phase = 'menu';
+      return show('s-x18-warn');
+    }
+    x18Menu();
+  }
+  function x18Menu() {
+    state.phase = 'menu';
+    const code = params.get('c');
+    if (code) {
+      params.delete('c');
+      history.replaceState(null, '', '/pareja');
+      state.phase = 'queue';
+      show('s-connecting');
+      return socket.send({ t: 'cq_join', code });
+    }
+    show('s-x18-menu');
+  }
+  if (VARIANT === 'x18') {
+    $('x18-accept').addEventListener('click', () => {
+      storage.set(X18_OK, '1');
+      x18Menu();
+    });
+    $('x18-private').addEventListener('click', () => socket.send({ t: 'cq_private', variant: 'x18' }));
+    $('x18-random').addEventListener('click', () => {
+      state.phase = 'queue';
+      show('s-queue');
+      socket.send({ t: 'cq_queue', variant: 'x18' });
+    });
+    $('x18-join').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = $('x18-code').value.trim().toUpperCase();
+      if (code) socket.send({ t: 'cq_join', code });
+    });
+    $('x18-code').addEventListener('input', () => {
+      $('x18-code').value = $('x18-code').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+    $('x18-bot').addEventListener('click', () => socket.send({ t: 'cq_private_bot' }));
+    $('x18-cancel').addEventListener('click', () => {
+      socket.send({ t: 'cq_cancel' });
+    });
+    $('x18-share').addEventListener('click', async () => {
+      const url = `${location.origin}/pareja?c=${state.privateCode}`;
+      const text = '¿Te atreves a conquistarme? 😏 Juega conmigo a Conquista en pareja (+18) en Yo Soy Listo:';
+      try {
+        if (navigator.share) await navigator.share({ title: 'Conquista en pareja', text, url });
+        else {
+          await navigator.clipboard.writeText(`${text} ${url}`);
+          banner('Enlace copiado: pégalo en WhatsApp');
+        }
+      } catch {
+        // compartir cancelado
+      }
+    });
+  }
+  function onPrivate(msg) {
+    state.phase = 'queue';
+    state.privateCode = msg.code;
+    $('x18-mycode').textContent = msg.code;
+    show('s-x18-wait');
   }
 
   function onQueued(msg) {
     state.phase = 'queue';
     show('s-queue');
     $('q-waiting').textContent = msg.waiting;
+    $('q-needed').textContent = msg.needed || 3;
     const secs = msg.startsInMs !== null ? Math.ceil(msg.startsInMs / 1000) : null;
     $('q-bots').textContent = secs
       ? `Si en ${secs} s no aparece nadie más, completaremos la partida con bots.`
       : 'Si no aparece nadie, completaremos la partida con bots.';
   }
 
-  $('q-cancel').addEventListener('click', () => socket.send({ t: 'cq_cancel' }));
+  $('q-cancel').addEventListener('click', (e) => {
+    e.preventDefault();
+    socket.send({ t: 'cq_cancel' });
+  });
   $('end-again').addEventListener('click', () => {
+    if (VARIANT === 'x18') return x18Menu();
     state.phase = 'queue';
     show('s-queue');
     socket.send({ t: 'cq_queue' });

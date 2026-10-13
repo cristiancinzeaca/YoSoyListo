@@ -103,7 +103,7 @@ function createFakeDb() {
     if (table === 'players') {
       return {
         rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0, conquista_played: 0, conquista_won: 0,
-        token_hash: null, google_sub: null, email: null, coins: 0, avatar: null, xp: 0, hero: null,
+        token_hash: null, google_sub: null, email: null, coins: 0, avatar: null, xp: 0, hero: null, birthdate: null, birthday_gift_year: null,
       };
     }
     if (table === 'country_owners') {
@@ -235,6 +235,14 @@ function createFakeDb() {
         p.name_key = args.p_key;
         if (cost) ledger(p.id, -cost, 'rename');
         return { data: [{ ok: true, reason: null, cost, coins_left: p.coins }], error: null };
+      }
+      if (name === 'birthday_gift') {
+        const p = player(args.p_id);
+        if (!p || (p.birthday_gift_year && p.birthday_gift_year >= args.p_year)) return { data: [], error: null };
+        p.coins += args.p_amount;
+        p.birthday_gift_year = args.p_year;
+        ledger(p.id, args.p_amount, 'gift:birthday');
+        return { data: [{ balance: p.coins }], error: null };
       }
       if (name === 'add_xp') {
         const p = player(args.p_id);

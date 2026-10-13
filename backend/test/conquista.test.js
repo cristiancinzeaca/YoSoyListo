@@ -209,3 +209,77 @@ test('tres personas en cola empiezan juntas sin bots', async () => {
   const winners = final.result.ranking.filter((r) => r.position === 1).map((r) => r.name);
   assert.ok(winners.length >= 1);
 });
+
+// Cliente sencillo: responde cualquier cosa (sirve para las preguntas +18, que no siguen el patrón «Pregunta n»).
+function simpleClient(token, onWelcome) {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(`ws://${base}/ws`);
+    const seen = { phases: new Set(), msgs: [] };
+    let lastKey = '';
+    ws.on('open', () => ws.send(JSON.stringify({ t: 'hello', token })));
+    ws.on('message', (raw) => {
+      const m = JSON.parse(raw);
+      seen.msgs.push(m);
+      if (m.t === 'welcome') onWelcome(ws, seen);
+      if (m.t === 'error') {
+        ws.close();
+        return resolve({ error: m.message, seen });
+      }
+      if (m.t !== 'cq_state') return;
+      seen.phases.add(m.phase);
+      if (m.phase === 'end') {
+        ws.close();
+        return resolve({ final: m, seen });
+      }
+      const mine = m.participants.includes(m.you) && m.myAnswer === null;
+      const key = `${m.phase}:${m.round}:${m.question?.text}:${m.picker}:${(m.options || []).length}`;
+      if (!mine || key === lastKey) return;
+      lastKey = key;
+      if (m.phase.endsWith('_pick')) ws.send(JSON.stringify({ t: 'cq_pick', region: m.options[0] }));
+      if (m.phase === 'bat_question') ws.send(JSON.stringify({ t: 'cq_choice', option: 0 }));
+      if (m.phase === 'exp_question' || m.phase === 'bat_tiebreak') ws.send(JSON.stringify({ t: 'cq_guess', value: 10 }));
+    });
+    ws.on('error', reject);
+  });
+}
+
+const makeAdult = (id) => (db.tables.players.find((p) => p.id === id).birthdate = '1990-01-01');
+
+test('modo +18: solo mayores de edad', async () => {
+  const teen = await newPlayer('Menor');
+  const r = await simpleClient(teen.token, (ws) => ws.send(JSON.stringify({ t: 'cq_queue', variant: 'x18' })));
+  assert.match(r.error, /mayores de edad/);
+});
+
+test('modo +18: partida privada en pareja con preguntas +18', async () => {
+  const a = await newPlayer('Pareja A');
+  const b = await newPlayer('Pareja B');
+  makeAdult(a.player.id);
+  makeAdult(b.player.id);
+  const before = db.tables.players.find((p) => p.id === a.player.id).conquista_played;
+  let code;
+  const host = simpleClient(a.token, (ws, seen) => {
+    ws.send(JSON.stringify({ t: 'cq_private', variant: 'x18' }));
+    const wait = setInterval(() => {
+      const m = seen.msgs.find((x) => x.t === 'cq_private');
+      if (m) {
+        clearInterval(wait);
+        code = m.code;
+      }
+    }, 5);
+  });
+  while (!code) await new Promise((r) => setTimeout(r, 10));
+  const guest = simpleClient(b.token, (ws) => ws.send(JSON.stringify({ t: 'cq_join', code })));
+  const [ra, rb] = await Promise.all([host, guest]);
+  assert.ok(ra.final && rb.final, ra.error || rb.error);
+  assert.equal(ra.final.code, rb.final.code);
+  assert.equal(ra.final.variant, 'x18');
+  assert.equal(ra.final.players.length, 2);
+  assert.equal(ra.final.players.filter((p) => p.isBot).length, 0);
+  const asked = ra.seen.msgs.filter((m) => m.t === 'cq_state' && m.question).map((m) => m.question.text);
+  const { CHOICE, NUMERIC } = require('../modules/adult/questions');
+  const bank = new Set([...CHOICE, ...NUMERIC].map((q) => q.text));
+  assert.ok(asked.length > 0 && asked.every((t) => bank.has(t)), 'solo preguntas +18');
+  assert.ok(db.tables.matches.some((m) => m.mode === 'conquista18'));
+  assert.equal(db.tables.players.find((p) => p.id === a.player.id).conquista_played, before, 'no cuenta en el ranking normal');
+});
