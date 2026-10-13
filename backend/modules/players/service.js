@@ -4,9 +4,10 @@ const { httpError } = require('../../core/http');
 const { validatePlayerName, nameKey, numberedName } = require('./names');
 const { FREE_AVATARS, COINS, AVATARS } = require('../shop/catalog');
 const heroes = require('../heroes/service');
+const age = require('./age');
 
 const PUBLIC_FIELDS =
-  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, coins, avatar, xp, hero';
+  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, coins, avatar, xp, hero, birthdate, birthday_gift_year';
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -29,6 +30,9 @@ function toPublic(row) {
     avatar: row.avatar && AVATARS[row.avatar] ? row.avatar : null,
     // Héroe, nivel y poder (lo que ven los rivales).
     ...heroes.summary(row),
+    // La fecha no sale nunca del servidor: solo si ya la puso y si es mayor de edad.
+    birthdateSet: !!row.birthdate,
+    adult: row.birthdate ? age.ageOn(row.birthdate) >= age.ADULT_AGE : false,
   };
 }
 
@@ -153,6 +157,42 @@ async function loginWithGoogle(identity, guestToken, { onCreated } = {}) {
   return { player: await findById(playerId), token, created };
 }
 
+// Fecha de nacimiento: obligatoria, se pone una sola vez. Menores de 14 años no pueden tener cuenta.
+async function setBirthdate(playerId, text) {
+  const parsed = age.parseDate(text);
+  if (!parsed) throw httpError(400, 'Fecha no válida');
+  const years = age.ageOn(text);
+  if (years === null || years < 0 || years > 120) throw httpError(400, 'Fecha no válida');
+  const db = getDb();
+  const { data: row, error } = await db.from('players').select('id, birthdate').eq('id', playerId).maybeSingle();
+  if (error) throw dbError(error, 'players.birthdate.load');
+  if (!row) throw httpError(404, 'Jugador no encontrado');
+  if (row.birthdate) throw httpError(409, 'Tu fecha de nacimiento ya está guardada. Si es un error, escríbenos.');
+  if (years < age.MIN_AGE) {
+    // No se guardan datos de menores de 14: se borra la cuenta.
+    const { error: delErr } = await db.from('players').delete().eq('id', playerId);
+    if (delErr) throw dbError(delErr, 'players.birthdate.minor');
+    throw httpError(403, `Lo sentimos: para tener cuenta en Yo Soy Listo hay que tener al menos ${age.MIN_AGE} años.`);
+  }
+  const { error: upErr } = await db.from('players').update({ birthdate: text }).eq('id', playerId).is('birthdate', null).select('id');
+  if (upErr) throw dbError(upErr, 'players.birthdate.save');
+  return { ...(await findById(playerId)), ...(await birthdayGift(playerId)) };
+}
+
+// Si hoy es su cumpleaños y aún no ha recibido el regalo de este año, se lo da.
+async function birthdayGift(playerId) {
+  const { data: row, error } = await getDb().from('players').select('birthdate, birthday_gift_year').eq('id', playerId).maybeSingle();
+  if (error || !row || !row.birthdate || !age.isBirthday(row.birthdate)) return {};
+  const year = Number(age.today().slice(0, 4));
+  if (row.birthday_gift_year >= year) return {};
+  const { data, error: gErr } = await getDb().rpc('birthday_gift', { p_id: playerId, p_year: year, p_amount: age.BIRTHDAY_GIFT });
+  if (gErr) {
+    console.error('[cumpleaños]', gErr.message);
+    return {};
+  }
+  return data && data[0] ? { birthdayGift: age.BIRTHDAY_GIFT, coins: data[0].balance } : {};
+}
+
 // Cambiar de nombre: cuesta COINS.rename (gratis si solo cambian mayúsculas o acentos).
 async function rename(playerId, name) {
   const { value, error } = validatePlayerName(name);
@@ -216,7 +256,9 @@ async function profile(player) {
     });
   }
 
-  return { ...player, bestBlitz: best.data[0]?.score ?? 0, recentMatches: matches };
+  // Regalo de cumpleaños (si toca hoy).
+  const gift = await birthdayGift(player.id);
+  return { ...player, ...gift, bestBlitz: best.data[0]?.score ?? 0, recentMatches: matches };
 }
 
 async function conquistaLeaderboard(limit) {
@@ -252,4 +294,4 @@ async function leaderboard(limit = 20, mode = 'duel') {
   }));
 }
 
-module.exports = { checkName, findByToken, findById, rename, profile, leaderboard, hashToken, loginWithGoogle, createSession, logout };
+module.exports = { setBirthdate, birthdayGift, checkName, findByToken, findById, rename, profile, leaderboard, hashToken, loginWithGoogle, createSession, logout };

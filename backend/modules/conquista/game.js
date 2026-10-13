@@ -41,9 +41,11 @@ function gaussian() {
 // Partida del modo Conquista (estilo Honfoglaló / Conquistador) para 3 jugadores.
 // Igual que Room, no sabe nada de WebSockets ni de la base de datos.
 class ConquistaGame {
-  constructor({ code, players, send, loadNumeric, loadChoice, allyQuestion = null, onFinished, onEmpty }) {
+  constructor({ code, players, send, loadNumeric, loadChoice, allyQuestion = null, onFinished, onEmpty, variant = 'normal', battleRounds = CQ.battleRounds }) {
     this.code = code;
     this.mode = 'conquista';
+    this.variant = variant; // 'normal' (3 jugadores) o 'x18' (2 jugadores, preguntas +18)
+    this.rounds = battleRounds;
     this.send = send;
     this.loadNumeric = loadNumeric;
     this.loadChoice = loadChoice;
@@ -129,7 +131,8 @@ class ConquistaGame {
       you: playerId,
       phase: this.phase,
       round: this.round,
-      rounds: CQ.battleRounds,
+      rounds: this.rounds,
+      variant: this.variant,
       players: this.players.map((p) => ({
         id: p.id,
         name: p.name,
@@ -340,7 +343,7 @@ class ConquistaGame {
     try {
       await this.intro();
       while (REGIONS.some((r) => this.owner[r] === null)) await this.expansionRound();
-      for (this.round = 1; this.round <= CQ.battleRounds; this.round++) {
+      for (this.round = 1; this.round <= this.rounds; this.round++) {
         const order = this.players.map((_, i) => this.players[(i + this.round - 1) % this.players.length]);
         for (const attacker of order) {
           if (this.active().length < 2) break;
@@ -428,7 +431,7 @@ class ConquistaGame {
     if (targets.length === 0) targets = REGIONS.filter(enemy);
     if (targets.length === 0) return;
 
-    this.event = `Ronda ${this.round} de ${CQ.battleRounds}: ataca ${attacker.name}`;
+    this.event = `Ronda ${this.round} de ${this.rounds}: ataca ${attacker.name}`;
     const target = await this.pickRegion('bat_pick', attacker.id, targets, () => {}, { attackerId: attacker.id });
     const defender = this.player(this.owner[target]);
     const attack = { attackerId: attacker.id, defenderId: defender.id, region: target };

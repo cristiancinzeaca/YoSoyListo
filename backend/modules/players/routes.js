@@ -19,6 +19,10 @@ router.get('/name-check', requirePlayer, rateLimit({ windowMs: 60_000, max: 60 }
   res.json(await service.checkName(String(req.query.name || ''), req.player));
 });
 
+router.post('/birthdate', requirePlayer, rateLimit({ windowMs: 60 * 60_000, max: 10 }), async (req, res) => {
+  res.json(await service.setBirthdate(req.player.id, req.body?.date));
+});
+
 router.get('/me', requirePlayer, async (req, res) => {
   res.json(await service.profile(req.player));
 });

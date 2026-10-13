@@ -113,6 +113,9 @@
       box.append(Hero.portrait(me.hero, { level: me.level, size: 'sm' }), txt, mk('span', 'go', '→'));
     }
     box.hidden = false;
+    // El modo +18 solo se muestra a los mayores de edad.
+    const x18 = document.getElementById('x18-banner');
+    if (x18) x18.hidden = !me.adult;
   }
 
   loadCategories();

@@ -160,6 +160,14 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Rivalii văd eroul: în lista din sală, în ecranul „cara a cara” (VS) dinaintea duelului/sălii, la începutul Conquistei, în bara de scor și în clasamentul final. Boții primesc un erou aleator (nivel 1–15). La final apare „+XP”, iar la nivel nou, confetti și piesele deblocate.
 - `UNLOCKS` din catalog e locul pentru opțiunile de joc care se vor debloca pe niveluri (deocamdată gol).
 
+## 5g. Data nașterii și modul +18 „Conquista en pareja” (ramura `mas18`)
+
+- **Data nașterii e obligatorie** (pagina `/edad`, cerută pe orice pagină cât timp lipsește). Se pune o singură dată și nu se mai poate schimba (doar din baza de date, la cerere). Nu pleacă niciodată de pe server: clientul primește doar `birthdateSet` și `adult`. **Sub 14 ani contul se șterge** (în Spania e nevoie de acordul părinților sub 14). Codul: `modules/players/age.js`.
+- **Cadou de ziua ta: 500 de monede**, o dată pe an, când intră în ziua lui (`birthday_gift` în SQL; cei născuți pe 29 februarie îl primesc pe 28 în anii nebisecți).
+- **Modul +18** la `/pareja` (nu apare în sitemap și e blocat în robots): Conquista pe harta Spaniei pentru **2 jucători** (4 runde de atac), doar cu întrebări +18 din `db/adult/choice.json` (~177) și `db/adult/numeric.json` (50) — anatomie, sex, sănătate sexuală, reproducere, istorie, curiozități. Nu se amestecă niciodată cu modurile normale.
+- Se poate juca: **privat cu cod/link** (pentru partener), **cu altă persoană +18** (coadă; după 15 s intră un bot) sau, din așteptarea privată, **contra unui bot**. Serverul verifică `adult` la fiecare intrare. Cardul de pe prima pagină se vede doar pentru adulți. La prima intrare apare un avertisment de conținut explicit.
+- Partidele se salvează cu `mode = 'conquista18'`, dau monede și XP, dar nu contează în clasamentul Conquista normal.
+
 ## 6. Alte idei în așteptare
 
 - **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).

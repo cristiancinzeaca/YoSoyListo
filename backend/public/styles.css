@@ -1041,3 +1041,30 @@ html.chat-open, html.chat-open body { overflow: hidden; }
 .hero-banner .go { font-size: 1.4rem; font-weight: 900; color: #ffe58a; }
 .hero-go { width: 100%; margin: 12px 0 0; }
 .hero-vs { position: relative; z-index: 2; }
+
+/* ---------- Fecha de nacimiento ---------- */
+.age-card { text-align: center; }
+.age-cake { font-size: 3.4rem; line-height: 1; margin: 4px 0 8px; }
+.age-row { display: grid; grid-template-columns: 1fr 1.6fr 1.2fr; gap: 8px; margin: 18px 0; }
+.age-row label { display: flex; flex-direction: column; gap: 4px; font-weight: 800; font-size: 0.85rem; text-align: left; }
+.age-row select { padding: 12px 8px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); background: rgba(10,4,25,0.5); color: var(--text-light); font: inherit; font-size: 1rem; }
+.age-card .btn { width: 100%; margin-top: 8px; }
+.age-big { font-size: 1.4rem; font-weight: 900; color: #ffe58a; }
+.age-warn { opacity: 0.8; font-weight: 700; }
+.small-note { font-size: 0.85rem; opacity: 0.7; }
+.birthday-pop { position: fixed; z-index: 90; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 10px; align-items: center; padding: 24px 18px; border-radius: 22px; background: linear-gradient(160deg, #4a2f92, #24164d); border: 2px solid #ffe58a; box-shadow: 0 20px 60px rgba(0,0,0,0.6); text-align: center; color: var(--text-light); }
+.birthday-pop strong { font-size: 1.5rem; }
+.birthday-pop .btn { width: 100%; }
+
+/* ---------- Modo +18 ---------- */
+.x18-badge { display: inline-grid; place-items: center; width: 74px; height: 74px; margin: 0 auto 10px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff6b8b, #b4123a); color: #fff; font-weight: 900; font-size: 1.6rem; border: 3px solid #ffd1dc; box-shadow: 0 0 24px rgba(255,80,120,0.55); }
+.x18-badge.small { width: 46px; height: 46px; font-size: 1rem; margin: 0; flex: 0 0 auto; border-width: 2px; }
+.x18-banner { background: linear-gradient(160deg, #7a1335, #2a0b1e); border-color: rgba(255,120,160,0.6); }
+body.x18 { background: radial-gradient(circle at 20% 0%, #4a1030, #1b1035 60%); }
+body.x18 .center-screen .btn { width: min(100%, 360px); margin: 6px auto; display: block; }
+.x18-small { font-size: 0.85rem; opacity: 0.8; }
+.x18-join { display: flex; gap: 8px; width: min(100%, 360px); margin: 14px auto 0; }
+.x18-join input { flex: 1; min-width: 0; padding: 12px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); background: rgba(10,4,25,0.5); color: var(--text-light); font: inherit; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; text-align: center; }
+.x18-join .btn { width: auto !important; margin: 0 !important; }
+.x18-code { margin: 10px auto 16px; font-size: 2.6rem; font-weight: 900; letter-spacing: 0.3em; color: #ffd1dc; text-shadow: 0 0 18px rgba(255,80,120,0.6); }
+.small-note a { color: #ffe58a; }

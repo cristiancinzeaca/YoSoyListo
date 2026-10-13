@@ -78,7 +78,7 @@ function createApp() {
 
   app.get('/robots.txt', (req, res) => {
     res.type('text/plain').send(
-      ['User-agent: *', 'Disallow: /admin/', 'Disallow: /api/', 'Disallow: /auth/', '', `Sitemap: ${baseUrl(req)}/sitemap.xml`, ''].join('\n')
+      ['User-agent: *', 'Disallow: /admin/', 'Disallow: /api/', 'Disallow: /pareja', 'Disallow: /auth/', '', `Sitemap: ${baseUrl(req)}/sitemap.xml`, ''].join('\n')
     );
   });
 
@@ -91,7 +91,7 @@ function createApp() {
   });
 
   // Duelos y salas usan la misma página; el código de sala va en ?c=XXXXX.
-  app.get('/conquista', (req, res) => {
+  app.get(['/conquista', '/pareja'], (req, res) => {
     res.set('Cache-Control', 'no-cache').sendFile(path.join(PUBLIC_DIR, 'conquista.html'));
   });
 

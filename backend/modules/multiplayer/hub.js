@@ -12,6 +12,7 @@ const cqPersist = require('../conquista/persist');
 const shop = require('../shop/service');
 const countries = require('../countries/service');
 const chat = require('../chat/service');
+const adultQuestions = require('../adult/questions');
 
 function shuffleList(list) {
   const a = [...list];
@@ -41,16 +42,19 @@ function attachMultiplayer(server, deps = {}) {
   const allyQuestion = deps.allyQuestion || countries.allyQuestion;
   const postMatchChat = deps.postMatchChat || chat.postMatch;
   const reloadPlayer = deps.reloadPlayer || players.findById;
+  const loadNumeric18 = deps.loadNumeric18 || adultQuestions.loadNumeric;
+  const loadChoice18 = deps.loadChoice18 || adultQuestions.loadChoice;
   // Antes de entrar en una partida se recargan sus datos (nivel, héroe, nombre) por si han cambiado.
-  const FRESH_BEFORE = new Set(['queue', 'create_room', 'join_room', 'cq_queue']);
+  const FRESH_BEFORE = new Set(['queue', 'create_room', 'join_room', 'cq_queue', 'cq_private', 'cq_join']);
 
   const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 4096 });
   const clients = new Map(); // playerId → conexión
   const membership = new Map(); // playerId → código de sala
   const rooms = new Map(); // código → Room
   const queue = new Map(); // playerId → { since, botTimer }
-  const cqQueue = new Map(); // playerId → desde cuándo espera una partida de Conquista
-  let cqTimer = null;
+  const cqQueues = { normal: new Map(), x18: new Map() }; // playerId → desde cuándo espera
+  const cqTimers = { normal: null, x18: null };
+  const privateCq = new Map(); // código → { variant, hostId } (partidas privadas esperando al invitado)
   const ipCounts = new Map();
 
   // ---------- envío ----------
@@ -112,17 +116,36 @@ function attachMultiplayer(server, deps = {}) {
   }
 
   // ---------- duelos ----------
-  // ---------- Conquista (3 jugadores) ----------
-  function cqQueueStatus() {
-    const startsInMs = cqTimer ? Math.max(0, cqTimer.at - Date.now()) : null;
-    for (const id of cqQueue.keys()) send(id, { t: 'cq_queued', waiting: cqQueue.size, needed: CQ.players, startsInMs });
+  // ---------- Conquista (normal: 3 jugadores · x18: 2 jugadores, preguntas +18) ----------
+  const CQ_VARIANTS = {
+    normal: { players: CQ.players, prefix: 'C', loadNumeric, loadChoice, allyQuestion, rounds: CQ.battleRounds, adult: false },
+    x18: {
+      players: 2,
+      prefix: 'X',
+      loadNumeric: loadNumeric18,
+      loadChoice: loadChoice18,
+      allyQuestion: null,
+      rounds: CQ.battleRounds + 1,
+      adult: true,
+    },
+  };
+  const variantOf = (v) => (Object.prototype.hasOwnProperty.call(CQ_VARIANTS, v) ? v : 'normal');
+
+  function requireAdult(player, variant) {
+    if (!CQ_VARIANTS[variant].adult) return;
+    if (!player.adult) throw new GameError('El modo +18 es solo para mayores de edad');
   }
 
-  async function startConquista() {
-    clearTimeout(cqTimer?.handle);
-    cqTimer = null;
-    const ids = [...cqQueue.keys()].filter((id) => clients.has(id)).slice(0, CQ.players);
-    for (const id of ids) cqQueue.delete(id);
+  function cqQueueStatus(variant) {
+    const timer = cqTimers[variant];
+    const startsInMs = timer ? Math.max(0, timer.at - Date.now()) : null;
+    const q = cqQueues[variant];
+    for (const id of q.keys()) send(id, { t: 'cq_queued', variant, waiting: q.size, needed: CQ_VARIANTS[variant].players, startsInMs });
+  }
+
+  // Empieza una partida con estos jugadores (se completa con bots si faltan).
+  async function launchConquista(variant, ids, { privateGame = false } = {}) {
+    const cfg = CQ_VARIANTS[variant];
     if (ids.length === 0) return;
     if (rooms.size >= config.maxRooms) {
       for (const id of ids) send(id, { t: 'error', message: 'El servidor está lleno, inténtalo en un rato' });
@@ -130,59 +153,108 @@ function attachMultiplayer(server, deps = {}) {
     }
     // Países de cada jugador (para usarlos como aliados al atacar).
     let owned = {};
-    try {
-      owned = await loadOwned(ids);
-    } catch (err) {
-      console.error('[conquista] países', err.context || '', err.cause || err);
+    if (cfg.allyQuestion) {
+      try {
+        owned = await loadOwned(ids);
+      } catch (err) {
+        console.error('[conquista] países', err.context || '', err.cause || err);
+      }
     }
     const participants = ids.filter((id) => clients.has(id)).map((id) => ({ ...clients.get(id).player, countries: owned[id] || [] }));
     if (participants.length === 0) return;
     const taken = participants.map((p) => p.name);
-    while (participants.length < CQ.players) {
+    while (participants.length < cfg.players) {
       const bot = createBot(taken);
       taken.push(bot.name);
       participants.push(bot);
     }
     const game = new ConquistaGame({
-      code: newCode('C'),
+      code: newCode(cfg.prefix),
       players: shuffleList(participants),
       send,
-      loadNumeric,
-      loadChoice,
-      allyQuestion,
+      loadNumeric: cfg.loadNumeric,
+      loadChoice: cfg.loadChoice,
+      allyQuestion: cfg.allyQuestion,
       onFinished: saveConquista,
       onEmpty,
+      variant,
+      battleRounds: cfg.rounds,
     });
+    game.privateGame = privateGame;
     rooms.set(game.code, game);
     for (const id of ids) membership.set(id, game.code);
     game.run();
+  }
+
+  async function startConquista(variant = 'normal') {
+    clearTimeout(cqTimers[variant]?.handle);
+    cqTimers[variant] = null;
+    const q = cqQueues[variant];
+    const ids = [...q.keys()].filter((id) => clients.has(id)).slice(0, CQ_VARIANTS[variant].players);
+    for (const id of ids) q.delete(id);
+    await launchConquista(variant, ids);
     // Si quedaron jugadores esperando, empieza otra cuenta atrás para ellos.
-    if (cqQueue.size > 0) armCqTimer();
+    if (q.size > 0) armCqTimer(variant);
   }
 
-  function armCqTimer() {
-    if (cqTimer) return;
+  function armCqTimer(variant) {
+    if (cqTimers[variant]) return;
     const at = Date.now() + CQ.botWaitMs;
-    cqTimer = { at, handle: setTimeout(() => startConquista().catch((e) => console.error('[conquista] inicio', e)), CQ.botWaitMs) };
+    cqTimers[variant] = {
+      at,
+      handle: setTimeout(() => startConquista(variant).catch((e) => console.error('[conquista] inicio', e)), CQ.botWaitMs),
+    };
   }
 
-  function joinCqQueue(conn) {
+  function joinCqQueue(conn, variant = 'normal') {
     const me = conn.player;
+    requireAdult(me, variant);
     ensureFree(me.id);
-    cqQueue.set(me.id, Date.now());
-    if (cqQueue.size >= CQ.players) return startConquista().catch((e) => console.error('[conquista] inicio', e));
-    armCqTimer();
-    cqQueueStatus();
+    const q = cqQueues[variant];
+    q.set(me.id, Date.now());
+    if (q.size >= CQ_VARIANTS[variant].players) return startConquista(variant).catch((e) => console.error('[conquista] inicio', e));
+    armCqTimer(variant);
+    cqQueueStatus(variant);
+  }
+
+  // Partida privada: uno crea un código y se lo pasa a su pareja/amigo.
+  function createPrivateCq(conn, variant) {
+    const me = conn.player;
+    requireAdult(me, variant);
+    ensureFree(me.id);
+    for (const [code, w] of privateCq) if (w.hostId === me.id) privateCq.delete(code);
+    const code = newCode(CQ_VARIANTS[variant].prefix);
+    privateCq.set(code, { variant, hostId: me.id, createdAt: Date.now() });
+    sendTo(conn, { t: 'cq_private', code, variant });
+  }
+
+  function joinPrivateCq(conn, rawCode) {
+    const me = conn.player;
+    const code = String(rawCode || '').trim().toUpperCase();
+    const w = privateCq.get(code);
+    if (!w || !clients.has(w.hostId)) throw new GameError('Ese código no existe o ya no está disponible');
+    if (w.hostId === me.id) throw new GameError('Comparte el código con la otra persona');
+    requireAdult(me, w.variant);
+    const ids = [w.hostId];
+    // Con 2 jugadores la partida empieza en cuanto entra el invitado.
+    ensureFree(me.id);
+    ids.push(me.id);
+    privateCq.delete(code);
+    launchConquista(w.variant, ids, { privateGame: true }).catch((e) => console.error('[conquista] privada', e));
   }
 
   function leaveQueue(playerId) {
-    if (cqQueue.delete(playerId)) {
-      if (cqQueue.size === 0) {
-        clearTimeout(cqTimer?.handle);
-        cqTimer = null;
+    for (const variant of Object.keys(cqQueues)) {
+      const q = cqQueues[variant];
+      if (q.delete(playerId)) {
+        if (q.size === 0) {
+          clearTimeout(cqTimers[variant]?.handle);
+          cqTimers[variant] = null;
+        }
+        cqQueueStatus(variant);
       }
-      cqQueueStatus();
     }
+    for (const [code, w] of privateCq) if (w.hostId === playerId) privateCq.delete(code);
     const entry = queue.get(playerId);
     if (!entry) return;
     clearTimeout(entry.botTimer);
@@ -281,8 +353,22 @@ function attachMultiplayer(server, deps = {}) {
     async start(conn) {
       await requireRoom(conn).start(conn.player.id);
     },
-    cq_queue(conn) {
-      joinCqQueue(conn);
+    cq_queue(conn, msg) {
+      joinCqQueue(conn, variantOf(msg.variant));
+    },
+    cq_private(conn, msg) {
+      createPrivateCq(conn, variantOf(msg.variant));
+    },
+    cq_join(conn, msg) {
+      joinPrivateCq(conn, msg.code);
+    },
+    // El anfitrión de una partida privada se cansa de esperar: juega contra un bot.
+    cq_private_bot(conn) {
+      const me = conn.player;
+      const entry = [...privateCq.entries()].find(([, w]) => w.hostId === me.id);
+      if (!entry) throw new GameError('No tienes ninguna partida privada esperando');
+      privateCq.delete(entry[0]);
+      launchConquista(entry[1].variant, [me.id], { privateGame: true }).catch((e) => console.error('[conquista] privada', e));
     },
     cq_cancel(conn) {
       leaveQueue(conn.player.id);
@@ -485,18 +571,20 @@ function attachMultiplayer(server, deps = {}) {
       const idle = now - room.lastActivity;
       if ((room.status === 'finished' && idle > config.finishedRoomTtlMs) || idle > 60 * 60_000) room.destroy();
     }
+    // Códigos de partidas privadas que nadie ha usado en 30 minutos.
+    for (const [code, w] of privateCq) if (now - w.createdAt > 30 * 60_000) privateCq.delete(code);
   }, 60_000);
   heartbeat.unref();
   cleanup.unref();
 
   return {
     wss,
-    stats: () => ({ connections: wss.clients.size, players: clients.size, rooms: rooms.size, queue: queue.size, cqQueue: cqQueue.size }),
+    stats: () => ({ connections: wss.clients.size, players: clients.size, rooms: rooms.size, queue: queue.size, cqQueue: cqQueues.normal.size, cqQueue18: cqQueues.x18.size }),
     close() {
       clearInterval(heartbeat);
       clearInterval(cleanup);
       for (const entry of queue.values()) clearTimeout(entry.botTimer);
-      clearTimeout(cqTimer?.handle);
+      for (const t of Object.values(cqTimers)) clearTimeout(t?.handle);
       for (const room of [...rooms.values()]) room.destroy();
       for (const ws of wss.clients) ws.close(1001, 'server shutting down');
       wss.close();

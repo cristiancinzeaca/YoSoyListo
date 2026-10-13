@@ -174,8 +174,48 @@ function renderMeChip() {
   }
 }
 
+// La fecha de nacimiento es obligatoria: sin ella, se pide antes de seguir.
+const BIRTHDATE_FREE_PAGES = ['/edad', '/entrar', '/privacidad'];
+function needsBirthdate(data) {
+  return data && data.hasAccount && data.birthdateSet === false && !BIRTHDATE_FREE_PAGES.includes(location.pathname);
+}
+function askBirthdate() {
+  location.replace(`/edad?next=${encodeURIComponent(location.pathname + location.search)}`);
+}
+
+// ¡Feliz cumpleaños! (el servidor da el regalo una vez al año)
+function celebrateBirthday(me) {
+  if (!me || !me.birthdayGift) return;
+  const box = document.createElement('div');
+  box.className = 'birthday-pop';
+  const t = document.createElement('strong');
+  t.textContent = '🎂 ¡Feliz cumpleaños!';
+  const p = document.createElement('span');
+  p.textContent = `Te regalamos ${me.birthdayGift} monedas 🪙`;
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'btn';
+  b.textContent = '¡Gracias!';
+  b.addEventListener('click', () => box.remove());
+  box.append(t, p, b);
+  document.body.appendChild(box);
+  if (window.FX) {
+    FX.confetti && FX.confetti(220);
+    FX.play && FX.play('victory');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   renderMeChip();
+  if (needsBirthdate(Player.data)) return askBirthdate();
   // Actualiza monedas y datos en segundo plano.
-  if (Player.has()) Player.refresh().catch(() => {});
+  if (Player.has()) {
+    Player.refresh()
+      .then((me) => {
+        if (needsBirthdate(me)) return askBirthdate();
+        if (me.birthdayGift) Wallet.setCoins(me.coins);
+        celebrateBirthday(me);
+      })
+      .catch(() => {});
+  }
 });

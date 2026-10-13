@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Tu edad · Yo Soy Listo</title>
+  <meta name="robots" content="noindex">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a class="logo" href="/" aria-label="Yo Soy Listo · Inicio"><img src="/img/logo.webp" alt="Yo Soy Listo" width="900" height="580"></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
+    </header>
+    <main>
+      <section class="card age-card" id="a-form">
+        <div class="age-cake" aria-hidden="true">🎂</div>
+        <h1>¿Cuándo naciste?</h1>
+        <p>La necesitamos una sola vez: para saber qué modos de juego puedes usar y para hacerte un regalo de <strong>500 monedas cada cumpleaños</strong>. Nadie más la verá.</p>
+        <div class="age-row">
+          <label><span>Día</span><select id="a-day"></select></label>
+          <label><span>Mes</span><select id="a-month"></select></label>
+          <label><span>Año</span><select id="a-year"></select></label>
+        </div>
+        <button class="btn" type="button" id="a-next" disabled>Continuar</button>
+        <p class="form-error center" id="a-error" hidden></p>
+      </section>
+
+      <section class="card age-card" id="a-confirm" hidden>
+        <h1>¿Es correcta?</h1>
+        <p class="age-big" id="a-summary"></p>
+        <p class="age-warn">Después no se podrá cambiar.</p>
+        <button class="btn" type="button" id="a-save">Sí, es correcta</button>
+        <button class="btn btn-secondary" type="button" id="a-back">Corregir</button>
+        <p class="form-error center" id="a-error2" hidden></p>
+      </section>
+
+      <section class="card age-card" id="a-bye" hidden>
+        <div class="age-cake" aria-hidden="true">🙁</div>
+        <h1>Lo sentimos</h1>
+        <p id="a-bye-text"></p>
+        <a class="btn btn-secondary" href="/">Volver al inicio</a>
+      </section>
+      <p class="center small-note"><a href="/privacidad">Política de privacidad</a></p>
+    </main>
+  </div>
+
+  <script src="/js/fx.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/edad.js"></script>
+</body>
+</html>

@@ -41,6 +41,12 @@ const api = {
 
 const CATEGORY_NAMES = {
   general: 'Cultura general',
+  x18_anatomia: '🔞 Anatomía',
+  x18_sexo: '🔞 Sexo',
+  x18_salud: '🔞 Salud sexual',
+  x18_reproduccion: '🔞 Reproducción',
+  x18_historia: '🔞 Historia del sexo',
+  x18_curiosidades: '🔞 Curiosidades',
   geografia: 'Geografía',
   historia: 'Historia',
   ciencia: 'Ciencia',

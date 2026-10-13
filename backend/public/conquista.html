@@ -28,10 +28,49 @@
       <h1>Conectando…</h1>
     </section>
 
+    <!-- Modo +18 -->
+    <section id="s-x18-gate" class="center-screen" hidden>
+      <div class="x18-badge">18+</div>
+      <h1>Solo para mayores de edad</h1>
+      <p>Este modo tiene preguntas de contenido sexual explícito y solo está disponible a partir de los 18 años.</p>
+      <a class="btn" href="/">Volver al inicio</a>
+    </section>
+
+    <section id="s-x18-warn" class="center-screen" hidden>
+      <div class="x18-badge">18+</div>
+      <h1>Conquista en pareja</h1>
+      <p>Un duelo por el mapa de España a dos jugadores con preguntas sobre sexo, cuerpo, reproducción y salud sexual. Contiene lenguaje y temas sexuales explícitos.</p>
+      <p class="x18-small">Respeta siempre a la otra persona. Si alguien te molesta, usa «Reportar» y «Bloquear» en el chat.</p>
+      <button class="btn" type="button" id="x18-accept">Tengo más de 18 años, entrar</button>
+      <a class="btn btn-secondary" href="/">Salir</a>
+    </section>
+
+    <section id="s-x18-menu" class="center-screen" hidden>
+      <div class="x18-badge">18+</div>
+      <h1>Conquista en pareja</h1>
+      <p>¿Con quién quieres jugar?</p>
+      <button class="btn" type="button" id="x18-private">💞 Con mi pareja (código privado)</button>
+      <button class="btn btn-secondary" type="button" id="x18-random">🎲 Con otra persona +18</button>
+      <form class="x18-join" id="x18-join">
+        <input type="text" id="x18-code" maxlength="8" placeholder="Código" autocomplete="off" autocapitalize="characters">
+        <button class="btn btn-secondary" type="submit">Unirme</button>
+      </form>
+    </section>
+
+    <section id="s-x18-wait" class="center-screen" hidden>
+      <div class="x18-badge">18+</div>
+      <h1>Esperando a tu pareja…</h1>
+      <p>Pásale este código o el enlace:</p>
+      <div class="x18-code" id="x18-mycode">-----</div>
+      <button class="btn" type="button" id="x18-share">📨 Enviar invitación</button>
+      <button class="btn btn-secondary" type="button" id="x18-bot">🤖 Jugar contra un bot</button>
+      <button class="btn btn-secondary" type="button" id="x18-cancel">Cancelar</button>
+    </section>
+
     <section id="s-queue" class="center-screen" hidden>
       <div class="spinner"></div>
       <h1>Buscando rivales…</h1>
-      <p><strong id="q-waiting">1</strong> de 3 jugadores</p>
+      <p><strong id="q-waiting">1</strong> de <span id="q-needed">3</span> jugadores</p>
       <p id="q-bots">Si no aparece nadie, completaremos la partida con bots.</p>
       <a class="btn btn-secondary" href="/" id="q-cancel">Cancelar</a>
     </section>
