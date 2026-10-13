@@ -182,6 +182,14 @@ function showLogin(message, next) {
       error(err.message);
     }
   });
+  // En la portada se puede cerrar la ventana y seguir mirando.
+  if (location.pathname === '/') {
+    $('.login-back').textContent = 'Cerrar';
+    $('.login-back').addEventListener('click', (e) => {
+      e.preventDefault();
+      overlay.remove();
+    });
+  }
   document.body.appendChild(overlay);
   $('.btn-google').focus();
 }
@@ -241,7 +249,16 @@ function renderMeChip() {
     el.href = '/perfil';
   } else {
     el.textContent = '🔑 Entrar';
-    el.href = Player.loginUrl();
+    // Abre la ventana de entrar (Google o correo) sin salir de la página.
+    el.href = '/entrar';
+    if (!el.dataset.loginBound) {
+      el.dataset.loginBound = '1';
+      el.addEventListener('click', (e) => {
+        if (Player.has()) return;
+        e.preventDefault();
+        showLogin(null, location.pathname + location.search);
+      });
+    }
   }
   let coins = document.getElementById('coin-chip');
   if (!coins && el.parentElement) {
