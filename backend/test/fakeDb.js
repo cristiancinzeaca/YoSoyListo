@@ -6,7 +6,7 @@ function createFakeDb() {
   const tables = {
     questions: [], numeric_questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [],
     player_sessions: [], player_items: [], coin_ledger: [], country_owners: [], country_attacks: [],
-    chat_messages: [], chat_reports: [], chat_blocks: [], chat_reads: [], campaign_runs: [],
+    chat_messages: [], chat_reports: [], chat_blocks: [], chat_reads: [], campaign_runs: [], auth_tokens: [],
   };
 
   class Query {
@@ -104,7 +104,7 @@ function createFakeDb() {
     if (table === 'players') {
       return {
         rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0, conquista_played: 0, conquista_won: 0,
-        token_hash: null, google_sub: null, email: null, coins: 0, avatar: null, xp: 0, hero: null, campaign: {}, birthdate: null, birthday_gift_year: null,
+        token_hash: null, google_sub: null, password_hash: null, email_verified: false, email: null, coins: 0, avatar: null, xp: 0, hero: null, campaign: {}, birthdate: null, birthday_gift_year: null,
       };
     }
     if (table === 'country_owners') {

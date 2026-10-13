@@ -2,8 +2,8 @@
 const crypto = require('crypto');
 const google = require('../modules/auth/google');
 
-async function login(base, name, { guestToken, sub } = {}) {
-  const code = google.createLoginCode({ sub: sub || `sub-${crypto.randomUUID()}`, email: null, name, givenName: name });
+async function login(base, name, { guestToken, sub, email = null } = {}) {
+  const code = google.createLoginCode({ sub: sub || `sub-${crypto.randomUUID()}`, email, name, givenName: name });
   const res = await fetch(`${base.startsWith('http') ? base : `http://${base}`}/api/auth/complete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

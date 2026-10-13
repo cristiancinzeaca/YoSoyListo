@@ -7,7 +7,7 @@ const heroes = require('../heroes/service');
 const age = require('./age');
 
 const PUBLIC_FIELDS =
-  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, coins, avatar, xp, hero, campaign, birthdate, birthday_gift_year';
+  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, password_hash, email_verified, coins, avatar, xp, hero, campaign, birthdate, birthday_gift_year';
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -25,7 +25,7 @@ function toPublic(row) {
     conquistaPlayed: row.conquista_played ?? 0,
     conquistaWon: row.conquista_won ?? 0,
     createdAt: row.created_at,
-    hasAccount: !!row.google_sub,
+    hasAccount: !!(row.google_sub || row.password_hash),
     coins: row.coins ?? 0,
     avatar: row.avatar && AVATARS[row.avatar] ? row.avatar : null,
     // Héroe, nivel y poder (lo que ven los rivales).
@@ -124,6 +124,20 @@ async function loginWithGoogle(identity, guestToken, { onCreated } = {}) {
     playerId = existing.id;
     await db.from('players').update({ email: identity.email || null, last_seen_at: new Date().toISOString() }).eq('id', playerId).select('id');
   } else {
+    if (identity.email) {
+      const { data: byMail } = await db
+        .from('players')
+        .select('id')
+        .eq('email', String(identity.email).trim().toLowerCase())
+        .is('google_sub', null)
+        .not('password_hash', 'is', null)
+        .limit(1);
+      if (byMail && byMail.length) {
+        await db.from('players').update({ google_sub: identity.sub, email_verified: true }).eq('id', byMail[0].id).select('id');
+        const token = await createSession(byMail[0].id);
+        return { player: await findById(byMail[0].id), token, created: false };
+      }
+    }
     const guest = guestToken ? await findByToken(guestToken) : null;
     if (guest && !guest.hasAccount) {
       const { data: linked, error: linkErr } = await db
@@ -191,6 +205,34 @@ async function birthdayGift(playerId) {
     return {};
   }
   return data && data[0] ? { birthdayGift: age.BIRTHDAY_GIFT, coins: data[0].balance } : {};
+}
+
+// Cuenta nueva con correo y contraseña (el nombre se elige libre a partir del deseado).
+async function createLocal({ email, wantedName, passwordHash, verified }) {
+  const db = getDb();
+  let fallback = wantedName;
+  if (!validatePlayerName(fallback).value) fallback = `Jugador${crypto.randomInt(1000, 10000)}`;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const name = attempt < 3 ? await freeName(fallback) : numberedName(fallback, crypto.randomInt(100, 100000));
+    const { data, error } = await db
+      .from('players')
+      .insert({
+        name,
+        name_key: nameKey(name),
+        email,
+        password_hash: passwordHash,
+        email_verified: !!verified,
+        coins: COINS.welcome,
+        avatar: randomFreeAvatar(),
+      })
+      .select('id')
+      .single();
+    if (error && error.code === '23505' && String(error.constraint || error.message).includes('name_key')) continue;
+    if (error && error.code === '23505') throw httpError(409, 'Ya hay una cuenta con ese correo');
+    if (error) throw dbError(error, 'players.createLocal');
+    return data.id;
+  }
+  throw httpError(500, 'No se pudo crear la cuenta');
 }
 
 // Cambiar de nombre: cuesta COINS.rename (gratis si solo cambian mayúsculas o acentos).
@@ -294,4 +336,4 @@ async function leaderboard(limit = 20, mode = 'duel') {
   }));
 }
 
-module.exports = { setBirthdate, birthdayGift, checkName, findByToken, findById, rename, profile, leaderboard, hashToken, loginWithGoogle, createSession, logout };
+module.exports = { createLocal, setBirthdate, birthdayGift, checkName, findByToken, findById, rename, profile, leaderboard, hashToken, loginWithGoogle, createSession, logout };

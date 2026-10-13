@@ -177,6 +177,14 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - **Recompense la prima victorie**: luptă +30 XP +10 monede; boss +120 XP +50 monede + o piesă exclusivă de campanie (titluri pe rasă, stindard „Biblioteca”, aura „Marea”, emblema ⏳, armura mecanică); boss-ul final +400 XP +300 monede + aura „Filo del Olvido” și titlul „Vencedor del Olvido”. Progresul e în `players.campaign`.
 - Imagini (ChatGPT): 9 boși, 9 scene de capitol, 4 „Desmemoriados” în `public/img/lore/`.
 
+## 5i. Cont cu email și parolă (ramura `cuenta-email`)
+
+- Pe lângă Google, în fereastra de login: **Entrar / Crear cuenta** cu email și parolă (+ „¿Has olvidado la contraseña?”). Codul: `modules/auth/local.js`, `password.js` (scrypt, fără dependențe), `mail.js` (Brevo).
+- **Emailuri prin Brevo** (API HTTP): variabilele **`BREVO_API_KEY`** și **`MAIL_FROM`** (expeditorul verificat în Brevo). Cu ele: contul trebuie confirmat din link (48 h) și se poate reseta parola (link 1 h, închide celelalte sesiuni). **Fără ele**: contul se activează direct, fără confirmare și fără resetare (doar pentru teste).
+- Pagina `/verificar` primește linkurile din emailuri (`#v=` confirmare, `#r=` parolă nouă).
+- Siguranță: parolă min. 8 caractere (nu doar cifre, nu din cele banale); 5 încercări greșite → blocare 15 min; răspunsuri identice la „am uitat parola” fie că emailul există sau nu; tokenuri de unică folosință salvate ca hash.
+- Dacă cineva intră cu Google cu același email ca un cont cu parolă, intră în **același cont** (Google a verificat emailul). Invers, un email deja folosit cu Google nu se poate înregistra cu parolă.
+
 ## 6. Alte idei în așteptare
 
 - **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).

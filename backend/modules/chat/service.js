@@ -145,9 +145,9 @@ async function postMatch(playerId, code, raw) {
 // ---------- privados ----------
 async function otherPlayer(meId, otherId) {
   if (!isUuid(otherId) || otherId === meId) throw httpError(404, 'Jugador no encontrado');
-  const { data, error } = await getDb().from('players').select('id, name, avatar, dm_open, google_sub').eq('id', otherId).maybeSingle();
+  const { data, error } = await getDb().from('players').select('id, name, avatar, dm_open, google_sub, password_hash').eq('id', otherId).maybeSingle();
   if (error) throw dbError(error, 'chat.other');
-  if (!data || !data.google_sub) throw httpError(404, 'Jugador no encontrado');
+  if (!data || !(data.google_sub || data.password_hash)) throw httpError(404, 'Jugador no encontrado');
   return data;
 }
 
@@ -284,9 +284,9 @@ async function search(meId, name) {
   const term = String(name || '').trim().slice(0, 20);
   if (term.length < 2) return { players: [] };
   const pattern = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-  const { data, error } = await getDb().from('players').select('id, name, avatar, google_sub').ilike('name', pattern).limit(12);
+  const { data, error } = await getDb().from('players').select('id, name, avatar, google_sub, password_hash').ilike('name', pattern).limit(12);
   if (error) throw dbError(error, 'chat.search');
-  return { players: data.filter((p) => p.google_sub && p.id !== meId).slice(0, 8).map(publicPlayer) };
+  return { players: data.filter((p) => (p.google_sub || p.password_hash) && p.id !== meId).slice(0, 8).map(publicPlayer) };
 }
 
 // ---------- administración ----------

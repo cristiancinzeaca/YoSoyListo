@@ -671,3 +671,20 @@ begin
   return query select true;
 end;
 $$;
+
+-- ---------- Cuentas con correo y contraseña ----------
+alter table players add column if not exists password_hash text;
+alter table players add column if not exists email_verified boolean not null default false;
+create unique index if not exists players_email_password_idx on players (lower(email)) where password_hash is not null;
+
+-- Enlaces de un solo uso: confirmar el correo ('verify') o cambiar la contraseña ('reset').
+create table if not exists auth_tokens (
+  token_hash text primary key,
+  player_id uuid not null references players (id) on delete cascade,
+  kind text not null check (kind in ('verify', 'reset')),
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists auth_tokens_player_idx on auth_tokens (player_id, kind);
+alter table auth_tokens enable row level security;

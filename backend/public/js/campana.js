@@ -8,7 +8,7 @@
     return e;
   };
 
-  await Player.ensure('Entra con Google para empezar la aventura.');
+  await Player.ensure('Entra con Google o con tu correo para empezar la aventura.');
 
   let bannerTimer;
   function banner(text, warn = false) {

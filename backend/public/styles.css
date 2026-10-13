@@ -1147,3 +1147,17 @@ html.lore-full, html.lore-full body { overflow: hidden; }
 .aura-niebla .hero-aura { inset: -22%; opacity: 1; background: conic-gradient(rgba(180,170,210,0.9), rgba(143,99,255,0.8), rgba(90,80,110,0.9), rgba(200,190,230,0.9), rgba(143,99,255,0.8), rgba(180,170,210,0.9)); -webkit-mask: radial-gradient(circle closest-side, transparent 60%, #000 72%, transparent 100%); mask: radial-gradient(circle closest-side, transparent 60%, #000 72%, transparent 100%); filter: blur(4px); animation: hero-spin 7s linear infinite; }
 .hero-card:has(.banner-biblioteca) { background: linear-gradient(160deg, #6b3f1d, #2a1608); }
 .lore-ico { flex: 0 0 auto; font-size: 2.2rem; line-height: 1; }
+
+/* ---------- Entrar con correo ---------- */
+.login-or { display: flex; align-items: center; gap: 10px; margin: 16px 0 10px; font-size: 0.85rem; font-weight: 700; opacity: 0.75; }
+.login-or::before, .login-or::after { content: ''; flex: 1; height: 1px; background: currentColor; opacity: 0.35; }
+.login-tabs { margin-bottom: 10px; }
+.login-form { display: flex; flex-direction: column; gap: 8px; }
+.login-form input { padding: 12px 14px; border-radius: 12px; border: 2px solid #e2dcf2; font: inherit; font-size: 1rem; }
+.login-form input[hidden] { display: none; }
+.login-form .btn { margin-top: 4px; }
+.login-note { margin: 10px 0 0; font-weight: 700; font-size: 0.9rem; line-height: 1.4; }
+.login-note .link-btn, .login-error .link-btn { display: block; margin: 6px auto 0; }
+.login-form input { background: rgba(10,4,25,0.55); color: var(--text-light); border-color: rgba(255,255,255,0.22); }
+.login-form input::placeholder { color: #c3b6ec; opacity: 1; }
+.login-form input:focus { outline: none; border-color: var(--primary); }

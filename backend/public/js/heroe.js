@@ -8,7 +8,7 @@
     return e;
   };
 
-  await Player.ensure('Entra con Google para crear tu héroe.');
+  await Player.ensure('Entra con Google o con tu correo para crear tu héroe.');
 
   let bannerTimer;
   function banner(text, warn = false) {
