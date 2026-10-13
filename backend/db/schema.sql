@@ -192,6 +192,7 @@ alter table players add column if not exists avatar text;
 -- Nombres únicos: name_key es el nombre sin mayúsculas, acentos ni separadores (lo calcula
 -- el servidor, ver modules/players/names.js). Las filas antiguas se rellenan al arrancar.
 alter table players add column if not exists name_key text;
+alter table players add column if not exists free_rename_used boolean not null default false;
 create unique index if not exists players_name_key_idx on players (name_key);
 
 -- Una fila por dispositivo con la sesión iniciada.
@@ -329,6 +330,7 @@ language plpgsql as $$
 declare
   me players%rowtype;
   price int;
+  first_free boolean := false;
 begin
   select * into me from players where id = p_id for update;
   if not found then return; end if;
@@ -336,13 +338,23 @@ begin
     return query select false, 'taken'::text, 0, me.coins;
     return;
   end if;
-  price := case when me.name_key = p_key then 0 else p_cost end;
+  -- Solo mayúsculas/acentos: gratis. El primer cambio de verdad: gratis. Después: p_cost.
+  if me.name_key = p_key then
+    price := 0;
+  elsif not coalesce(me.free_rename_used, false) then
+    price := 0;
+    first_free := true;
+  else
+    price := p_cost;
+  end if;
   if me.coins < price then
     return query select false, 'coins'::text, price, me.coins;
     return;
   end if;
   begin
-    update players set name = p_name, name_key = p_key, coins = coins - price where id = p_id;
+    update players set name = p_name, name_key = p_key, coins = coins - price,
+      free_rename_used = coalesce(free_rename_used, false) or first_free
+      where id = p_id;
   exception when unique_violation then
     return query select false, 'taken'::text, 0, me.coins;
     return;

@@ -104,3 +104,24 @@ test('los bots tienen héroe y el equipo inválido se corrige', () => {
   assert.equal(s.hero.equip.armadura, 'cuero', 'no puede llevar algo de nivel 50 siendo nivel 1');
   assert.equal(s.hero.equip.arma, 'ninguna');
 });
+
+test('opciones que se desbloquean por nivel', async () => {
+  const nuevo = await login(base, 'Novata');
+  const otra = await login(base, 'Veterana');
+  row(otra.player.id).xp = 1000;
+  // Nivel 1: no escribe en el General, no manda privados, no compra países.
+  const lobby = await call('POST', '/api/chat/lobby', { text: 'hola' }, nuevo.token);
+  assert.equal(lobby.status, 403);
+  assert.match(lobby.body.error, /nivel 2/);
+  assert.equal(lobby.body.code, 'level');
+  const dm = await call('POST', `/api/chat/dm/${otra.player.id}`, { text: 'hola' }, nuevo.token);
+  assert.equal(dm.status, 403);
+  assert.match(dm.body.error, /nivel 3/);
+  row(nuevo.player.id).coins = 5000;
+  assert.equal((await call('POST', '/api/countries/ad/buy', {}, nuevo.token)).status, 403);
+  // Al subir de nivel, se abren.
+  row(nuevo.player.id).xp = 100; // nivel 2
+  assert.equal((await call('POST', '/api/chat/lobby', { text: 'ya puedo' }, nuevo.token)).status, 201);
+  row(nuevo.player.id).xp = 700; // nivel 5
+  assert.equal((await call('POST', '/api/countries/ad/buy', {}, nuevo.token)).status, 200);
+});

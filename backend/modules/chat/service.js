@@ -5,6 +5,7 @@ const { getDb, dbError } = require('../../core/db');
 const { httpError, isUuid } = require('../../core/http');
 const { AVATARS } = require('../shop/catalog');
 const { cleanMessage } = require('./filter');
+const heroes = require('../heroes/service');
 
 const CHAT = {
   minGapMs: 1_500, // entre dos mensajes del mismo jugador
@@ -79,7 +80,7 @@ function format(row, people) {
 }
 
 async function senderRow(playerId) {
-  const { data, error } = await getDb().from('players').select('id, name, avatar, chat_muted_until, dm_open').eq('id', playerId).maybeSingle();
+  const { data, error } = await getDb().from('players').select('id, name, avatar, chat_muted_until, dm_open, xp').eq('id', playerId).maybeSingle();
   if (error) throw dbError(error, 'chat.sender');
   if (!data) throw httpError(404, 'Jugador no encontrado');
   return data;
@@ -132,6 +133,7 @@ async function lobby(viewerId, after) {
 }
 
 async function postLobby(playerId, raw) {
+  heroes.requireUnlock((await senderRow(playerId)).xp, 'chat_general', 'Escribir en el chat General');
   const { sender, text } = await prepare(playerId, raw);
   return { message: await insertMessage(sender, LOBBY, text) };
 }
@@ -152,6 +154,11 @@ async function otherPlayer(meId, otherId) {
 }
 
 async function canWrite(meId, other) {
+  try {
+    heroes.requireUnlock((await senderRow(meId)).xp, 'chat_privado', 'Enviar mensajes privados');
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
   if ((await blockedBy(meId)).has(other.id)) return { ok: false, reason: `Has bloqueado a ${other.name}. Desbloquéale para escribirle.` };
   if ((await blockedBy(other.id)).has(meId)) return { ok: false, reason: `${other.name} no acepta tus mensajes.` };
   if (other.dm_open === false) return { ok: false, reason: `${other.name} no acepta mensajes privados.` };

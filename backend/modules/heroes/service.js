@@ -175,4 +175,16 @@ function botHero() {
   };
 }
 
-module.exports = { hasItem, catalog, me, create, equip, addXp, safeXp, summary, botHero, power, RECREATE_COST };
+// ¿Tiene ya el nivel para esta opción? Si no, error 403 con el nivel que falta.
+function requireUnlock(xp, key, what) {
+  const need = C.UNLOCK_LEVEL[key];
+  if (!need) return;
+  const { level } = C.levelFromXp(xp ?? 0);
+  if (level < need) {
+    const err = httpError(403, `${what} se desbloquea en el nivel ${need} (ahora tienes el ${level}). ¡Juega partidas para subir!`);
+    err.code = 'level';
+    throw err;
+  }
+}
+
+module.exports = { requireUnlock, hasItem, catalog, me, create, equip, addXp, safeXp, summary, botHero, power, RECREATE_COST };

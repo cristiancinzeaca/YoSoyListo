@@ -123,8 +123,11 @@ const DEFAULT_EQUIP = { armadura: 'cuero', arma: 'ninguna', emblema: 'ninguno', 
 
 // Opciones del juego que se desbloquean por nivel (se irán añadiendo).
 const UNLOCKS = [
-  // { level: 5, key: 'ejemplo', name: 'Algo nuevo' },
+  { level: 2, key: 'chat_general', name: 'Escribir en el chat General' },
+  { level: 3, key: 'chat_privado', name: 'Enviar mensajes privados' },
+  { level: 5, key: 'comprar_paises', name: 'Comprar países en «Conquista el mundo»' },
 ];
+const UNLOCK_LEVEL = Object.fromEntries(UNLOCKS.map((u) => [u.key, u.level]));
 
 const itemsAtLevel = (level) => ITEMS_LIST.filter(([, , , l]) => l === level).map(([id]) => ITEMS[id]);
 
@@ -140,5 +143,6 @@ module.exports = {
   ITEMS,
   DEFAULT_EQUIP,
   UNLOCKS,
+  UNLOCK_LEVEL,
   itemsAtLevel,
 };

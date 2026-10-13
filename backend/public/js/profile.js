@@ -63,7 +63,8 @@
     hint.textContent = text;
     hint.className = `name-hint ${cls}`;
   };
-  const defaultHint = () => setHint('Tu nombre es único. Cambiarlo cuesta 🪙 100.');
+  const defaultHint = () =>
+    setHint(me.freeRename ? 'Tu nombre es único. El primer cambio es gratis 🎁' : 'Tu nombre es único. Cambiarlo cuesta 🪙 100.');
   const checkName = async () => {
     const value = $('name').value.trim();
     const seq = ++checkSeq;
@@ -79,7 +80,10 @@
         return setHint(r.error, 'bad');
       }
       btn.disabled = false;
-      setHint(r.cost ? `✓ Está libre · cuesta 🪙 ${r.cost}` : '✓ Solo cambian mayúsculas o acentos · gratis', 'ok');
+      setHint(
+        r.cost ? `✓ Está libre · cuesta 🪙 ${r.cost}` : r.firstFree ? '✓ Está libre · ¡gratis, es tu primer cambio!' : '✓ Solo cambian mayúsculas o acentos · gratis',
+        'ok'
+      );
     } catch {
       btn.disabled = false;
       defaultHint();

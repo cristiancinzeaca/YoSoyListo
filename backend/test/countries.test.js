@@ -3,7 +3,14 @@ const assert = require('node:assert/strict');
 const { createApp } = require('../core/server');
 const { setDbForTests } = require('../core/db');
 const { createFakeDb } = require('./fakeDb');
-const { login } = require('./login');
+const { login: loginBase } = require('./login');
+
+// Jugadores con nivel suficiente para chatear y comprar países.
+async function login(b, name, opts) {
+  const r = await loginBase(b, name, opts);
+  db.tables.players.find((p) => p.id === r.player.id).xp = 1000;
+  return r;
+}
 const { COUNTRIES, RULES } = require('../modules/countries/catalog');
 
 let server;

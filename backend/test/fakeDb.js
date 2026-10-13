@@ -104,7 +104,7 @@ function createFakeDb() {
     if (table === 'players') {
       return {
         rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0, conquista_played: 0, conquista_won: 0,
-        token_hash: null, google_sub: null, password_hash: null, email_verified: false, email: null, coins: 0, avatar: null, xp: 0, hero: null, campaign: {}, birthdate: null, birthday_gift_year: null,
+        token_hash: null, google_sub: null, password_hash: null, email_verified: false, email: null, coins: 0, avatar: null, xp: 0, hero: null, campaign: {}, birthdate: null, birthday_gift_year: null, free_rename_used: false,
       };
     }
     if (table === 'country_owners') {
@@ -229,11 +229,13 @@ function createFakeDb() {
         if (tables.players.some((x) => x.id !== p.id && x.name_key === args.p_key)) {
           return { data: [{ ok: false, reason: 'taken', cost: 0, coins_left: p.coins }], error: null };
         }
-        const cost = p.name_key === args.p_key ? 0 : args.p_cost;
+        const firstFree = p.name_key !== args.p_key && !p.free_rename_used;
+        const cost = p.name_key === args.p_key || firstFree ? 0 : args.p_cost;
         if (p.coins < cost) return { data: [{ ok: false, reason: 'coins', cost, coins_left: p.coins }], error: null };
         p.coins -= cost;
         p.name = args.p_name;
         p.name_key = args.p_key;
+        if (firstFree) p.free_rename_used = true;
         if (cost) ledger(p.id, -cost, 'rename');
         return { data: [{ ok: true, reason: null, cost, coins_left: p.coins }], error: null };
       }
