@@ -48,7 +48,7 @@ package.json                 → permite deploy din rădăcină (pornește backe
 backend/
   core/        server.js (Express, CSP, rute), db.js, pgdb.js, migrate.js, http.js, rateLimit.js
   db/          schema.sql (toate tabelele), seed.sql (GENERAT), build-seed.js
-               questions/<categorie>.json  → ~1000 întrebări cu variante (167–175 pe categorie)
+               questions/<categorie>.json  → ~1260 întrebări cu variante (~200 pe categorie; multe de cultură generală internațională)
                numeric/aproximacion.json   → 119 întrebări numerice (Conquista)
   modules/
     questions/   întrebări, categorii, rapoarte de erori (API admin)
