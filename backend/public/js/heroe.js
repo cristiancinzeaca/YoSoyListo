@@ -161,7 +161,7 @@
         const b = el('button', `hero-item${on ? ' on' : ''}${open ? '' : ' locked'}`);
         b.type = 'button';
         b.appendChild(el('span', 'hero-item-name', it.name));
-        b.appendChild(el('span', 'hero-item-meta', open ? (it.power ? `+${it.power} poder` : 'básico') : `🔒 Nivel ${it.level}`));
+        b.appendChild(el('span', 'hero-item-meta', open ? (it.power ? `+${it.power} poder` : 'básico') : it.campaign ? '🔒 Campaña' : `🔒 Nivel ${it.level}`));
         b.disabled = !open || on;
         b.addEventListener('click', async () => {
           try {

@@ -16,12 +16,20 @@ function power(level, equip) {
   return p;
 }
 
-// Equipo válido para un nivel: lo que no esté desbloqueado (o no exista) vuelve a lo básico.
-function cleanEquip(equip, level) {
+// ¿Tiene esta pieza? Las normales, por nivel; las de campaña, si las ganó.
+function hasItem(item, level, owned) {
+  if (!item) return false;
+  return item.campaign ? owned.includes(item.id) : item.level <= level;
+}
+
+const ownedOf = (row) => (row.campaign && Array.isArray(row.campaign.items) ? row.campaign.items : []);
+
+// Equipo válido: lo que no tenga (o no exista) vuelve a lo básico.
+function cleanEquip(equip, level, owned = []) {
   const out = {};
   for (const slot of C.SLOTS) {
     const item = C.ITEMS[equip?.[slot]];
-    out[slot] = item && item.slot === slot && item.level <= level ? item.id : C.DEFAULT_EQUIP[slot];
+    out[slot] = item && item.slot === slot && hasItem(item, level, owned) ? item.id : C.DEFAULT_EQUIP[slot];
   }
   return out;
 }
@@ -32,7 +40,7 @@ function summary(row) {
   const { level } = C.levelFromXp(xp);
   const h = row.hero;
   if (!h || !C.RACES[h.race] || !C.CLASSES[h.cls]) return { level, power: power(level, C.DEFAULT_EQUIP), hero: null };
-  const equip = cleanEquip(h.equip, level);
+  const equip = cleanEquip(h.equip, level, ownedOf(row));
   return {
     level,
     power: power(level, equip),
@@ -41,7 +49,7 @@ function summary(row) {
 }
 
 async function loadRow(playerId) {
-  const { data, error } = await getDb().from('players').select('id, name, coins, xp, hero').eq('id', playerId).maybeSingle();
+  const { data, error } = await getDb().from('players').select('id, name, coins, xp, hero, campaign').eq('id', playerId).maybeSingle();
   if (error) throw dbError(error, 'heroes.load');
   if (!data) throw httpError(404, 'Jugador no encontrado');
   return data;
@@ -50,7 +58,7 @@ async function loadRow(playerId) {
 function catalog() {
   const levels = [];
   for (let l = 1; l <= C.MAX_LEVEL; l++) {
-    const items = C.itemsAtLevel(l).map((i) => i.id);
+    const items = C.itemsAtLevel(l).filter((i) => !i.campaign).map((i) => i.id);
     const unlocks = C.UNLOCKS.filter((u) => u.level === l).map((u) => u.name);
     if (items.length || unlocks.length) levels.push({ level: l, items, unlocks });
   }
@@ -75,7 +83,7 @@ async function me(playerId) {
     xp: row.xp ?? 0,
     xpInto: prog.into,
     xpNext: prog.next,
-    unlocked: Object.values(C.ITEMS).filter((i) => i.level <= s.level).map((i) => i.id),
+    unlocked: Object.values(C.ITEMS).filter((i) => hasItem(i, s.level, ownedOf(row))).map((i) => i.id),
     nextRewards: catalog().levels.filter((l) => l.level > s.level).slice(0, 3),
   };
 }
@@ -111,8 +119,9 @@ async function equip(playerId, { slot, item } = {}) {
   const row = await loadRow(playerId);
   if (!row.hero) throw httpError(409, 'Primero crea tu héroe');
   const { level } = C.levelFromXp(row.xp ?? 0);
-  if (it.level > level) throw httpError(403, `Se desbloquea en el nivel ${it.level}`);
-  const equipNow = { ...cleanEquip(row.hero.equip, level), [slot]: it.id };
+  if (it.campaign && !ownedOf(row).includes(it.id)) throw httpError(403, 'Se consigue en la campaña');
+  if (!it.campaign && it.level > level) throw httpError(403, `Se desbloquea en el nivel ${it.level}`);
+  const equipNow = { ...cleanEquip(row.hero.equip, level, ownedOf(row)), [slot]: it.id };
   const { error } = await getDb().from('players').update({ hero: { ...row.hero, equip: equipNow } }).eq('id', playerId).select('id');
   if (error) throw dbError(error, 'heroes.equip');
   return me(playerId);
@@ -131,7 +140,7 @@ async function addXp(playerId, amount, reason) {
   const rewards = [];
   const unlocks = [];
   for (let l = before + 1; l <= after.level; l++) {
-    rewards.push(...C.itemsAtLevel(l).map((i) => ({ id: i.id, name: i.name, slot: i.slot })));
+    rewards.push(...C.itemsAtLevel(l).filter((i) => !i.campaign).map((i) => ({ id: i.id, name: i.name, slot: i.slot })));
     unlocks.push(...C.UNLOCKS.filter((u) => u.level === l).map((u) => u.name));
   }
   return { gained, xp, level: after.level, xpInto: after.into, xpNext: after.next, levelUp: after.level > before, from: before, rewards, unlocks };
@@ -155,7 +164,7 @@ function botHero() {
   };
   const level = 1 + crypto.randomInt(15);
   const best = (slot) => {
-    const options = Object.values(C.ITEMS).filter((i) => i.slot === slot && i.level <= level);
+    const options = Object.values(C.ITEMS).filter((i) => i.slot === slot && !i.campaign && i.level <= level);
     return options[crypto.randomInt(options.length)].id;
   };
   const equipBot = Object.fromEntries(C.SLOTS.map((s) => [s, best(s)]));
@@ -166,4 +175,4 @@ function botHero() {
   };
 }
 
-module.exports = { catalog, me, create, equip, addXp, safeXp, summary, botHero, power, RECREATE_COST };
+module.exports = { hasItem, catalog, me, create, equip, addXp, safeXp, summary, botHero, power, RECREATE_COST };

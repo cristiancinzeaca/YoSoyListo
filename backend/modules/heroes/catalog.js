@@ -101,7 +101,24 @@ const ITEMS_LIST = [
   ['inmortal', 'titulo', 'Inmortal', 50, 800],
 ];
 
-const ITEMS = Object.fromEntries(ITEMS_LIST.map(([id, slot, name, level, power]) => [id, { id, slot, name, level, power }]));
+// Piezas que solo se consiguen en la campaña (al vencer a un jefe).
+const CAMPAIGN_ITEMS = [
+  ['heroe_alejandria', 'titulo', 'Héroe de Alejandría', 60],
+  ['heroe_bosque', 'titulo', 'Guardián del Bosque', 60],
+  ['heroe_forja', 'titulo', 'Señor de la Forja', 60],
+  ['heroe_tambor', 'titulo', 'Hijo del Tambor', 60],
+  ['biblioteca', 'estandarte', 'Estandarte de la Biblioteca', 150],
+  ['marea', 'arma', 'Garfio de la Marea', 200],
+  ['reloj', 'emblema', 'Emblema del Tiempo', 200],
+  ['mecanica', 'armadura', 'Armadura mecánica', 250],
+  ['niebla', 'arma', 'Filo del Olvido', 600],
+  ['vencedor', 'titulo', 'Vencedor del Olvido', 500],
+];
+
+const ITEMS = Object.fromEntries([
+  ...ITEMS_LIST.map(([id, slot, name, level, power]) => [id, { id, slot, name, level, power }]),
+  ...CAMPAIGN_ITEMS.map(([id, slot, name, power]) => [id, { id, slot, name, level: 1, power, campaign: true }]),
+]);
 const DEFAULT_EQUIP = { armadura: 'cuero', arma: 'ninguna', emblema: 'ninguno', estandarte: 'noche', titulo: 'novato' };
 
 // Opciones del juego que se desbloquean por nivel (se irán añadiendo).

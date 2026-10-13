@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Las Crónicas de Sapiencia · Yo Soy Listo</title>
+  <meta name="description" content="La campaña de Yo Soy Listo: derrota al Olvido respondiendo preguntas de cultura general.">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a class="logo" href="/" aria-label="Yo Soy Listo · Inicio"><img src="/img/logo.webp" alt="Yo Soy Listo" width="900" height="580"></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
+    </header>
+
+    <!-- Mapa de capítulos -->
+    <main id="s-map" hidden>
+      <section class="lore-hero card">
+        <h1>Las Crónicas de Sapiencia</h1>
+        <p>Una niebla llamada <strong>el Olvido</strong> devora los recuerdos del mundo. Solo quien sabe las respuestas puede detenerla.</p>
+      </section>
+      <div class="lore-chapters" id="map-list"></div>
+      <h2 class="lore-extra-title" id="map-extra-title" hidden>Historias de otras razas</h2>
+      <div class="lore-chapters" id="map-extra"></div>
+      <section class="card center" id="map-nohero" hidden>
+        <h2>Primero, tu héroe</h2>
+        <p>La historia empieza en la tierra de tu raza. Crea tu héroe para comenzar la aventura.</p>
+        <a class="btn" href="/heroe?next=%2Fcampana">⚔️ Crear mi héroe</a>
+      </section>
+    </main>
+
+    <!-- Capítulo -->
+    <main id="s-chapter" hidden>
+      <button class="lore-back" type="button" id="ch-back">← Capítulos</button>
+      <section class="lore-chapter-head" id="ch-head">
+        <h1 id="ch-title"></h1>
+        <p id="ch-place"></p>
+      </section>
+      <ol class="lore-path" id="ch-path"></ol>
+      <p class="lore-reward" id="ch-reward"></p>
+    </main>
+  </div>
+
+  <!-- Escena (pantalla completa) -->
+  <section class="lore-scene" id="s-story" hidden>
+    <div class="lore-scene-bg" id="st-bg"></div>
+    <div class="lore-dialog" id="st-dialog">
+      <div class="lore-speaker" id="st-speaker"></div>
+      <p class="lore-text" id="st-text"></p>
+      <button class="btn lore-next" type="button" id="st-next">Continuar ▸</button>
+    </div>
+    <button class="lore-skip" type="button" id="st-skip">Saltar escena</button>
+  </section>
+
+  <!-- Combate (pantalla completa) -->
+  <section class="lore-battle" id="s-battle" hidden>
+    <div class="lore-scene-bg" id="bt-bg"></div>
+    <div class="lore-battle-in">
+      <div class="lore-enemy" id="bt-enemy">
+        <img class="lore-enemy-img" id="bt-enemy-img" alt="">
+        <div class="lore-enemy-info">
+          <strong id="bt-enemy-name"></strong>
+          <div class="lore-hp" id="bt-hp"></div>
+        </div>
+      </div>
+      <div class="lore-battle-body" id="bt-body"></div>
+      <div class="lore-me">
+        <div id="bt-me"></div>
+        <div class="lore-hearts" id="bt-hearts"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <script src="/js/fx.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/chat.js"></script>
+  <script src="/js/hero.js"></script>
+  <script src="/js/campana.js"></script>
+</body>
+</html>

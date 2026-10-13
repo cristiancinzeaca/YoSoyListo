@@ -1,7 +1,7 @@
 // Tarjeta del héroe: retrato + marco (armadura) + aura (arma) + emblema + estandarte (fondo) + título.
 // Se usa en el perfil del héroe, en la creación y delante de los rivales en las partidas.
 (function () {
-  const EMBLEM_ICONS = { bronce: '🛡️', buho: '🦉', corona: '👑', dragon_e: '🐉', estrella: '🌟' };
+  const EMBLEM_ICONS = { bronce: '🛡️', buho: '🦉', corona: '👑', dragon_e: '🐉', estrella: '🌟', reloj: '⏳' };
   const RACE_NAMES = { humano: 'Humano', elfo: 'Elfo', enano: 'Enano', orco: 'Orco' };
   const CLASS_NAMES = { guerrero: 'Guerrero', mago: 'Mago', explorador: 'Explorador' };
 
