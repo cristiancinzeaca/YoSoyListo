@@ -40,6 +40,9 @@ function attachMultiplayer(server, deps = {}) {
   const loadOwned = deps.loadOwned || countries.ownedBy;
   const allyQuestion = deps.allyQuestion || countries.allyQuestion;
   const postMatchChat = deps.postMatchChat || chat.postMatch;
+  const reloadPlayer = deps.reloadPlayer || players.findById;
+  // Antes de entrar en una partida se recargan sus datos (nivel, héroe, nombre) por si han cambiado.
+  const FRESH_BEFORE = new Set(['queue', 'create_room', 'join_room', 'cq_queue']);
 
   const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 4096 });
   const clients = new Map(); // playerId → conexión
@@ -416,6 +419,14 @@ function attachMultiplayer(server, deps = {}) {
     const handler = Object.prototype.hasOwnProperty.call(handlers, msg.t) ? handlers[msg.t] : null;
     if (!handler) return;
     try {
+      if (FRESH_BEFORE.has(msg.t)) {
+        try {
+          const fresh = await reloadPlayer(conn.player.id);
+          if (fresh && fresh.hasAccount) conn.player = fresh;
+        } catch (err) {
+          console.error('[multiplayer] recargar jugador', err.message);
+        }
+      }
       await handler(conn, msg);
     } catch (err) {
       if (err instanceof GameError) {

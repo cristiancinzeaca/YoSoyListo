@@ -3,9 +3,10 @@ const { getDb, dbError } = require('../../core/db');
 const { httpError } = require('../../core/http');
 const { validatePlayerName, nameKey, numberedName } = require('./names');
 const { FREE_AVATARS, COINS, AVATARS } = require('../shop/catalog');
+const heroes = require('../heroes/service');
 
 const PUBLIC_FIELDS =
-  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, coins, avatar';
+  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, coins, avatar, xp, hero';
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -26,6 +27,8 @@ function toPublic(row) {
     hasAccount: !!row.google_sub,
     coins: row.coins ?? 0,
     avatar: row.avatar && AVATARS[row.avatar] ? row.avatar : null,
+    // Héroe, nivel y poder (lo que ven los rivales).
+    ...heroes.summary(row),
   };
 }
 

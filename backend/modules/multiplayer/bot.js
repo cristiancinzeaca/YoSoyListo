@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { botHero } = require('../heroes/service');
 
 const BOT_NAMES = ['Einstein', 'Curie', 'Cervantes', 'Frida', 'Lorca', 'Hipatia', 'Ramón y Cajal', 'Lovelace'];
 
@@ -9,6 +10,7 @@ function createBot(takenNames = []) {
     id: `bot-${crypto.randomUUID()}`,
     name: `🤖 ${base}`,
     isBot: true,
+    ...botHero(),
     // Probabilidad de acertar: ni imposible de ganar ni demasiado fácil.
     skill: 0.45 + Math.random() * 0.3,
   };

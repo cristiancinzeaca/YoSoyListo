@@ -594,3 +594,13 @@ alter table chat_messages enable row level security;
 alter table chat_reports enable row level security;
 alter table chat_blocks enable row level security;
 alter table chat_reads enable row level security;
+
+-- ---------- Héroes y niveles ----------
+alter table players add column if not exists xp int not null default 0;
+alter table players add column if not exists hero jsonb;
+
+create or replace function add_xp(p_id uuid, p_amount int)
+returns table (xp int)
+language sql as $$
+  update players set xp = players.xp + greatest(p_amount, 0) where id = p_id returning players.xp;
+$$;

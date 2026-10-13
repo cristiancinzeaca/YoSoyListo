@@ -85,6 +85,37 @@
     joinCode.value = joinCode.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   });
 
+  // Tarjeta del héroe (o invitación a crearlo).
+  async function heroBanner() {
+    const box = document.getElementById('hero-banner');
+    if (!box || !Player.has() || !window.Hero) return;
+    let me = Player.data;
+    try {
+      me = await Player.refresh();
+    } catch {
+      // con los datos guardados basta
+    }
+    const mk = (tag, cls, text) => {
+      const e = document.createElement(tag);
+      e.className = cls;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    };
+    box.replaceChildren();
+    if (!me.hero) {
+      box.classList.add('empty');
+      const txt = mk('span', 'hero-banner-txt');
+      txt.append(mk('strong', '', '⚔️ Crea tu héroe'), mk('span', '', 'Elige raza y clase. Sube de nivel jugando y consigue armaduras que verán tus rivales.'));
+      box.append(Hero.portrait(null, { size: 'sm' }), txt, mk('span', 'go', '→'));
+    } else {
+      const txt = mk('span', 'hero-banner-txt');
+      txt.append(mk('strong', '', `${me.name} · Nivel ${me.level}`), mk('span', 'hero-title', me.hero.title), mk('span', '', `⚔️ Poder ${me.power.toLocaleString('es-ES')}`));
+      box.append(Hero.portrait(me.hero, { level: me.level, size: 'sm' }), txt, mk('span', 'go', '→'));
+    }
+    box.hidden = false;
+  }
+
   loadCategories();
   loadRanking('week');
+  heroBanner();
 })();

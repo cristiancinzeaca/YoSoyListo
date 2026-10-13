@@ -5,6 +5,8 @@ const { BLITZ, applyAnswer, acceptsAnswers, canFinish } = require('./logic');
 const shop = require('../shop/service');
 const { HELPERS } = require('../shop/catalog');
 const { blitzCoins } = require('../shop/rewards');
+const heroes = require('../heroes/service');
+const { blitzXp } = require('../heroes/rewards');
 
 const SKIPPED = -1;
 const EXTRA_TIME_MS = 10_000;
@@ -210,6 +212,7 @@ async function finish(sessionId, body, playerId) {
           .select('*');
         if (saved && saved.length) session = saved[0];
         session.coinResult = { ...coins, personalBest: session.score > 0 && session.score > previousBest };
+        session.xpResult = await heroes.safeXp(session.player_id, blitzXp(session.correct_count), 'game:blitz');
       }
     } else {
       session = await loadSession(sessionId, playerId);
@@ -235,6 +238,7 @@ async function finish(sessionId, body, playerId) {
     playerName: session.player_name,
     rank,
     coins: session.coinResult || { awarded: session.coins ?? 0, bonus: 0, balance: null, personalBest: false },
+    xp: session.xpResult || null,
   };
 }
 

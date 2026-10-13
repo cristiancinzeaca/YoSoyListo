@@ -132,7 +132,16 @@ function renderMeChip() {
   const data = Player.data;
   el.replaceChildren();
   if (data && Player.token && data.hasAccount) {
-    if (window.FX) el.appendChild(FX.avatar(data.name, data.avatar, 'chip-avatar'));
+    if (data.hero) {
+      // Con héroe: su cara en la cabecera.
+      const img = document.createElement('img');
+      img.className = 'avatar chip-avatar';
+      img.alt = '';
+      img.width = 40;
+      img.height = 40;
+      img.src = `/img/heroes/${data.hero.race}-${data.hero.cls}-${data.hero.sex === 'm' ? 'm' : 'h'}.webp`;
+      el.appendChild(img);
+    } else if (window.FX) el.appendChild(FX.avatar(data.name, data.avatar, 'chip-avatar'));
     const n = document.createElement('span');
     n.className = 'chip-name';
     n.textContent = data.name;

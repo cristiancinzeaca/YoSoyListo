@@ -231,6 +231,13 @@
     if (c.bonus) notes.push(`☀️ +${c.bonus} por tu primera partida del día`);
     $('coins-note').textContent = notes.join(' · ');
     if (c.balance !== null && c.balance !== undefined) Wallet.setCoins(c.balance);
+    const old = document.getElementById('result-xp');
+    if (old) old.remove();
+    if (result.xp && window.Hero) {
+      const xpBox = Hero.xpResult(result.xp);
+      xpBox.id = 'result-xp';
+      box.after(xpBox);
+    }
     if (total > 0) setTimeout(() => {
       FX.burst($('coins-won'), { colors: ['#ffcb2b', '#ffe58a', '#fff'], amount: 30 });
       FX.bump(box);

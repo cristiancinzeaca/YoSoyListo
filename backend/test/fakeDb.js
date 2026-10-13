@@ -103,7 +103,7 @@ function createFakeDb() {
     if (table === 'players') {
       return {
         rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0, conquista_played: 0, conquista_won: 0,
-        token_hash: null, google_sub: null, email: null, coins: 0, avatar: null,
+        token_hash: null, google_sub: null, email: null, coins: 0, avatar: null, xp: 0, hero: null,
       };
     }
     if (table === 'country_owners') {
@@ -235,6 +235,12 @@ function createFakeDb() {
         p.name_key = args.p_key;
         if (cost) ledger(p.id, -cost, 'rename');
         return { data: [{ ok: true, reason: null, cost, coins_left: p.coins }], error: null };
+      }
+      if (name === 'add_xp') {
+        const p = player(args.p_id);
+        if (!p) return { data: [], error: null };
+        p.xp = (p.xp || 0) + Math.max(0, args.p_amount);
+        return { data: [{ xp: p.xp }], error: null };
       }
       if (name === 'pay_coins') {
         const p = player(args.p_id);

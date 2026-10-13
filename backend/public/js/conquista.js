@@ -295,7 +295,7 @@
     for (const p of s.players) {
       const card = el('div', 'cq-player');
       card.dataset.id = p.id;
-      card.appendChild(FX.avatar(p.name, p.avatar));
+      card.appendChild(Hero.face(p));
       if (p.id === state.me.id) card.classList.add('me');
       if (turnIds.has(p.id)) card.classList.add('turn');
       if (p.eliminated || p.left) card.classList.add('out');
@@ -357,7 +357,9 @@
     const isParticipant = s.participants.includes(me);
 
     if (s.phase === 'intro') {
-      panel.append(el('h3', '', '¡Empieza la Conquista!'), el('p', 'muted', 'Tu color es el de tu nombre arriba. Cada jugador tiene un castillo con 3 torres.'));
+      panel.append(el('h3', '', '¡Empieza la Conquista!'));
+      if (window.Hero) panel.append(Hero.versus(s.players, me));
+      panel.append(el('p', 'muted', 'Tu color es el de tu nombre arriba. Cada jugador tiene un castillo con 3 torres.'));
       return;
     }
 
@@ -689,6 +691,7 @@
     if (coinsBox && state.coinsShown !== s.code) {
       state.coinsShown = s.code;
       coinsBox.replaceChildren(me ? coinReward(me) : '');
+      if (me && me.xp && window.Hero) coinsBox.appendChild(Hero.xpResult(me.xp));
     }
     const list = $('end-ranking');
     list.replaceChildren();
@@ -699,7 +702,7 @@
       dot.style.background = r.color;
       li.append(
         el('span', 'pos', r.position <= 3 ? ['🥇', '🥈', '🥉'][r.position - 1] : r.position),
-        FX.avatar(r.name, r.avatar),
+        Hero.face(r),
         dot,
         el('span', 'name', `${r.name}${r.eliminated ? ' (eliminado)' : ''}`),
         el('span', 'pts', `${r.score}`)
