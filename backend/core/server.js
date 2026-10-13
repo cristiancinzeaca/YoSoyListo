@@ -16,6 +16,7 @@ const countriesRoutes = require('../modules/countries/routes');
 const chatRoutes = require('../modules/chat/routes');
 const heroesRoutes = require('../modules/heroes/routes');
 const campaignRoutes = require('../modules/campaign/routes');
+const dailyRoutes = require('../modules/daily/routes');
 const chat = require('../modules/chat/service');
 const { attachMultiplayer } = require('../modules/multiplayer/hub');
 
@@ -23,7 +24,7 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
 
 // Páginas que queremos que Google indexe.
-const SITEMAP_PAGES = ['/', '/conquista', '/mundo', '/campana', '/privacidad'];
+const SITEMAP_PAGES = ['/', '/reto', '/conquista', '/mundo', '/campana', '/privacidad'];
 
 function baseUrl(req) {
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, '');
@@ -74,6 +75,7 @@ function createApp() {
   app.use('/api/chat', chatRoutes);
   app.use('/api/heroes', heroesRoutes);
   app.use('/api/campaign', campaignRoutes);
+  app.use('/api/daily', dailyRoutes);
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
   app.use('/auth', authRoutes.pages);

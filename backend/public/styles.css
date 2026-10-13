@@ -1161,3 +1161,38 @@ html.lore-full, html.lore-full body { overflow: hidden; }
 .login-form input { background: rgba(10,4,25,0.55); color: var(--text-light); border-color: rgba(255,255,255,0.22); }
 .login-form input::placeholder { color: #c3b6ec; opacity: 1; }
 .login-form input:focus { outline: none; border-color: var(--primary); }
+
+/* ---------- Reto diario ---------- */
+.reto-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(160deg, #4a2f92, #1f1342); }
+.reto-head h1 { margin: 0; font-size: 1.6rem; }
+.reto-head p { margin: 2px 0 0; opacity: 0.8; font-weight: 700; }
+.reto-streak { display: flex; flex-direction: column; align-items: center; min-width: 84px; padding: 8px 10px; border-radius: 18px; background: linear-gradient(180deg, rgba(255,138,61,0.3), rgba(229,72,77,0.25)); border: 2px solid #ffb36b; }
+.reto-streak.cold { filter: grayscale(1); opacity: 0.7; }
+.reto-flame { font-size: 1.8rem; line-height: 1; animation: hero-flicker 0.9s ease-in-out infinite alternate; }
+.reto-streak.cold .reto-flame { animation: none; }
+.reto-streak strong { font-size: 1.6rem; line-height: 1.1; }
+.reto-streak small { font-size: 0.7rem; font-weight: 800; opacity: 0.85; text-align: center; }
+.reto-intro { text-align: center; }
+.reto-intro h2 { margin: 0 0 10px; }
+.reto-rules { list-style: none; padding: 0; margin: 0 0 16px; text-align: left; display: flex; flex-direction: column; gap: 8px; font-weight: 700; }
+.reto-intro .btn { width: 100%; }
+.reto-progress { display: flex; gap: 4px; margin-bottom: 10px; }
+.reto-progress span { flex: 1; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.15); }
+.reto-progress span.now { background: #ffe58a; }
+.reto-progress span.ok { background: #1fb36b; }
+.reto-progress span.ko { background: #ef4747; }
+.reto-score { text-align: right; margin: 10px 0 0; font-weight: 800; }
+.reto-result { text-align: center; }
+.reto-grid { display: flex; justify-content: center; gap: 4px; font-size: 1.5rem; margin: 6px 0 12px; }
+.reto-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.reto-stats div { display: flex; flex-direction: column; padding: 10px 4px; border-radius: 14px; background: rgba(0,0,0,0.25); }
+.reto-stats strong { font-size: 1.4rem; color: #ffe58a; }
+.reto-stats small { font-weight: 700; opacity: 0.8; }
+.reto-rewards { font-weight: 900; color: #ffe58a; }
+.reto-result .btn { width: 100%; }
+.reto-next { margin: 12px 0 0; font-weight: 700; opacity: 0.8; }
+.reto-board li.me { background: rgba(255,229,138,0.15); border-radius: 12px; }
+.reto-board-ok { font-weight: 800; opacity: 0.75; font-size: 0.85rem; }
+.reto-banner { background: linear-gradient(160deg, #6b2a12, #2a1608); border-color: rgba(255,179,107,0.6); }
+.reto-banner .reto-flame { font-size: 2.2rem; flex: 0 0 auto; }
+.reto-banner.pending { animation: hero-call 2.4s ease-in-out infinite; }

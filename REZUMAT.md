@@ -185,10 +185,17 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Siguranță: parolă min. 8 caractere (nu doar cifre, nu din cele banale); 5 încercări greșite → blocare 15 min; răspunsuri identice la „am uitat parola” fie că emailul există sau nu; tokenuri de unică folosință salvate ca hash.
 - Dacă cineva intră cu Google cu același email ca un cont cu parolă, intră în **același cont** (Google a verificat emailul). Invers, un email deja folosit cu Google nu se poate înregistra cu parolă.
 
+## 5j. Provocarea zilnică și seria de zile (ramura `reto-diario`)
+
+- Pagina `/reto` (card pe prima pagină cu seria 🔥 și starea de azi). **10 întrebări, aceleași pentru toți** în ziua respectivă (ora Madridului; alese cu `daily_questions`, ordine fixă după dată), **o singură încercare pe zi**, 15 s pe întrebare. Puncte: 100 pe răspuns corect + 10 pe fiecare secundă rămasă.
+- **Clasamentul zilei** (top 20 + locul tău) și **rezultat de distribuit** în stil Wordle (🟩🟥 + scor + loc).
+- **Seria de zile** (`players.streak`, `streak_best`, `streak_day`): crește dacă joci în zile la rând; se rupe dacă sari o zi.
+- **Recompense**: 10 monede + 3/răspuns corect + 5/zi de serie (max. 7) + bonus la 7 zile (+100), 30 (+500), 100 (+2000); XP 20 + 5/răspuns corect. Cifrele sunt în `modules/daily/service.js` (`DAILY`).
+- Dacă cineva închide pagina în mijlocul unei întrebări și revine după ce a expirat timpul, întrebarea se numără greșită (nu se poate „trage cu ochiul” și reîncerca).
+
 ## 6. Alte idei în așteptare
 
 - **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).
-- **Provocarea zilnică** (aceleași 10 întrebări pentru toți, clasament pe zi).
 - **SEO**: pagini pe categorii, domeniu propriu, Google Search Console.
 - **Monetizare** (când există trafic): Google AdSense + banner de cookie-uri (obligatoriu în UE) + pagina „Aviso legal” (cere numele și NIF-ul titularului).
 - Mai multe întrebări și categorii (de exemplu „España”, cinema, muzică). Formatul e explicat în `README.md`.

@@ -118,7 +118,26 @@
     if (x18) x18.hidden = !me.adult;
   }
 
+  // Reto diario: racha y si ya se ha jugado hoy.
+  async function retoBanner() {
+    if (!Player.has()) return;
+    try {
+      const d = await api.get('/api/daily');
+      const n = d.streak.streak;
+      document.getElementById('reto-banner-title').textContent = n ? `Reto diario · 🔥 ${n} ${n === 1 ? 'día' : 'días'}` : 'Reto diario';
+      document.getElementById('reto-banner-txt').textContent = d.played
+        ? `Hoy: ${d.result.correct}/10 · puesto #${d.result.rank}. ¡Vuelve mañana!`
+        : n
+          ? '¡Juega hoy para no perder tu racha!'
+          : '10 preguntas, las mismas para todos. ¿Cuántas aciertas hoy?';
+      document.getElementById('reto-banner').classList.toggle('pending', !d.played);
+    } catch {
+      // sin datos, el texto por defecto vale
+    }
+  }
+
   loadCategories();
   loadRanking('week');
   heroBanner();
+  retoBanner();
 })();

@@ -700,3 +700,55 @@ create table if not exists auth_tokens (
 );
 create index if not exists auth_tokens_player_idx on auth_tokens (player_id, kind);
 alter table auth_tokens enable row level security;
+
+-- ---------- Reto diario y racha ----------
+alter table players add column if not exists streak int not null default 0;
+alter table players add column if not exists streak_best int not null default 0;
+alter table players add column if not exists streak_day text; -- 'YYYY-MM-DD' (hora de Madrid)
+
+create table if not exists daily_runs (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null references players (id) on delete cascade,
+  day text not null, -- 'YYYY-MM-DD' (hora de Madrid)
+  questions jsonb not null,
+  answers jsonb not null default '{"list": []}'::jsonb,
+  current int not null default 0,
+  correct int not null default 0,
+  score int not null default 0,
+  deadline timestamptz not null,
+  status text not null default 'active' check (status in ('active', 'done')),
+  created_at timestamptz not null default now(),
+  finished_at timestamptz,
+  unique (player_id, day)
+);
+create index if not exists daily_runs_day_idx on daily_runs (day, status, score desc);
+alter table daily_runs enable row level security;
+
+-- Las mismas preguntas para todos ese día (orden fijo según la fecha).
+create or replace function daily_questions(p_day text, p_limit int)
+returns setof questions
+language sql stable as $$
+  select * from questions where active order by md5(id::text || p_day) limit p_limit;
+$$;
+
+-- Al terminar el reto: actualiza la racha de días seguidos. Devuelve la racha y la mejor.
+create or replace function finish_daily(p_id uuid, p_day text)
+returns table (streak int, best int)
+language plpgsql as $$
+declare
+  me players%rowtype;
+  s int;
+begin
+  select * into me from players where id = p_id for update;
+  if not found then return; end if;
+  if me.streak_day = p_day then
+    s := me.streak;
+  elsif me.streak_day = to_char(p_day::date - 1, 'YYYY-MM-DD') then
+    s := me.streak + 1;
+  else
+    s := 1;
+  end if;
+  update players set streak = s, streak_best = greatest(streak_best, s), streak_day = p_day where id = p_id;
+  return query select s, greatest(me.streak_best, s);
+end;
+$$;

@@ -6,7 +6,7 @@ function createFakeDb() {
   const tables = {
     questions: [], numeric_questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [],
     player_sessions: [], player_items: [], coin_ledger: [], country_owners: [], country_attacks: [],
-    chat_messages: [], chat_reports: [], chat_blocks: [], chat_reads: [], campaign_runs: [], auth_tokens: [],
+    chat_messages: [], chat_reports: [], chat_blocks: [], chat_reads: [], campaign_runs: [], auth_tokens: [], daily_runs: [],
   };
 
   class Query {
@@ -99,12 +99,13 @@ function createFakeDb() {
   function defaults(table) {
     if (table === 'chat_messages') return { recipient_id: null, hidden: false };
     if (table === 'campaign_runs') return { current: 0, status: 'active' };
+    if (table === 'daily_runs') return { current: 0, correct: 0, score: 0, answers: { list: [] }, status: 'active', finished_at: null };
     if (table === 'chat_reports') return { resolved: false };
     if (table === 'questions') return { category: 'general', difficulty: 2, explanation: null, active: true };
     if (table === 'players') {
       return {
         rating: 1000, duels_played: 0, duels_won: 0, rooms_played: 0, rooms_won: 0, conquista_played: 0, conquista_won: 0,
-        token_hash: null, google_sub: null, password_hash: null, email_verified: false, email: null, coins: 0, avatar: null, xp: 0, hero: null, campaign: {}, birthdate: null, birthday_gift_year: null, free_rename_used: false,
+        token_hash: null, google_sub: null, password_hash: null, email_verified: false, email: null, coins: 0, avatar: null, xp: 0, hero: null, campaign: {}, birthdate: null, birthday_gift_year: null, free_rename_used: false, streak: 0, streak_best: 0, streak_day: null,
       };
     }
     if (table === 'country_owners') {
@@ -246,6 +247,21 @@ function createFakeDb() {
         p.birthday_gift_year = args.p_year;
         ledger(p.id, args.p_amount, 'gift:birthday');
         return { data: [{ balance: p.coins }], error: null };
+      }
+      if (name === 'daily_questions') {
+        const h = (q) => require('crypto').createHash('md5').update(String(q.id) + args.p_day).digest('hex');
+        const list = tables.questions.filter((q) => q.active).sort((a, b) => (h(a) < h(b) ? -1 : 1)).slice(0, args.p_limit);
+        return { data: list.map((q) => ({ ...q })), error: null };
+      }
+      if (name === 'finish_daily') {
+        const p = player(args.p_id);
+        if (!p) return { data: [], error: null };
+        const prev = new Date(Date.parse(`${args.p_day}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+        const s = p.streak_day === args.p_day ? p.streak : p.streak_day === prev ? p.streak + 1 : 1;
+        p.streak = s;
+        p.streak_best = Math.max(p.streak_best || 0, s);
+        p.streak_day = args.p_day;
+        return { data: [{ streak: s, best: p.streak_best }], error: null };
       }
       if (name === 'campaign_complete') {
         const p = player(args.p_id);
