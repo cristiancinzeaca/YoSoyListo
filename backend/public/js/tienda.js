@@ -121,7 +121,7 @@
   }
 
   (async function init() {
-    await Player.ensure('Entra con Google para ver tus monedas y la tienda.');
+    await Player.ensure('Entra con Google o con tu correo para ver tus monedas y la tienda.');
     try {
       [catalog] = await Promise.all([api.get('/api/shop/catalog'), Wallet.load()]);
       if (!Wallet.data) return Player.ensure();

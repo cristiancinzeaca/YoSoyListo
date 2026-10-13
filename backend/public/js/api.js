@@ -24,6 +24,7 @@ const api = {
     if (!res.ok) {
       const err = new Error((data && data.error) || `Error ${res.status}`);
       err.status = res.status;
+      err.code = data && data.code;
       throw err;
     }
     return data;

@@ -1,6 +1,6 @@
 (async function () {
   const $ = (id) => document.getElementById(id);
-  await Player.ensure('Entra con Google para ver tu perfil, tus monedas y tus estadísticas.');
+  await Player.ensure('Entra con Google o con tu correo para ver tu perfil, tus monedas y tus estadísticas.');
 
   let me;
   try {

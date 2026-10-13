@@ -3,6 +3,8 @@ const express = require('express');
 const { httpError } = require('../../core/http');
 const { rateLimit } = require('../../core/rateLimit');
 const google = require('./google');
+const local = require('./local');
+const mail = require('./mail');
 const players = require('../players/service');
 const shop = require('../shop/service');
 const { bearer } = require('../players/auth');
@@ -69,7 +71,32 @@ pages.get('/google/callback', rateLimit({ windowMs: 60_000, max: 30 }), async (r
 const api = express.Router();
 
 api.get('/config', (req, res) => {
-  res.json({ google: google.configured() });
+  res.json({ google: google.configured(), email: true, emailVerification: mail.configured() });
+});
+
+// ---------- correo y contraseña ----------
+api.post('/register', rateLimit({ windowMs: 60 * 60_000, max: 10 }), async (req, res) => {
+  res.status(201).json(await local.register(req.body, baseUrl(req)));
+});
+
+api.post('/login', rateLimit({ windowMs: 15 * 60_000, max: 30 }), async (req, res) => {
+  res.json(await local.login(req.body));
+});
+
+api.post('/verify', rateLimit({ windowMs: 60_000, max: 20 }), async (req, res) => {
+  res.json(await local.verify(req.body?.token));
+});
+
+api.post('/resend', rateLimit({ windowMs: 60 * 60_000, max: 10 }), async (req, res) => {
+  res.json(await local.resend(req.body, baseUrl(req)));
+});
+
+api.post('/forgot', rateLimit({ windowMs: 60 * 60_000, max: 10 }), async (req, res) => {
+  res.json(await local.forgot(req.body, baseUrl(req)));
+});
+
+api.post('/reset', rateLimit({ windowMs: 60 * 60_000, max: 20 }), async (req, res) => {
+  res.json(await local.reset(req.body));
 });
 
 api.post('/complete', rateLimit({ windowMs: 60_000, max: 20 }), async (req, res) => {

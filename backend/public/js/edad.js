@@ -5,7 +5,7 @@
   const nextRaw = new URLSearchParams(location.search).get('next');
   const next = nextRaw && nextRaw.startsWith('/') && !nextRaw.startsWith('//') && !nextRaw.startsWith('/edad') ? nextRaw : '/';
 
-  await Player.ensure('Entra con Google para continuar.', location.pathname + location.search);
+  await Player.ensure('Entra con Google o con tu correo para continuar.', location.pathname + location.search);
   if (Player.data && Player.data.birthdateSet) return location.replace(next);
 
   const opt = (sel, value, label) => {

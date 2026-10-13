@@ -46,8 +46,10 @@
   else {
     $('e-spinner').hidden = true;
     $('e-title').textContent = 'Entra para jugar';
-    $('e-text').textContent = 'Usa tu cuenta de Google: guardamos tus monedas, avatares y estadísticas.';
+    $('e-text').textContent = 'Entra con Google o con tu correo: guardamos tus monedas, tu héroe y tus estadísticas.';
     $('e-google').href = Player.loginUrl('/');
     $('e-google').hidden = false;
+    // También con correo y contraseña.
+    showLogin('Entra con Google o con tu correo y contraseña.', '/');
   }
 })();

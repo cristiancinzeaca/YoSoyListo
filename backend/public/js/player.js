@@ -10,7 +10,7 @@ const Player = {
       return null;
     }
   },
-  // Solo vale una cuenta de Google (los perfiles de invitado antiguos ya no sirven para jugar).
+  // Cuenta de Google o de correo (los perfiles de invitado antiguos ya no sirven para jugar).
   has() {
     const d = this.data;
     return !!(this.token && d && d.hasAccount);
@@ -65,7 +65,7 @@ const Player = {
   // next: a dónde volver después de entrar (por defecto, esta misma página).
   ensure(message, next) {
     if (this.has()) return Promise.resolve(this.data);
-    showLogin(message || 'Para jugar necesitas entrar con tu cuenta de Google. Así guardamos tus monedas, avatares y estadísticas en todos tus dispositivos.', next);
+    showLogin(message || 'Para jugar necesitas una cuenta: entra con Google o con tu correo. Así guardamos tus monedas, tu héroe y tus estadísticas en todos tus dispositivos.', next);
     // No se resuelve: al entrar con Google se vuelve a esta misma página.
     return new Promise(() => {});
   },
@@ -73,6 +73,7 @@ const Player = {
 
 function showLogin(message, next) {
   if (document.querySelector('.overlay.login')) return;
+  const target = next || location.pathname + location.search;
   const overlay = document.createElement('div');
   overlay.className = 'overlay login';
   overlay.innerHTML = `
@@ -86,12 +87,103 @@ function showLogin(message, next) {
         <li>📱 Tu progreso en el móvil y en el ordenador</li>
       </ul>
       <a class="btn btn-google" href="#"><span class="g-logo" aria-hidden="true">G</span> Entrar con Google</a>
+      <div class="login-or"><span>o con tu correo</span></div>
+      <div class="seg login-tabs">
+        <button type="button" data-mode="login" class="active">Entrar</button>
+        <button type="button" data-mode="register">Crear cuenta</button>
+      </div>
+      <form class="login-form" novalidate>
+        <input type="text" name="name" placeholder="Tu nombre en el juego" maxlength="20" autocomplete="nickname" hidden>
+        <input type="email" name="email" placeholder="Correo electrónico" autocomplete="email" required>
+        <input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required>
+        <button class="btn btn-secondary" type="submit">Entrar</button>
+        <button class="link-btn login-forgot" type="button">¿Has olvidado la contraseña?</button>
+      </form>
+      <p class="login-note" hidden></p>
+      <p class="form-error login-error" hidden></p>
       <a class="link-btn login-back" href="/">Volver al inicio</a>
     </div>`;
-  overlay.querySelector('.login-msg').textContent = message;
-  overlay.querySelector('.btn-google').href = Player.loginUrl(next);
+  const $ = (sel) => overlay.querySelector(sel);
+  $('.login-msg').textContent = message;
+  $('.btn-google').href = Player.loginUrl(next);
+  let mode = 'login';
+  const form = $('.login-form');
+  const note = (text) => {
+    $('.login-note').hidden = !text;
+    $('.login-note').replaceChildren(document.createTextNode(text || ''));
+  };
+  const error = (text) => {
+    $('.login-error').hidden = !text;
+    $('.login-error').textContent = text || '';
+  };
+  const setMode = (m) => {
+    mode = m;
+    for (const b of $('.login-tabs').children) b.classList.toggle('active', b.dataset.mode === m);
+    form.name.hidden = m !== 'register';
+    form.password.autocomplete = m === 'register' ? 'new-password' : 'current-password';
+    form.password.placeholder = m === 'register' ? 'Contraseña (mín. 8 caracteres)' : 'Contraseña';
+    form.querySelector('[type=submit]').textContent = m === 'register' ? 'Crear cuenta' : 'Entrar';
+    $('.login-forgot').hidden = m !== 'login';
+    note('');
+    error('');
+  };
+  $('.login-tabs').addEventListener('click', (e) => {
+    if (e.target.dataset && e.target.dataset.mode) setMode(e.target.dataset.mode);
+  });
+  // Botón «Reenviar correo» dentro del aviso.
+  const resendButton = (email) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'link-btn';
+    b.textContent = 'Reenviar el correo';
+    b.addEventListener('click', async () => {
+      await api.post('/api/auth/resend', { email }).catch(() => {});
+      b.textContent = 'Enviado ✓';
+      b.disabled = true;
+    });
+    return b;
+  };
+  const done = (res) => {
+    Player.save(res.player, res.token);
+    location.href = res.created ? `/heroe?next=${encodeURIComponent(target)}` : target;
+  };
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    error('');
+    note('');
+    const submit = form.querySelector('[type=submit]');
+    submit.disabled = true;
+    const body = { email: form.email.value, password: form.password.value };
+    try {
+      if (mode === 'register') {
+        const res = await api.post('/api/auth/register', { ...body, name: form.name.value });
+        if (res.needsVerification) {
+          note(`📬 Te hemos enviado un correo a ${res.email}. Ábrelo y pulsa el enlace para activar tu cuenta (mira también en «Spam»). `);
+          $('.login-note').appendChild(resendButton(res.email));
+          return;
+        }
+        return done(res);
+      }
+      done(await api.post('/api/auth/login', body));
+    } catch (err) {
+      error(err.message);
+      if (err.code === 'unverified') $('.login-error').appendChild(resendButton(body.email));
+    } finally {
+      submit.disabled = false;
+    }
+  });
+  $('.login-forgot').addEventListener('click', async () => {
+    error('');
+    if (!form.email.value.trim()) return error('Escribe tu correo arriba y vuelve a pulsar.');
+    try {
+      await api.post('/api/auth/forgot', { email: form.email.value });
+      note('📬 Si hay una cuenta con ese correo, te hemos enviado un enlace para cambiar la contraseña.');
+    } catch (err) {
+      error(err.message);
+    }
+  });
   document.body.appendChild(overlay);
-  overlay.querySelector('.btn-google').focus();
+  $('.btn-google').focus();
 }
 
 // Monedas y comodines del jugador.
@@ -175,7 +267,7 @@ function renderMeChip() {
 }
 
 // La fecha de nacimiento es obligatoria: sin ella, se pide antes de seguir.
-const BIRTHDATE_FREE_PAGES = ['/edad', '/entrar', '/privacidad'];
+const BIRTHDATE_FREE_PAGES = ['/edad', '/entrar', '/privacidad', '/verificar'];
 function needsBirthdate(data) {
   return data && data.hasAccount && data.birthdateSet === false && !BIRTHDATE_FREE_PAGES.includes(location.pathname);
 }

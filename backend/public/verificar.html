@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Tu cuenta · Yo Soy Listo</title>
+  <meta name="robots" content="noindex">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a class="logo" href="/" aria-label="Yo Soy Listo · Inicio"><img src="/img/logo.webp" alt="Yo Soy Listo" width="900" height="580"></a>
+    </header>
+    <main>
+      <section class="card age-card" id="v-wait">
+        <div class="spinner"></div>
+        <h1>Un momento…</h1>
+      </section>
+      <section class="card age-card" id="v-ok" hidden>
+        <div class="age-cake" aria-hidden="true">✅</div>
+        <h1>¡Correo confirmado!</h1>
+        <p>Tu cuenta ya está activa. ¡Vamos a crear tu héroe!</p>
+      </section>
+      <section class="card age-card" id="v-reset" hidden>
+        <div class="age-cake" aria-hidden="true">🔑</div>
+        <h1>Nueva contraseña</h1>
+        <form class="login-form" id="v-form" novalidate>
+          <input type="password" id="v-pass" placeholder="Nueva contraseña (mín. 8 caracteres)" autocomplete="new-password">
+          <input type="password" id="v-pass2" placeholder="Repite la contraseña" autocomplete="new-password">
+          <button class="btn" type="submit">Guardar contraseña</button>
+        </form>
+      </section>
+      <section class="card age-card" id="v-error" hidden>
+        <div class="age-cake" aria-hidden="true">⚠️</div>
+        <h1>Vaya…</h1>
+        <p id="v-error-text"></p>
+        <a class="btn" href="/entrar">Ir a «Entrar»</a>
+      </section>
+      <p class="form-error center" id="v-msg" hidden></p>
+    </main>
+  </div>
+  <script src="/js/fx.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/verificar.js"></script>
+</body>
+</html>
