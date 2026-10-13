@@ -193,6 +193,12 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - **Recompense**: 10 monede + 3/răspuns corect + 5/zi de serie (max. 7) + bonus la 7 zile (+100), 30 (+500), 100 (+2000); XP 20 + 5/răspuns corect. Cifrele sunt în `modules/daily/service.js` (`DAILY`).
 - Dacă cineva închide pagina în mijlocul unei întrebări și revine după ce a expirat timpul, întrebarea se numără greșită (nu se poate „trage cu ochiul” și reîncerca).
 
+## 5k. Potrivire pe nivel și provocare prin link (ramura `emparejamiento`)
+
+- **Rang de potrivire** = ELO de duel (cât de bine răspunzi) + 5 pe nivel de erou (cât joci, max. 40 niveluri). **Ranguri**: 🥉 Bronce <900 · 🥈 Plata · 🥇 Oro 1100+ · 🔷 Platino 1300+ · 💎 Diamante 1500+ · 👑 Maestro 1700+. Se văd în profil, pe cărțile VS și în ecranul de căutare. Codul: `modules/multiplayer/matchmaking.js` (`MM`).
+- **Duel**: întâi caută rival cu diferență ≤100 puncte; fereastra crește cu 25/secundă; după 8 s acceptă pe oricine; după 12 s, bot **de nivelul tău** (boții sunt mai buni pentru rangurile mari). La fel pentru Conquista (grupuri de 3 cât mai apropiate; la expirarea timpului se completează cu boți de nivelul grupului). Cozile se reverifică în fiecare secundă.
+- **Provocare prin link** („⚔️ Retar a un amigo” pe prima pagină → `/duelo?amigo=1`): duel privat, codul/linkul `/duelo?reto=COD` se trimite pe WhatsApp; începe când intră prietenul. **Nu schimbă ELO-ul** (ca să nu se poată „dărui” puncte). **Revanșă** când o cer amândoi.
+
 ## 6. Alte idei în așteptare
 
 - **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).

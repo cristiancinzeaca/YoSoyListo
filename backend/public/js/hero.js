@@ -47,6 +47,7 @@
       info.appendChild(el('span', 'hero-title', 'Sin héroe'));
     }
     info.appendChild(el('span', 'hero-power', `⚔️ ${(p.power || 0).toLocaleString('es-ES')}`));
+    if (p.tier) info.appendChild(el('span', `hero-tier tier-${p.tier.key}`, `${p.tier.icon} ${p.tier.name}`));
     c.appendChild(info);
     return c;
   }

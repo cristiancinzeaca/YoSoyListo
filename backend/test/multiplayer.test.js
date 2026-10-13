@@ -318,3 +318,79 @@ test('un perfil de invitado antiguo ya no puede jugar', async () => {
   const c = await connect(token);
   assert.equal(c.welcome.code, 'auth');
 });
+
+test('emparejamiento por nivel: un rival muy distinto no se empareja enseguida', async () => {
+  const mm = require('../modules/multiplayer/matchmaking');
+  const prevAnyone = mm.MM.anyoneAfterMs;
+  const prevBot = config.botWaitMs;
+  mm.MM.anyoneAfterMs = 1500;
+  config.botWaitMs = 4000;
+  try {
+    const novata = await newPlayer('Novata MM');
+    const experta = await newPlayer('Experta MM');
+    db.tables.players.find((p) => p.id === experta.player.id).rating = 1800;
+    const cn = await connect(novata.token);
+    const ce = await connect(experta.token);
+    cn.send({ t: 'queue' });
+    const q = await cn.waitFor(is('queued'));
+    assert.equal(q.tier.key, 'plata');
+    ce.send({ t: 'queue' });
+    const qe = await ce.waitFor(is('queued'));
+    assert.equal(qe.tier.key, 'maestro');
+    const t0 = Date.now();
+    // Se emparejan entre ellos (no con bots), pero solo cuando la búsqueda se abre.
+    const room = await cn.waitFor((m) => m.t === 'room' && m.room.mode === 'duel', 6000);
+    assert.ok(Date.now() - t0 >= 900, 'no se juntan al instante');
+    assert.ok(room.room.players.every((p) => !p.isBot), 'contra la otra persona, no contra un bot');
+    cn.close();
+    ce.close();
+  } finally {
+    mm.MM.anyoneAfterMs = prevAnyone;
+    config.botWaitMs = prevBot;
+  }
+});
+
+test('reto a un amigo por enlace: duelo privado, sin ELO, con revancha', async () => {
+  const a = await newPlayer('Retadora');
+  const b = await newPlayer('Retado');
+  const ca = await connect(a.token);
+  const cb = await connect(b.token);
+  ca.send({ t: 'challenge_create' });
+  const lobby = await ca.waitFor((m) => m.t === 'room' && m.room.friendly);
+  assert.equal(lobby.room.status, 'lobby');
+  const code = lobby.room.code;
+
+  // Un tercero no puede colarse cuando ya ha empezado.
+  cb.send({ t: 'challenge_join', code });
+  const [endA] = await playToEnd([
+    { c: ca, right: true },
+    { c: cb, right: false },
+  ]);
+  assert.equal(endA.ranking[0].playerId, a.player.id);
+  assert.equal(endA.ranking[0].ratingAfter, null, 'los retos entre amigos no cambian el ELO');
+  assert.equal(db.tables.players.find((p) => p.id === a.player.id).rating, 1000);
+
+  const c3 = await connect((await newPlayer('Colada')).token);
+  c3.send({ t: 'challenge_join', code });
+  assert.match((await c3.waitFor(is('error'))).message, /ya ha empezado|ya no existe/);
+
+  // Revancha: empieza cuando la piden los dos.
+  ca.send({ t: 'challenge_rematch' });
+  await cb.waitFor(is('rematch_vote'));
+  cb.send({ t: 'challenge_rematch' });
+  const [again] = await playToEnd([
+    { c: ca, right: false },
+    { c: cb, right: true },
+  ]);
+  assert.equal(again.ranking[0].playerId, b.player.id);
+  ca.close();
+  cb.close();
+  c3.close();
+});
+
+test('enlace de reto caducado', async () => {
+  const c = await connect((await newPlayer('Tardía')).token);
+  c.send({ t: 'challenge_join', code: 'RXXXXX' });
+  assert.match((await c.waitFor(is('error'))).message, /ya no existe/);
+  c.close();
+});

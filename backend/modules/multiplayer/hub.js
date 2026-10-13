@@ -3,6 +3,7 @@ const { WebSocketServer, WebSocket } = require('ws');
 const { config } = require('./config');
 const { Room, GameError } = require('./room');
 const { createBot } = require('./bot');
+const mm = require('./matchmaking');
 const { normalizeCategory } = require('../questions/validate');
 const players = require('../players/service');
 const persist = require('./persist');
@@ -45,7 +46,7 @@ function attachMultiplayer(server, deps = {}) {
   const loadNumeric18 = deps.loadNumeric18 || adultQuestions.loadNumeric;
   const loadChoice18 = deps.loadChoice18 || adultQuestions.loadChoice;
   // Antes de entrar en una partida se recargan sus datos (nivel, héroe, nombre) por si han cambiado.
-  const FRESH_BEFORE = new Set(['queue', 'create_room', 'join_room', 'cq_queue', 'cq_private', 'cq_join']);
+  const FRESH_BEFORE = new Set(['queue', 'create_room', 'join_room', 'cq_queue', 'cq_private', 'cq_join', 'challenge_create', 'challenge_join']);
 
   const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 4096 });
   const clients = new Map(); // playerId → conexión
@@ -140,7 +141,7 @@ function attachMultiplayer(server, deps = {}) {
     const timer = cqTimers[variant];
     const startsInMs = timer ? Math.max(0, timer.at - Date.now()) : null;
     const q = cqQueues[variant];
-    for (const id of q.keys()) send(id, { t: 'cq_queued', variant, waiting: q.size, needed: CQ_VARIANTS[variant].players, startsInMs });
+    for (const [id, e] of q) send(id, { t: 'cq_queued', variant, waiting: q.size, needed: CQ_VARIANTS[variant].players, startsInMs, tier: mm.tierOf(e.score) });
   }
 
   // Empieza una partida con estos jugadores (se completa con bots si faltan).
@@ -163,8 +164,9 @@ function attachMultiplayer(server, deps = {}) {
     const participants = ids.filter((id) => clients.has(id)).map((id) => ({ ...clients.get(id).player, countries: owned[id] || [] }));
     if (participants.length === 0) return;
     const taken = participants.map((p) => p.name);
+    const avgScore = participants.reduce((sum, p) => sum + mm.matchRating(p), 0) / participants.length;
     while (participants.length < cfg.players) {
-      const bot = createBot(taken);
+      const bot = createBot(taken, { skill: mm.botSkillFor(avgScore) });
       taken.push(bot.name);
       participants.push(bot);
     }
@@ -186,15 +188,36 @@ function attachMultiplayer(server, deps = {}) {
     game.run();
   }
 
+  // Al acabarse la espera: el que más lleva y los más parecidos que haya (el resto, bots).
   async function startConquista(variant = 'normal') {
     clearTimeout(cqTimers[variant]?.handle);
     cqTimers[variant] = null;
     const q = cqQueues[variant];
-    const ids = [...q.keys()].filter((id) => clients.has(id)).slice(0, CQ_VARIANTS[variant].players);
+    const entries = [...q.entries()].filter(([id]) => clients.has(id)).map(([id, e]) => ({ id, score: e.score, since: e.since }));
+    if (!entries.length) return;
+    entries.sort((a, b) => a.since - b.since);
+    const first = entries[0];
+    const rest = entries.slice(1).sort((x, y) => Math.abs(first.score - x.score) - Math.abs(first.score - y.score));
+    const ids = [first.id, ...rest.slice(0, CQ_VARIANTS[variant].players - 1).map((e) => e.id)];
     for (const id of ids) q.delete(id);
     await launchConquista(variant, ids);
     // Si quedaron jugadores esperando, empieza otra cuenta atrás para ellos.
     if (q.size > 0) armCqTimer(variant);
+  }
+
+  // Grupo completo de nivel parecido: empieza ya.
+  function tryCqMatch(variant) {
+    const q = cqQueues[variant];
+    const entries = [...q.entries()].filter(([id]) => clients.has(id)).map(([id, e]) => ({ id, score: e.score, since: e.since }));
+    const group = mm.findGroup(entries, CQ_VARIANTS[variant].players);
+    if (!group) return false;
+    for (const id of group) q.delete(id);
+    if (q.size === 0) {
+      clearTimeout(cqTimers[variant]?.handle);
+      cqTimers[variant] = null;
+    }
+    launchConquista(variant, group).catch((e) => console.error('[conquista] inicio', e));
+    return true;
   }
 
   function armCqTimer(variant) {
@@ -211,8 +234,8 @@ function attachMultiplayer(server, deps = {}) {
     requireAdult(me, variant);
     ensureFree(me.id);
     const q = cqQueues[variant];
-    q.set(me.id, Date.now());
-    if (q.size >= CQ_VARIANTS[variant].players) return startConquista(variant).catch((e) => console.error('[conquista] inicio', e));
+    q.set(me.id, { since: Date.now(), score: mm.matchRating(me) });
+    if (tryCqMatch(variant)) return;
     armCqTimer(variant);
     cqQueueStatus(variant);
   }
@@ -277,24 +300,40 @@ function attachMultiplayer(server, deps = {}) {
     }
   }
 
+  // Duelos: cola con emparejamiento por nivel (ver matchmaking.js).
+  function duelEntries() {
+    return [...queue.entries()].filter(([id]) => clients.has(id)).map(([id, e]) => ({ id, score: e.score, since: e.since }));
+  }
+
+  function tryDuelMatch() {
+    const pair = mm.findPair(duelEntries());
+    if (!pair) return false;
+    const players = pair.map((id) => clients.get(id).player);
+    for (const id of pair) leaveQueue(id);
+    startDuel(players);
+    return true;
+  }
+
   function joinQueue(conn) {
     const me = conn.player;
     ensureFree(me.id);
-    const rival = [...queue.keys()].find((id) => id !== me.id && clients.has(id));
-    if (rival) {
-      leaveQueue(rival);
-      const rivalPlayer = clients.get(rival).player;
-      startDuel([rivalPlayer, me]);
-      return;
-    }
+    const score = mm.matchRating(me);
     const botTimer = setTimeout(() => {
       if (!queue.has(me.id)) return;
       queue.delete(me.id);
-      startDuel([me, createBot()]);
+      startDuel([me, createBot([], { skill: mm.botSkillFor(score) })]);
     }, config.botWaitMs);
-    queue.set(me.id, { since: Date.now(), botTimer });
-    sendTo(conn, { t: 'queued', botWaitMs: config.botWaitMs });
+    queue.set(me.id, { since: Date.now(), score, botTimer });
+    sendTo(conn, { t: 'queued', botWaitMs: config.botWaitMs, tier: mm.tierOf(score), score });
+    tryDuelMatch();
   }
+
+  // Cada segundo se revisan las colas: la ventana de búsqueda se va abriendo.
+  const matcher = setInterval(() => {
+    while (tryDuelMatch());
+    for (const variant of Object.keys(cqQueues)) tryCqMatch(variant);
+  }, 1000);
+  matcher.unref();
 
   // ---------- mensajes ----------
   const handlers = {
@@ -352,6 +391,41 @@ function attachMultiplayer(server, deps = {}) {
     },
     async start(conn) {
       await requireRoom(conn).start(conn.player.id);
+    },
+    // Reto a un amigo: duelo privado por enlace. Empieza solo cuando entra el amigo.
+    challenge_create(conn) {
+      const me = conn.player;
+      ensureFree(me.id);
+      const room = createRoom({ code: newCode('R'), mode: 'duel', questionCount: config.duelQuestions });
+      room.friendly = true;
+      room.addPlayer(me);
+      membership.set(me.id, room.code);
+    },
+    async challenge_join(conn, msg) {
+      const me = conn.player;
+      const code = String(msg.code || '').trim().toUpperCase();
+      const room = rooms.get(code);
+      if (!room || !room.friendly) throw new GameError('Este reto ya no existe. Pide a tu amigo que te mande otro enlace.');
+      if (membership.get(me.id) === code) {
+        room.addPlayer(me);
+        room.syncPlayer(me.id);
+        return;
+      }
+      if (room.status !== 'lobby' || room.players.size >= 2) throw new GameError('Este reto ya ha empezado con otra persona');
+      ensureFree(me.id);
+      room.addPlayer(me);
+      membership.set(me.id, code);
+      try {
+        await room.start();
+      } catch (err) {
+        const message = err instanceof GameError ? err.message : 'No se pudo empezar el reto';
+        for (const p of room.players.values()) if (!p.isBot) send(p.id, { t: 'error', message });
+      }
+    },
+    async challenge_rematch(conn) {
+      const room = currentRoom(conn.player.id);
+      if (!room || !room.friendly) throw new GameError('No estás en ningún reto');
+      await room.friendlyRematch(conn.player.id);
     },
     cq_queue(conn, msg) {
       joinCqQueue(conn, variantOf(msg.variant));
@@ -583,6 +657,7 @@ function attachMultiplayer(server, deps = {}) {
     close() {
       clearInterval(heartbeat);
       clearInterval(cleanup);
+      clearInterval(matcher);
       for (const entry of queue.values()) clearTimeout(entry.botTimer);
       for (const t of Object.values(cqTimers)) clearTimeout(t?.handle);
       for (const room of [...rooms.values()]) room.destroy();

@@ -32,9 +32,20 @@
     <section id="s-queue" class="center-screen" hidden>
       <div class="spinner"></div>
       <h1>Buscando rival…</h1>
-      <p>Si en unos segundos no aparece nadie, jugarás contra un bot.</p>
+      <p class="queue-tier" id="queue-tier"></p>
+      <p>Primero buscamos a alguien de tu nivel; si tarda, a cualquiera; y si no hay nadie, jugarás contra un bot de tu nivel.</p>
       <p><strong id="queue-time">0</strong> s</p>
       <a class="btn btn-secondary" href="/" id="queue-cancel">Cancelar</a>
+    </section>
+
+    <section id="s-challenge" class="center-screen" hidden>
+      <div class="challenge-icon" aria-hidden="true">⚔️</div>
+      <h1 id="ch-title">Reta a un amigo</h1>
+      <p id="ch-text">Mándale este enlace. El duelo empieza en cuanto entre.</p>
+      <div class="x18-code" id="ch-code">-----</div>
+      <button class="btn" type="button" id="ch-share">📨 Enviar el reto por WhatsApp</button>
+      <button class="btn btn-secondary" type="button" id="ch-copy">🔗 Copiar enlace</button>
+      <button class="btn btn-secondary" type="button" id="ch-cancel">Cancelar</button>
     </section>
 
     <section id="s-lobby" hidden>

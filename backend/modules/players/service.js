@@ -5,6 +5,7 @@ const { validatePlayerName, nameKey, numberedName } = require('./names');
 const { FREE_AVATARS, COINS, AVATARS } = require('../shop/catalog');
 const heroes = require('../heroes/service');
 const age = require('./age');
+const mm = require('../multiplayer/matchmaking');
 
 const PUBLIC_FIELDS =
   'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, password_hash, email_verified, coins, avatar, xp, hero, campaign, birthdate, birthday_gift_year, free_rename_used';
@@ -14,7 +15,10 @@ function hashToken(token) {
 }
 
 function toPublic(row) {
+  const hero = heroes.summary(row);
   return {
+    // Rango de emparejamiento (ELO + experiencia).
+    tier: mm.tierOf(mm.matchRating({ rating: row.rating, level: hero.level })),
     id: row.id,
     name: row.name,
     rating: row.rating,

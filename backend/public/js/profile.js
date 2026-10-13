@@ -25,6 +25,7 @@
     location.href = '/';
   });
   FX.countUp($('st-rating'), me.rating);
+  if (me.tier) $('st-tier').textContent = `${me.tier.icon} ${me.tier.name}`;
   $('st-blitz').textContent = me.bestBlitz;
   $('st-duels').textContent = `${me.duelsWon} / ${me.duelsPlayed}`;
   $('st-rooms').textContent = `${me.roomsWon} / ${me.roomsPlayed}`;
