@@ -14,6 +14,7 @@ const shopRoutes = require('../modules/shop/routes');
 const authRoutes = require('../modules/auth/routes');
 const countriesRoutes = require('../modules/countries/routes');
 const chatRoutes = require('../modules/chat/routes');
+const heroesRoutes = require('../modules/heroes/routes');
 const chat = require('../modules/chat/service');
 const { attachMultiplayer } = require('../modules/multiplayer/hub');
 
@@ -70,6 +71,7 @@ function createApp() {
   app.use('/api/auth', authRoutes.api);
   app.use('/api/countries', countriesRoutes);
   app.use('/api/chat', chatRoutes);
+  app.use('/api/heroes', heroesRoutes);
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
   app.use('/auth', authRoutes.pages);

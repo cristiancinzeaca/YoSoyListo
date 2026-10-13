@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Mi héroe · Yo Soy Listo</title>
+  <meta name="robots" content="noindex">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a class="logo" href="/" aria-label="Yo Soy Listo · Inicio"><img src="/img/logo.webp" alt="Yo Soy Listo" width="900" height="580"></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
+    </header>
+
+    <!-- Crear el héroe -->
+    <main id="create" hidden>
+      <section class="card hero-create">
+        <h1 class="hero-create-title" id="c-title">Crea tu héroe</h1>
+        <p class="hero-create-sub" id="c-sub">Tu héroe te acompañará en cada partida. Tus rivales lo verán antes de enfrentarse a ti… y subirá de nivel contigo.</p>
+        <div class="hero-preview" id="c-preview"></div>
+        <p class="hero-lore" id="c-lore"></p>
+
+        <h2 class="hero-step">1 · ¿Hombre o mujer?</h2>
+        <div class="seg hero-seg" id="c-sex"></div>
+        <h2 class="hero-step">2 · Raza</h2>
+        <div class="hero-choices" id="c-race"></div>
+        <h2 class="hero-step">3 · Clase</h2>
+        <div class="hero-choices three" id="c-class"></div>
+
+        <button class="btn" type="button" id="c-go">⚔️ Crear mi héroe</button>
+        <p class="hero-cost" id="c-cost" hidden></p>
+        <button class="btn btn-secondary" type="button" id="c-cancel" hidden>Cancelar</button>
+        <a class="hero-later" id="c-later" href="/">Más tarde</a>
+        <p class="form-error center" id="c-error" hidden></p>
+      </section>
+    </main>
+
+    <!-- Ficha del héroe -->
+    <main id="sheet" hidden>
+      <section class="card hero-sheet">
+        <div class="hero-sheet-top" id="h-card"></div>
+        <p class="hero-lore" id="h-lore"></p>
+        <div class="hero-level-box">
+          <div class="hero-level-row"><strong id="h-level">Nivel 1</strong><span id="h-xp">0 / 100 XP</span></div>
+          <div class="hero-xp-bar"><span id="h-xpbar"></span></div>
+          <p class="hero-tip">Ganas experiencia en todas las partidas: Blitz, duelos, salas, Conquista y conquistando países.</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="ribbon">Equipo</h2>
+        <p class="hero-tip">El equipo cambia cómo te ven los demás y suma poder. No da ventaja en las preguntas.</p>
+        <div id="h-slots"></div>
+      </section>
+
+      <section class="card">
+        <h2 class="ribbon">Camino de niveles</h2>
+        <div class="hero-road" id="h-road"></div>
+      </section>
+
+      <button class="btn btn-secondary hero-change" type="button" id="h-change">Cambiar de héroe</button>
+      <p class="form-error center" id="h-error" hidden></p>
+    </main>
+
+    <footer class="site-footer">© Yo Soy Listo · <a href="/privacidad">Privacidad</a></footer>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+
+  <script src="/js/fx.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/chat.js"></script>
+  <script src="/js/hero.js"></script>
+  <script src="/js/heroe.js"></script>
+</body>
+</html>

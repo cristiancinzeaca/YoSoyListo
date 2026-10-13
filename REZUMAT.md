@@ -152,6 +152,14 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Atingi un mesaj → **Mensaje privado**, **Reportar** (motiv), **Bloquear**. Blocatul nu-ți mai apare nicăieri și nu-ți poate scrie în privat. Oricine poate închide privatele din „Ajustes del chat”.
 - 3 reportări de la persoane diferite ascund mesajul; cine are 3 mesaje ascunse în 7 zile nu poate scrie 24 h. În panoul de admin (`/admin`) există secțiunea „Chat: mensajes reportados” (fals aviz / ascunde / ascunde și reduce la tăcere 7 zile).
 - Mesajele publice se șterg după 7 zile, cele private după 90 (`prune_chat`, la pornire și la fiecare 6 h). Tabele: `chat_messages`, `chat_reports`, `chat_blocks`, `chat_reads`.
+## 5f. Eroi și niveluri (ramura `heroes`)
+
+- Fiecare cont are **nivel** (1–50) și **XP**. XP din toate jocurile: Blitz 3/răspuns corect; Duel 40/25/15; Sală 50/35/25/15; Conquista 80/50/30; contra boților ×0,6; cucerirea unei țări +100, apărarea ei +20. Curba: de la nivelul n la n+1 trebuie 100 + 50·(n−1) XP. Totul în `modules/heroes/catalog.js`.
+- **Eroul** (pagina `/heroe`): rasă (om, elf, pitic, orc) × clasă (războinic, mag, explorator) × sex = 24 de portrete în `public/img/heroes/<rasa>-<clasa>-<h|m>.webp` (generate cu ChatGPT, tăiate din 4 planșe). Conturile noi sunt duse la crearea eroului după login („Más tarde” sare peste). Prima creare e gratuită; schimbarea rasei/clasei/sexului costă 300 de monede (păstrează nivelul și echipamentul).
+- **Echipament doar vizual** (nu dă avantaj la întrebări), deblocat pe niveluri: armură → rama portretului; armă → aura; emblemă → insigna; stindard → fundalul cărții; titlu → textul de sub nume. Fiecare piesă adaugă „putere” (poder) = nivel·20 + puterea pieselor.
+- Rivalii văd eroul: în lista din sală, în ecranul „cara a cara” (VS) dinaintea duelului/sălii, la începutul Conquistei, în bara de scor și în clasamentul final. Boții primesc un erou aleator (nivel 1–15). La final apare „+XP”, iar la nivel nou, confetti și piesele deblocate.
+- `UNLOCKS` din catalog e locul pentru opțiunile de joc care se vor debloca pe niveluri (deocamdată gol).
+
 ## 6. Alte idei în așteptare
 
 - **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).

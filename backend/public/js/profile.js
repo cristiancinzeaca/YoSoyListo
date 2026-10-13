@@ -17,7 +17,8 @@
 
   $('profile').hidden = false;
   $('name').value = me.name;
-  $('p-avatar').src = FX.avatar(me.name, me.avatar).src;
+  $('p-avatar').src = me.hero && window.Hero ? Hero.portraitSrc(me.hero) : FX.avatar(me.name, me.avatar).src;
+  $('p-hero-txt').textContent = me.hero ? `Nivel ${me.level} · ${me.hero.title} · ⚔️ ${me.power}` : 'Crea tu héroe';
   FX.countUp($('p-coins'), me.coins);
   $('logout-btn').addEventListener('click', async () => {
     await Player.logout();

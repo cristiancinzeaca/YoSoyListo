@@ -233,7 +233,13 @@
       const name = document.createElement('span');
       name.className = 'grow';
       name.textContent = p.name + (state.me && p.id === state.me.id ? ' (tú)' : '');
-      li.append(FX.avatar(p.name, p.avatar), name);
+      li.append(window.Hero ? Hero.portrait(p.hero, { level: p.level || 1, size: 'xs' }) : FX.avatar(p.name, p.avatar), name);
+      if (p.power) {
+        const pw = document.createElement('span');
+        pw.className = 'tag power';
+        pw.textContent = `⚔️ ${p.power.toLocaleString('es-ES')}`;
+        li.appendChild(pw);
+      }
       if (p.id === room.hostId) {
         const tag = document.createElement('span');
         tag.className = 'tag';
@@ -317,12 +323,14 @@
     state.phase = 'countdown';
     show('s-countdown');
     const end = Date.now() + ms;
+    // Cara a cara: los héroes de todos los jugadores.
+    const vs = state.room && window.Hero ? Hero.versus(state.room.players, state.me && state.me.id) : null;
     const step = () => {
       if (state.phase !== 'countdown') return;
       const left = Math.ceil((end - Date.now()) / 1000);
       const span = document.createElement('span');
       span.textContent = left > 0 ? left : '¡Ya!';
-      $('s-countdown').replaceChildren(span);
+      $('s-countdown').replaceChildren(...(vs ? [vs, span] : [span]));
       FX.play(left > 0 ? 'tick' : 'go');
       if (left > 0) setTimeout(step, ((end - Date.now()) % 1000) || 1000);
     };
@@ -412,7 +420,7 @@
       const s = document.createElement('span');
       s.className = 's';
       s.textContent = p.score;
-      chip.append(FX.avatar(p.name, p.avatar), n, s);
+      chip.append(Hero.face(p), n, s);
       strip.appendChild(chip);
     }
   }
@@ -492,7 +500,7 @@
       const pts = document.createElement('span');
       pts.className = 'pts';
       pts.textContent = `${r.score}`;
-      li.append(pos, FX.avatar(r.name, r.avatar), name, pts);
+      li.append(pos, Hero.face(r), name, pts);
       if (r.ratingBefore !== null && r.ratingAfter !== null) {
         const diff = r.ratingAfter - r.ratingBefore;
         const elo = document.createElement('span');
@@ -506,6 +514,7 @@
     const actions = $('end-actions');
     actions.replaceChildren();
     if (me) actions.appendChild(coinReward(me));
+    if (me && me.xp && window.Hero) actions.appendChild(Hero.xpResult(me.xp));
     const button = (text, cls, onClick) => {
       const b = document.createElement('button');
       b.type = 'button';

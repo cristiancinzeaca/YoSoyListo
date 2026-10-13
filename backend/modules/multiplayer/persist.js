@@ -2,6 +2,8 @@ const { getDb, dbError } = require('../../core/db');
 const { eloUpdate } = require('./elo');
 const shop = require('../shop/service');
 const { matchCoins } = require('../shop/rewards');
+const heroes = require('../heroes/service');
+const { matchXp } = require('../heroes/rewards');
 
 // Reparte las monedas de la partida y las anota en cada fila de la clasificación.
 async function awardMatchCoins(mode, ranking) {
@@ -16,6 +18,9 @@ async function awardMatchCoins(mode, ranking) {
         } catch (err) {
           console.error('[coins] no se pudieron dar las monedas', err.context || '', err.cause || err);
         }
+        // Experiencia (y subida de nivel, si toca).
+        const xp = await heroes.safeXp(r.playerId, matchXp(mode, r, ranking), `game:${mode}`);
+        if (xp) r.xp = xp;
       })
   );
 }

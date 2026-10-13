@@ -31,7 +31,10 @@
         FX.confetti(120);
         FX.play('streak');
       }
-      setTimeout(() => location.replace(res.next || '/'), res.created ? 2200 : 600);
+      // Cuenta nueva (o sin héroe todavía): primero se crea el héroe.
+      const next = res.next || '/';
+      const go = res.created || !res.player.hero ? `/heroe?next=${encodeURIComponent(next)}` : next;
+      setTimeout(() => location.replace(go), res.created ? 2200 : 600);
     } catch (err) {
       fail(err.message);
     }

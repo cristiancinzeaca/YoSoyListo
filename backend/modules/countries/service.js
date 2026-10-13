@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const { getDb, dbError } = require('../../core/db');
 const { httpError } = require('../../core/http');
 const { RULES, COUNTRIES, maxFortify, defenseSize } = require('./catalog');
+const heroes = require('../heroes/service');
+const { XP } = require('../heroes/catalog');
 
 function country(id) {
   const c = typeof id === 'string' ? COUNTRIES[id] : null;
@@ -205,6 +207,7 @@ async function resolveLost(attack, reason) {
       p_gain: RULES.valueGainOnDefense,
     });
     if (e2) throw dbError(e2, 'countries.attack.defend');
+    await heroes.safeXp(attack.owner_id, XP.countryDefended, 'country:defended');
   }
   return { result: 'lost', reason, at: attack.current, total: attack.seqs.length };
 }
@@ -295,7 +298,8 @@ async function answerAttack(playerId, attackId, { index, option } = {}) {
     });
     if (cErr) throw dbError(cErr, 'countries.answer.conquer');
     const ok = conq && conq[0] && conq[0].ok;
-    return { result: ok ? 'won' : 'changed', total: a.seqs.length, country: { id: c.id, name: c.name, flag: c.flag } };
+    const xp = ok ? await heroes.safeXp(playerId, XP.countryConquered, 'country:conquered') : null;
+    return { result: ok ? 'won' : 'changed', xp, total: a.seqs.length, country: { id: c.id, name: c.name, flag: c.flag } };
   }
   const deadline = new Date(Date.now() + RULES.questionMs).toISOString();
   const { data: upd, error: uErr } = await getDb()
