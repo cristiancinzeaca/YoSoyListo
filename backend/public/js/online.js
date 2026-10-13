@@ -2,7 +2,7 @@
   const $ = (id) => document.getElementById(id);
   const MODE = location.pathname.startsWith('/duelo') ? 'duel' : 'room';
   const params = new URLSearchParams(location.search);
-  const SCREENS = ['s-connecting', 's-queue', 's-lobby', 's-countdown', 's-game', 's-end', 's-fatal'];
+  const SCREENS = ['s-connecting', 's-queue', 's-challenge', 's-lobby', 's-countdown', 's-game', 's-end', 's-fatal'];
 
   const state = {
     me: null,
@@ -128,6 +128,7 @@
       case 'queued':
         state.phase = 'queue';
         state.queueSince = Date.now();
+        if (msg.tier) $('queue-tier').textContent = `Buscando rival de tu nivel: ${msg.tier.icon} ${msg.tier.name}`;
         show('s-queue');
         return;
       case 'room':
@@ -147,6 +148,9 @@
         return;
       case 'helper':
         return onHelper(msg);
+      case 'rematch_vote':
+        if (state.me && msg.playerId !== state.me.id) banner('⚔️ ¡Tu amigo quiere la revancha!');
+        return;
       case 'chat':
         return window.Chat && Chat.match.receive(msg.message);
       case 'error':
@@ -171,7 +175,11 @@
       return;
     }
     state.introDone = true;
-    if (MODE === 'duel') {
+    if (MODE === 'duel' && params.get('reto')) {
+      socket.send({ t: 'challenge_join', code: params.get('reto') });
+    } else if (MODE === 'duel' && params.get('amigo')) {
+      socket.send({ t: 'challenge_create' });
+    } else if (MODE === 'duel') {
       socket.send({ t: 'queue' });
     } else if (params.get('c')) {
       socket.send({ t: 'join_room', code: params.get('c') });
@@ -209,6 +217,18 @@
       params.delete('n');
       params.delete('cat');
       history.replaceState(null, '', `/sala?${params}`);
+    }
+    // Reto a un amigo: esperando a que entre.
+    if (room.friendly && room.status === 'lobby') {
+      state.phase = 'challenge';
+      const host = state.me && room.players[0] && room.players[0].id === state.me.id;
+      $('ch-code').textContent = room.code;
+      $('ch-title').textContent = host ? 'Reta a un amigo' : 'Entrando en el reto…';
+      $('ch-text').textContent = host ? 'Mándale este enlace. El duelo empieza en cuanto entre.' : 'El duelo empieza ahora mismo.';
+      for (const id of ['ch-share', 'ch-copy']) $(id).hidden = !host;
+      if (params.get('amigo')) history.replaceState(null, '', '/duelo');
+      show('s-challenge');
+      return;
     }
     if (room.status === 'lobby') {
       if (state.phase === 'lobby' && room.players.length > (state.lobbySize || 0)) FX.play('turn');
@@ -524,7 +544,17 @@
       actions.appendChild(b);
       return b;
     };
-    if (msg.mode === 'duel') {
+    if (state.room && state.room.friendly) {
+      const b = button('⚔️ Revancha', 'btn', () => {
+        socket.send({ t: 'challenge_rematch' });
+        b.disabled = true;
+        b.textContent = 'Esperando a tu amigo…';
+      });
+      state.rematchButton = b;
+      button('Buscar rival', 'btn btn-secondary', () => {
+        location.href = '/duelo';
+      });
+    } else if (msg.mode === 'duel') {
       button('Otro duelo', 'btn', () => socket.send({ t: 'queue' }));
     } else if (isHost()) {
       button('Jugar otra vez', 'btn', () => socket.send({ t: 'rematch' }));
@@ -540,6 +570,27 @@
     home.textContent = 'Volver al inicio';
     actions.appendChild(home);
   }
+
+  // ---------- reto a un amigo ----------
+  const challengeUrl = () => `${location.origin}/duelo?reto=${state.room.code}`;
+  $('ch-share').addEventListener('click', async () => {
+    const text = `⚔️ ¡Te reto a un duelo de preguntas en Yo Soy Listo! A ver quién sabe más:`;
+    try {
+      if (navigator.share) await navigator.share({ title: 'Te reto en Yo Soy Listo', text, url: challengeUrl() });
+      else location.href = `https://wa.me/?text=${encodeURIComponent(`${text} ${challengeUrl()}`)}`;
+    } catch {
+      // compartir cancelado
+    }
+  });
+  $('ch-copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(challengeUrl());
+      banner('Enlace copiado');
+    } catch {
+      banner(challengeUrl());
+    }
+  });
+  $('ch-cancel').addEventListener('click', () => socket.send({ t: 'leave' }));
 
   // Contador de la búsqueda de rival.
   setInterval(() => {

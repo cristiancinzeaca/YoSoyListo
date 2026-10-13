@@ -47,7 +47,8 @@ async function saveMatch(room, ranking) {
   if (humans.length === 0) return ranking;
   const vsBot = ranking.some((r) => r.isBot);
 
-  if (room.mode === 'duel' && !vsBot && humans.length === 2) {
+  // Los retos entre amigos no cambian el ELO (para que no se pueda «regalar» puntos).
+  if (room.mode === 'duel' && !room.friendly && !vsBot && humans.length === 2) {
     const { data, error } = await db.from('players').select('id, rating').in('id', humans.map((h) => h.playerId));
     if (error) throw dbError(error, 'multiplayer.saveMatch.ratings');
     const ratingOf = new Map(data.map((p) => [p.id, p.rating]));

@@ -1,18 +1,22 @@
 const crypto = require('crypto');
 const { botHero } = require('../heroes/service');
+const { tierOf, matchRating } = require('./matchmaking');
 
 const BOT_NAMES = ['Einstein', 'Curie', 'Cervantes', 'Frida', 'Lorca', 'Hipatia', 'Ramón y Cajal', 'Lovelace'];
 
-function createBot(takenNames = []) {
+function createBot(takenNames = [], { skill = null } = {}) {
   const free = BOT_NAMES.filter((n) => !takenNames.includes(`🤖 ${n}`));
   const base = free.length ? free[crypto.randomInt(free.length)] : `Bot ${crypto.randomInt(100)}`;
+  const hero = botHero();
+  const finalSkill = skill !== null ? Math.max(0.3, Math.min(0.9, skill + (Math.random() - 0.5) * 0.1)) : 0.45 + Math.random() * 0.3;
   return {
+    tier: tierOf(matchRating({ rating: Math.round(900 + (finalSkill - 0.45) * 2000), level: hero.level })),
     id: `bot-${crypto.randomUUID()}`,
     name: `🤖 ${base}`,
     isBot: true,
-    ...botHero(),
+    ...hero,
     // Probabilidad de acertar: ni imposible de ganar ni demasiado fácil.
-    skill: 0.45 + Math.random() * 0.3,
+    skill: finalSkill,
   };
 }
 

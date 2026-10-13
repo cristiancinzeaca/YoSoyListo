@@ -254,6 +254,7 @@
     show('s-queue');
     $('q-waiting').textContent = msg.waiting;
     $('q-needed').textContent = msg.needed || 3;
+    if (msg.tier) $('q-tier').textContent = `Tu nivel: ${msg.tier.icon} ${msg.tier.name}`;
     const secs = msg.startsInMs !== null ? Math.ceil(msg.startsInMs / 1000) : null;
     $('q-bots').textContent = secs
       ? `Si en ${secs} s no aparece nadie más, completaremos la partida con bots.`

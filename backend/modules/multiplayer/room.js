@@ -64,6 +64,7 @@ class Room {
     return {
       code: this.code,
       mode: this.mode,
+      friendly: !!this.friendly,
       status: this.status,
       hostId: this.hostId,
       category: this.category,
@@ -78,6 +79,7 @@ class Room {
         hero: p.hero || null,
         level: p.level || 1,
         power: p.power || 0,
+        tier: p.tier || null,
         isBot: p.isBot,
         connected: p.connected,
         score: p.score,
@@ -129,6 +131,7 @@ class Room {
       hero: player.hero || null,
       level: player.level || 1,
       power: player.power || 0,
+      tier: player.tier || null,
       rating: player.rating ?? null,
       isBot: !!player.isBot,
       skill: player.skill,
@@ -381,6 +384,7 @@ class Room {
         hero: p.hero || null,
         level: p.level || 1,
         power: p.power || 0,
+        tier: p.tier || null,
         isBot: p.isBot,
         left: !!p.left,
         score: p.score,
@@ -424,6 +428,31 @@ class Room {
     this.lastReveal = null;
     this.touch();
     this.broadcastState();
+  }
+
+  // Revancha en un reto entre amigos: empieza cuando los dos la piden.
+  async friendlyRematch(byId) {
+    if (!this.friendly || this.status !== 'finished') throw new GameError('No se puede repetir ahora');
+    this.rematchVotes = this.rematchVotes || new Set();
+    this.rematchVotes.add(byId);
+    const humans = [...this.players.values()].filter((p) => !p.isBot && p.connected && !p.left);
+    if (humans.length < 2) throw new GameError('Tu amigo ya se ha ido');
+    if (!humans.every((p) => this.rematchVotes.has(p.id))) {
+      this.broadcast({ t: 'rematch_vote', playerId: byId });
+      return;
+    }
+    this.rematchVotes = null;
+    for (const p of this.players.values()) {
+      p.score = 0;
+      p.correctCount = 0;
+    }
+    this.status = 'lobby';
+    this.questions = [];
+    this.index = -1;
+    this.result = null;
+    this.lastReveal = null;
+    this.touch();
+    await this.start();
   }
 
   destroy() {

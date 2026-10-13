@@ -1196,3 +1196,9 @@ html.lore-full, html.lore-full body { overflow: hidden; }
 .reto-banner { background: linear-gradient(160deg, #6b2a12, #2a1608); border-color: rgba(255,179,107,0.6); }
 .reto-banner .reto-flame { font-size: 2.2rem; flex: 0 0 auto; }
 .reto-banner.pending { animation: hero-call 2.4s ease-in-out infinite; }
+.hero-tier { font-weight: 900; font-size: 0.85rem; }
+.tier-bronce { color: #e0a070; } .tier-plata { color: #d6dde8; } .tier-oro { color: #ffd34d; }
+.tier-platino { color: #7fe0ff; } .tier-diamante { color: #b18cff; } .tier-maestro { color: #ff8ad8; }
+.queue-tier { font-weight: 900; font-size: 1.1rem; color: #ffe58a; }
+.challenge-icon { font-size: 3.4rem; line-height: 1; margin-bottom: 6px; }
+#s-challenge .btn { width: min(100%, 360px); margin: 6px auto; display: block; }
