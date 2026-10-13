@@ -2,6 +2,8 @@
 (function () {
   const $ = (id) => document.getElementById(id);
   const params = new URLSearchParams(location.hash.slice(1));
+  const nextRaw = new URLSearchParams(location.search).get('next');
+  const nextPage = nextRaw && nextRaw.startsWith('/') && !nextRaw.startsWith('//') ? nextRaw : '/';
   history.replaceState(null, '', '/entrar');
 
   const ERRORS = {
@@ -18,6 +20,7 @@
     $('e-google').href = Player.loginUrl('/');
     $('e-google').hidden = false;
     $('e-home').hidden = false;
+    showLogin(text, nextPage);
   }
 
   async function complete(code) {
@@ -47,9 +50,9 @@
     $('e-spinner').hidden = true;
     $('e-title').textContent = 'Entra para jugar';
     $('e-text').textContent = 'Entra con Google o con tu correo: guardamos tus monedas, tu héroe y tus estadísticas.';
-    $('e-google').href = Player.loginUrl('/');
+    $('e-google').href = Player.loginUrl(nextPage);
     $('e-google').hidden = false;
     // También con correo y contraseña.
-    showLogin('Entra con Google o con tu correo y contraseña.', '/');
+    showLogin('Entra con Google o con tu correo y contraseña.', nextPage);
   }
 })();
