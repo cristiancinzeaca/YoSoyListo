@@ -53,6 +53,7 @@
           <div class="mode-head"><img class="mode-icon" src="/img/modo-conquista.webp" alt="" width="256" height="256"><h2 id="cq-title">Conquista</h2></div>
           <p>Repartíos el mapa de España con preguntas de aproximación y luego atacad las comunidades de los rivales. Si tomas un castillo, te quedas con todo su territorio.</p>
           <a class="btn" href="/conquista">¡Conquistar España!</a>
+          <a class="btn btn-secondary" href="/conquista?amigos=1">👥 Conquista con amigos</a>
         </section>
 
         <section class="card" aria-labelledby="blitz-title">
@@ -107,8 +108,18 @@
         <span class="go" aria-hidden="true">→</span>
       </a>
 
+      <section class="card league" aria-labelledby="league-title">
+        <h2 class="ribbon" id="league-title">🏆 Liga semanal</h2>
+        <div class="league-won" id="league-won" hidden></div>
+        <p class="league-sub">Toda la experiencia que ganas jugando suma puntos. Se cierra en <strong id="league-left">…</strong>.</p>
+        <p class="league-me" id="league-me" hidden></p>
+        <ol class="ranking" id="league-list"></ol>
+        <p class="empty" id="league-empty" hidden>Aún no ha puntuado nadie esta semana. ¡Juega una partida y ponte primero!</p>
+        <p class="league-prizes">Premios en monedas: 🥇 1.000 · 🥈 600 · 🥉 400 · del 4º al 10º, 150</p>
+      </section>
+
       <section class="card" aria-labelledby="ranking-title">
-        <h2 class="ribbon" id="ranking-title">🏆 Ranking</h2>
+        <h2 class="ribbon" id="ranking-title">📊 Ranking</h2>
         <div class="tabs" role="tablist">
           <button class="tab active" type="button" role="tab" data-board="week" aria-selected="true">Blitz semana</button>
           <button class="tab" type="button" role="tab" data-board="all" aria-selected="false">Blitz histórico</button>

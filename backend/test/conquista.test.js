@@ -283,3 +283,55 @@ test('modo +18: partida privada en pareja con preguntas +18', async () => {
   assert.ok(db.tables.matches.some((m) => m.mode === 'conquista18'));
   assert.equal(db.tables.players.find((p) => p.id === a.player.id).conquista_played, before, 'no cuenta en el ranking normal');
 });
+
+test('Conquista con amigos: código privado para 3 y empezar antes con bots', async () => {
+  const [h, g1, g2] = await Promise.all(['Anfitriona', 'Amigo Uno', 'Amiga Dos'].map((n) => newPlayer(n)));
+  let code;
+  const host = simpleClient(h.token, (ws, seen) => {
+    ws.send(JSON.stringify({ t: 'cq_private' }));
+    const wait = setInterval(() => {
+      const m = seen.msgs.find((x) => x.t === 'cq_private');
+      if (m) {
+        clearInterval(wait);
+        code = m.code;
+      }
+    }, 5);
+  });
+  while (!code) await new Promise((r) => setTimeout(r, 10));
+  assert.match(code, /^C/);
+  const c1 = simpleClient(g1.token, (ws) => ws.send(JSON.stringify({ t: 'cq_join', code })));
+  // Espera a que el primero esté dentro para que el orden sea fijo.
+  await new Promise((r) => setTimeout(r, 80));
+  const c2 = simpleClient(g2.token, (ws) => ws.send(JSON.stringify({ t: 'cq_join', code })));
+  const [rh, r1, r2] = await Promise.all([host, c1, c2]);
+  assert.ok(rh.final && r1.final && r2.final, rh.error || r1.error || r2.error);
+  assert.equal(rh.final.code, r2.final.code);
+  assert.equal(rh.final.players.length, 3);
+  assert.equal(rh.final.players.filter((p) => p.isBot).length, 0, 'tres humanos, sin bots');
+  // La sala de espera avisaba de quién había entrado.
+  const lobby = rh.seen.msgs.filter((m) => m.t === 'cq_lobby');
+  assert.ok(lobby.some((m) => m.members.length === 2 && m.needed === 3));
+
+  // Con un solo amigo, el anfitrión puede empezar ya y el hueco lo ocupa un bot.
+  const [h2, g3] = await Promise.all(['Impaciente', 'Amigo Tres'].map((n) => newPlayer(n)));
+  let code2;
+  let hostWs;
+  const host2 = simpleClient(h2.token, (ws, seen) => {
+    hostWs = ws;
+    ws.send(JSON.stringify({ t: 'cq_private' }));
+    const wait = setInterval(() => {
+      const m = seen.msgs.find((x) => x.t === 'cq_private');
+      if (m) {
+        clearInterval(wait);
+        code2 = m.code;
+      }
+    }, 5);
+  });
+  while (!code2) await new Promise((r) => setTimeout(r, 10));
+  const c3 = simpleClient(g3.token, (ws) => ws.send(JSON.stringify({ t: 'cq_join', code: code2 })));
+  await new Promise((r) => setTimeout(r, 80));
+  hostWs.send(JSON.stringify({ t: 'cq_private_bot' }));
+  const [rh2, r3] = await Promise.all([host2, c3]);
+  assert.ok(rh2.final && r3.final, rh2.error || r3.error);
+  assert.equal(rh2.final.players.filter((p) => p.isBot).length, 1);
+});

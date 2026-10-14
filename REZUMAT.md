@@ -204,9 +204,12 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - În partidă pagina ocupă tot ecranul, fără scroll: întrebarea stă într-o „foaie” peste partea de jos a hărții; harta se micșorează cât să încapă în spațiul rămas (acoperită cel mult ~45%).
 - Sunete sintetizate în `fx.js`: tobe de război la începutul bătăliei, redoblare + săbii la fiecare luptă, corn când e rândul tău, fanfară la început, fanfară când cucerești, trompete triste când pierzi o regiune, castel care se prăbușește, scut la apărare, fanfară regală la victorie. Muzică medievală de lăută în meniu (prima pagină, așteptare, meniurile +18). Castele noi 3D (generate în ChatGPT, recolorate roșu/albastru/verde, `castillo-*.webp?v=2`), mai mari pe hartă, cu un halou în culoarea jucătorului. Butonul de sunet are 3 stări: 🎶 muzică + efecte → 🔊 doar efecte → 🔇.
 
+## 5m. Conquista cu prietenii și liga săptămânală (ramura `amigos-liga`)
+- **Conquista con amigos**: butonul „👥 Conquista con amigos” de pe prima pagină → `/conquista?amigos=1` creează o sală privată (cod `C…`); prietenii intră cu linkul `/conquista?c=COD`. Sala de așteptare arată cine a intrat; partida pornește singură când sunt 3, iar anfitrionul poate porni mai devreme (locurile goale le iau boți). Server: `privateCq` are acum `guests`, mesaje `cq_lobby` / `cq_lobby_closed`; dacă anfitrionul iese, sala se închide. Merge la fel pentru modul +18 (2 jucători).
+- **Liga săptămânală** (`modules/weekly`): fiecare punct de experiență câștigat de luni până duminică (ora Madridului) contează (`add_week_points`, apelat din `heroes.addXp`). La începutul săptămânii următoare, primii 10 primesc monede: 1.000 / 600 / 400 / 150 (locurile 4–10). Plata e atomică și o singură dată (`pay_weekly_prizes`, tabelul `weekly_payouts`); serverul verifică la pornire și în fiecare oră. Pe prima pagină: cardul „🏆 Liga semanal” cu top 10, poziția ta, cât mai e până se închide și un mesaj de felicitare cu confetti când ai câștigat (`/api/weekly`, `/api/weekly/seen`).
+
 ## 6. Alte idei în așteptare
 
-- **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).
 - **SEO**: pagini pe categorii, domeniu propriu, Google Search Console.
 - **Monetizare** (când există trafic): Google AdSense + banner de cookie-uri (obligatoriu în UE) + pagina „Aviso legal” (cere numele și NIF-ul titularului).
 - Mai multe întrebări și categorii (de exemplu „España”, cinema, muzică). Formatul e explicat în `README.md`.

@@ -55,7 +55,7 @@ function attachMultiplayer(server, deps = {}) {
   const queue = new Map(); // playerId → { since, botTimer }
   const cqQueues = { normal: new Map(), x18: new Map() }; // playerId → desde cuándo espera
   const cqTimers = { normal: null, x18: null };
-  const privateCq = new Map(); // código → { variant, hostId } (partidas privadas esperando al invitado)
+  const privateCq = new Map(); // código → { variant, hostId, guests: [ids] } (partidas privadas esperando a los invitados)
   const ipCounts = new Map();
 
   // ---------- envío ----------
@@ -240,15 +240,37 @@ function attachMultiplayer(server, deps = {}) {
     cqQueueStatus(variant);
   }
 
-  // Partida privada: uno crea un código y se lo pasa a su pareja/amigo.
+  // Partida privada: uno crea un código y se lo pasa a sus amigos (o a su pareja en el modo +18).
+  const lobbyOf = (playerId) => [...privateCq.entries()].find(([, w]) => w.hostId === playerId || w.guests.includes(playerId));
+
+  function lobbyStatus(code) {
+    const w = privateCq.get(code);
+    if (!w) return;
+    const ids = [w.hostId, ...w.guests];
+    const members = ids.filter((id) => clients.has(id)).map((id) => {
+      const p = clients.get(id).player;
+      return { id, name: p.name, avatar: p.avatar || null, hero: p.hero || null, level: p.level || 1, host: id === w.hostId };
+    });
+    for (const id of ids) send(id, { t: 'cq_lobby', code, variant: w.variant, members, needed: CQ_VARIANTS[w.variant].players, host: w.hostId });
+  }
+
   function createPrivateCq(conn, variant) {
     const me = conn.player;
     requireAdult(me, variant);
     ensureFree(me.id);
-    for (const [code, w] of privateCq) if (w.hostId === me.id) privateCq.delete(code);
+    leaveQueue(me.id);
     const code = newCode(CQ_VARIANTS[variant].prefix);
-    privateCq.set(code, { variant, hostId: me.id, createdAt: Date.now() });
+    privateCq.set(code, { variant, hostId: me.id, guests: [], createdAt: Date.now() });
     sendTo(conn, { t: 'cq_private', code, variant });
+    lobbyStatus(code);
+  }
+
+  function launchLobby(code) {
+    const w = privateCq.get(code);
+    if (!w) return;
+    privateCq.delete(code);
+    const ids = [w.hostId, ...w.guests].filter((id) => clients.has(id));
+    launchConquista(w.variant, ids, { privateGame: true }).catch((e) => console.error('[conquista] privada', e));
   }
 
   function joinPrivateCq(conn, rawCode) {
@@ -256,14 +278,17 @@ function attachMultiplayer(server, deps = {}) {
     const code = String(rawCode || '').trim().toUpperCase();
     const w = privateCq.get(code);
     if (!w || !clients.has(w.hostId)) throw new GameError('Ese código no existe o ya no está disponible');
-    if (w.hostId === me.id) throw new GameError('Comparte el código con la otra persona');
+    if (w.hostId === me.id) throw new GameError('Comparte el código con tus amigos');
+    if (w.guests.includes(me.id)) return lobbyStatus(code);
     requireAdult(me, w.variant);
-    const ids = [w.hostId];
-    // Con 2 jugadores la partida empieza en cuanto entra el invitado.
     ensureFree(me.id);
-    ids.push(me.id);
-    privateCq.delete(code);
-    launchConquista(w.variant, ids, { privateGame: true }).catch((e) => console.error('[conquista] privada', e));
+    leaveQueue(me.id);
+    w.guests = w.guests.filter((id) => clients.has(id));
+    if (1 + w.guests.length >= CQ_VARIANTS[w.variant].players) throw new GameError('La partida ya está completa');
+    w.guests.push(me.id);
+    // Cuando están todos, empieza sola.
+    if (1 + w.guests.length >= CQ_VARIANTS[w.variant].players) return launchLobby(code);
+    lobbyStatus(code);
   }
 
   function leaveQueue(playerId) {
@@ -277,7 +302,15 @@ function attachMultiplayer(server, deps = {}) {
         cqQueueStatus(variant);
       }
     }
-    for (const [code, w] of privateCq) if (w.hostId === playerId) privateCq.delete(code);
+    for (const [code, w] of privateCq) {
+      if (w.hostId === playerId) {
+        privateCq.delete(code);
+        for (const id of w.guests) send(id, { t: 'cq_lobby_closed', message: 'El anfitrión ha cancelado la partida' });
+      } else if (w.guests.includes(playerId)) {
+        w.guests = w.guests.filter((id) => id !== playerId);
+        lobbyStatus(code);
+      }
+    }
     const entry = queue.get(playerId);
     if (!entry) return;
     clearTimeout(entry.botTimer);
@@ -437,12 +470,12 @@ function attachMultiplayer(server, deps = {}) {
       joinPrivateCq(conn, msg.code);
     },
     // El anfitrión de una partida privada se cansa de esperar: juega contra un bot.
+    // El anfitrión no quiere esperar más: empieza con los que haya y el resto, bots.
     cq_private_bot(conn) {
       const me = conn.player;
       const entry = [...privateCq.entries()].find(([, w]) => w.hostId === me.id);
       if (!entry) throw new GameError('No tienes ninguna partida privada esperando');
-      privateCq.delete(entry[0]);
-      launchConquista(entry[1].variant, [me.id], { privateGame: true }).catch((e) => console.error('[conquista] privada', e));
+      launchLobby(entry[0]);
     },
     cq_cancel(conn) {
       leaveQueue(conn.player.id);
@@ -551,7 +584,9 @@ function attachMultiplayer(server, deps = {}) {
       leaveEverything(player.id);
       room = null;
     }
-    sendTo(conn, { t: 'welcome', player, roomCode: room ? room.code : null });
+    const lobby = room ? null : lobbyOf(player.id);
+    sendTo(conn, { t: 'welcome', player, roomCode: room ? room.code : null, lobbyCode: lobby ? lobby[0] : null });
+    if (lobby) lobbyStatus(lobby[0]);
     if (room) {
       room.setConnected(player.id, true);
       room.syncPlayer(player.id);
@@ -646,7 +681,12 @@ function attachMultiplayer(server, deps = {}) {
       if ((room.status === 'finished' && idle > config.finishedRoomTtlMs) || idle > 60 * 60_000) room.destroy();
     }
     // Códigos de partidas privadas que nadie ha usado en 30 minutos.
-    for (const [code, w] of privateCq) if (now - w.createdAt > 30 * 60_000) privateCq.delete(code);
+    for (const [code, w] of privateCq) {
+      if (now - w.createdAt > 30 * 60_000 || !clients.has(w.hostId)) {
+        privateCq.delete(code);
+        for (const id of w.guests) send(id, { t: 'cq_lobby_closed', message: 'La partida privada ha caducado' });
+      }
+    }
   }, 60_000);
   heartbeat.unref();
   cleanup.unref();

@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const { getDb, dbError } = require('../../core/db');
 const { httpError } = require('../../core/http');
 const C = require('./catalog');
+const weekly = require('../weekly/service');
 
 const RECREATE_COST = 300; // cambiar de raza/clase/sexo después de crearlo
 const SEXES = ['h', 'm']; // hombre / mujer
@@ -135,6 +136,7 @@ async function addXp(playerId, amount, reason) {
   if (error) throw dbError(error, `heroes.xp:${reason}`);
   const xp = data && data[0] ? data[0].xp : null;
   if (xp === null || xp === undefined) return null;
+  await weekly.safeAdd(playerId, gained); // la liga semanal cuenta la experiencia ganada
   const before = C.levelFromXp(xp - gained).level;
   const after = C.levelFromXp(xp);
   const rewards = [];

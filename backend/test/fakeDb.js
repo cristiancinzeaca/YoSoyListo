@@ -7,6 +7,7 @@ function createFakeDb() {
     questions: [], numeric_questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [],
     player_sessions: [], player_items: [], coin_ledger: [], country_owners: [], country_attacks: [],
     chat_messages: [], chat_reports: [], chat_blocks: [], chat_reads: [], campaign_runs: [], auth_tokens: [], daily_runs: [],
+    weekly_points: [], weekly_payouts: [], weekly_prizes: [],
   };
 
   class Query {
@@ -101,6 +102,7 @@ function createFakeDb() {
     if (table === 'campaign_runs') return { current: 0, status: 'active' };
     if (table === 'daily_runs') return { current: 0, correct: 0, score: 0, answers: { list: [] }, status: 'active', finished_at: null };
     if (table === 'chat_reports') return { resolved: false };
+    if (table === 'weekly_prizes') return { seen: false };
     if (table === 'questions') return { category: 'general', difficulty: 2, explanation: null, active: true };
     if (table === 'players') {
       return {
@@ -337,6 +339,28 @@ function createFakeDb() {
           ledger(args.p_owner, args.p_fee, `country:defense:${args.p_country}`);
         }
         return { data: null, error: null };
+      }
+      if (name === 'add_week_points') {
+        let row = tables.weekly_points.find((r) => r.week === args.p_week && r.player_id === args.p_id);
+        if (!row) tables.weekly_points.push((row = { week: args.p_week, player_id: args.p_id, points: 0 }));
+        row.points += Math.max(0, args.p_amount);
+        row.updated_at = nextTime();
+        return { data: null, error: null };
+      }
+      if (name === 'pay_weekly_prizes') {
+        if (tables.weekly_payouts.some((r) => r.week === args.p_week)) return { data: [{ paid: 0 }], error: null };
+        tables.weekly_payouts.push({ week: args.p_week });
+        const top = tables.weekly_points
+          .filter((r) => r.week === args.p_week && r.points > 0)
+          .sort((a, b) => b.points - a.points || (a.updated_at < b.updated_at ? -1 : 1))
+          .slice(0, args.p_prizes.length);
+        top.forEach((r, i) => {
+          tables.weekly_prizes.push({ week: args.p_week, player_id: r.player_id, rank: i + 1, coins: args.p_prizes[i], seen: false });
+          const p = player(r.player_id);
+          if (p) p.coins += args.p_prizes[i];
+          ledger(r.player_id, args.p_prizes[i], `weekly:${args.p_week}`);
+        });
+        return { data: [{ paid: top.length }], error: null };
       }
       if (name === 'question_categories') {
         const counts = {};

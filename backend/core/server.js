@@ -17,6 +17,8 @@ const chatRoutes = require('../modules/chat/routes');
 const heroesRoutes = require('../modules/heroes/routes');
 const campaignRoutes = require('../modules/campaign/routes');
 const dailyRoutes = require('../modules/daily/routes');
+const weeklyRoutes = require('../modules/weekly/routes');
+const weekly = require('../modules/weekly/service');
 const chat = require('../modules/chat/service');
 const { attachMultiplayer } = require('../modules/multiplayer/hub');
 
@@ -76,6 +78,7 @@ function createApp() {
   app.use('/api/heroes', heroesRoutes);
   app.use('/api/campaign', campaignRoutes);
   app.use('/api/daily', dailyRoutes);
+  app.use('/api/weekly', weeklyRoutes);
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
   app.use('/auth', authRoutes.pages);
@@ -149,6 +152,10 @@ if (require.main === module) {
         // Los mensajes viejos del chat se borran solos (cada 6 horas).
         chat.prune();
         setInterval(() => chat.prune(), 6 * 3600_000).unref();
+        // Premios de la liga semanal: se comprueba al arrancar y cada hora.
+        const settle = () => weekly.settle().catch((e) => console.error('[liga] reparto', e.message));
+        settle();
+        setInterval(settle, 3600_000).unref();
       } catch (err) {
         console.error('❌ No se pudo preparar la base de datos:', err.message);
       }
