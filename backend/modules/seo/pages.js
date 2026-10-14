@@ -51,6 +51,129 @@ const CATS = {
   },
 };
 const ORDER = ['general', 'historia', 'geografia', 'ciencia', 'arte', 'deportes'];
+
+// Páginas por tema (búsquedas concretas). Cada una filtra las preguntas existentes.
+const norm = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const has = (re) => (q) => re.test(norm(`${q.text} ${q.correct}`));
+// Palabras al principio de palabra (admite plurales); `not` descarta falsos positivos.
+const words = (list, not) => {
+  const re = new RegExp(`\\b(${list.join('|')})`);
+  const no = not ? new RegExp(`\\b(${not.join('|')})`) : null;
+  return (q) => {
+    const t = norm(`${q.text} ${q.correct}`);
+    return re.test(t) && !(no && no.test(t));
+  };
+};
+const inCats = (cats, f = () => true) => (q, cat) => cats.includes(cat) && f(q);
+const ESP = /espan|madrid|barcelona|sevilla|valencia|andaluc|castilla|cataluna|galicia|asturias|canarias|baleares|toledo|granada|cordoba|bilbao|zaragoza|pamplona|franco|reyes catolicos|felipe ii|carlos i\b|alfonso|borbon|constitucion de 1978|transicion|laliga|liga espanola|cervantes|velazquez|goya|picasso|dali|lorca|almodovar|paella|tortilla|sanfermin|fallas|teide|ebro|tajo|duero|guadalquivir|pirineos/;
+const THEMES = {
+  'para-ninos': {
+    name: 'Para niños',
+    title: 'Preguntas para niños con respuestas',
+    desc: 'Preguntas fáciles para niños con respuestas: animales, colores, cuerpo humano, planetas y curiosidades. Ideales para clase o para jugar en familia.',
+    intro:
+      'Preguntas sencillas para niños y niñas con sus respuestas: animales, colores, números, el cuerpo humano, los planetas y curiosidades del día a día. Son perfectas para jugar en familia, en un cumpleaños o en clase. Lee la pregunta en voz alta, deja que piensen y luego toca «Ver respuesta».',
+    filter: inCats(['general', 'ciencia'], (q) => q.difficulty === 1),
+  },
+  faciles: {
+    name: 'Fáciles',
+    title: 'Preguntas fáciles de cultura general con respuestas',
+    desc: 'Preguntas fáciles de cultura general con respuestas: historia, geografía, arte y deportes para calentar motores. Juega gratis online.',
+    intro:
+      'Preguntas fáciles de cultura general con respuestas, para empezar un trivial sin que nadie se quede atrás: historia, geografía, arte, cine y deportes. Si las aciertas casi todas, prueba con las difíciles. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['historia', 'geografia', 'arte', 'deportes'], (q) => q.difficulty === 1),
+  },
+  dificiles: {
+    name: 'Difíciles',
+    title: 'Preguntas difíciles de cultura general con respuestas',
+    desc: 'Preguntas difíciles de cultura general con respuestas para expertos: historia, ciencia, geografía, arte y deportes. ¿Cuántas aciertas?',
+    intro:
+      'Preguntas difíciles de cultura general con respuestas, solo para los más listos: datos de historia, ciencia, geografía, arte y deportes que no sabe casi nadie. Si aciertas más de la mitad, tienes un nivel muy alto. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: (q) => q.difficulty === 3,
+  },
+  espana: {
+    name: 'Sobre España',
+    title: 'Preguntas sobre España con respuestas',
+    desc: 'Preguntas sobre España con respuestas: historia, geografía, comunidades, costumbres, arte y deportistas españoles. ¿Cuánto sabes de España?',
+    intro:
+      'Preguntas sobre España con respuestas: su historia, sus comunidades y provincias, ríos y montañas, fiestas y costumbres, pintores y escritores, y sus grandes deportistas. Un repaso perfecto para españoles y para quien quiera conocer mejor el país. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: (q) => ESP.test(norm(`${q.text} ${q.correct}`)),
+  },
+  'historia-de-espana': {
+    name: 'Historia de España',
+    title: 'Preguntas de historia de España con respuestas',
+    desc: 'Preguntas de historia de España con respuestas: Hispania romana, al-Ándalus, Reyes Católicos, el Imperio, la Guerra Civil y la Transición.',
+    intro:
+      'Preguntas de historia de España con respuestas: de la Hispania romana y al-Ándalus a los Reyes Católicos, el Imperio, la Guerra de la Independencia, la Guerra Civil y la Transición. Muy útiles para repasar la asignatura. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['historia'], (q) => ESP.test(norm(`${q.text} ${q.correct}`)) || /hispania|al-andalus|numancia|covadonga|cid\b|lepanto|trafalgar|pepa|isabel ii|fernando vii|1808|1936|1975|1978|23-f|23 de febrero/.test(norm(`${q.text} ${q.correct}`))),
+  },
+  capitales: {
+    name: 'Capitales',
+    title: 'Preguntas de capitales del mundo con respuestas',
+    desc: 'Preguntas de capitales del mundo con respuestas: Europa, América, Asia y África. Repasa las capitales jugando.',
+    intro:
+      'Preguntas sobre capitales del mundo con respuestas: de Europa, América, Asia, África y Oceanía, desde las más conocidas hasta algunas que suelen pillar a todo el mundo. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['geografia'], has(/capital/)),
+  },
+  futbol: {
+    name: 'Fútbol',
+    title: 'Preguntas de fútbol con respuestas',
+    desc: 'Preguntas de fútbol con respuestas: Mundiales, Champions, LaLiga, selección española y grandes jugadores como Messi o Cristiano.',
+    intro:
+      'Preguntas de fútbol con respuestas: Mundiales, Eurocopas, la Champions, LaLiga, estadios, la selección española y leyendas como Pelé, Maradona, Messi o Cristiano Ronaldo. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['deportes'], words(['futbol', 'mundial', 'eurocopa', 'champions', 'liga de campeones', 'laliga', 'liga espanola', 'gol\\b', 'goles', 'estadio', 'balon de oro', 'penalti', 'messi', 'cristiano', 'pele', 'maradona', 'real madrid', 'fc barcelona', 'barca', 'atletico de madrid', 'athletic', 'manchester', 'bayern', 'juventus', 'liverpool', 'camp nou', 'bernabeu', 'var\\b', 'tarjeta roja', 'iniesta', 'putellas', 'haaland', 'mbappe', 'salah', 'albiceleste', 'canarinha', 'old trafford', 'vecchia', 'mano de dios', 'metropolitano', 'villamarin', 'sanchez-pizjuan', 'san mames', 'once jugadores'], ['olimpic', 'baloncesto', 'rugby', 'tenis', 'super bowl', 'futbol americano', 'formula 1', 'piloto', 'motociclismo', 'nba'])),
+  },
+  animales: {
+    name: 'Animales',
+    title: 'Preguntas sobre animales con respuestas',
+    desc: 'Preguntas sobre animales con respuestas: mamíferos, aves, insectos, crías y curiosidades del reino animal. Para niños y mayores.',
+    intro:
+      'Preguntas sobre animales con respuestas: cómo se llaman sus crías, qué comen, cuál es el más rápido o el más grande y muchas curiosidades del reino animal. Valen para niños y para mayores. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['general', 'ciencia'], words(['animal', 'mamifero', 'aves\\b', 'ave\\b', 'insecto', 'pez\\b', 'peces', 'reptil', 'anfibio', 'cria\\b', 'perro', 'gato', 'leon\\b', 'tigre', 'elefante', 'jirafa', 'ballena', 'delfin', 'tortuga', 'abeja', 'arana', 'pulpo', 'panda', 'koala', 'canguro', 'cebra', 'guepardo', 'pinguino', 'murcielago', 'aguila', 'halcon', 'lince', 'oso\\b', 'vaca', 'caballo', 'yegua', 'potro', 'oveja', 'cerdo', 'camaleon', 'ornitorrinco', 'avestruz', 'camello', 'dromedario', 'gusano', 'mariposa', 'rana\\b', 'lobo', 'zorro', 'cabra', 'conejo', 'gazapo', 'ternero', 'cachorro', 'lechon', 'burro', 'carnero', 'herbivor', 'omnivor', 'carnivor'])),
+  },
+  'cine-y-series': {
+    name: 'Cine y series',
+    title: 'Preguntas de cine y series con respuestas',
+    desc: 'Preguntas de cine y series con respuestas: Disney, Pixar, Marvel, Star Wars, Harry Potter, directores, actores y series famosas.',
+    intro:
+      'Preguntas de cine y series con respuestas: películas de Disney y Pixar, superhéroes de Marvel y DC, sagas como Star Wars o Harry Potter, directores y actores españoles y series que todo el mundo ha visto. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['arte'], words(['pelicula', 'serie\\b', 'series\\b', 'actor', 'actriz', 'director', 'dirigio', 'disney', 'pixar', 'marvel', 'superheroe', 'star wars', 'harry potter', 'hogwarts', 'gandalf', 'oscar', 'premios goya', 'los goya', 'cine\\b', 'simpson', 'toy story', 'shrek', 'netflix', 'james bond', 'batman', 'spider', 'superman', 'hulk', 'thor\\b', 'iron man', 'jack sparrow', 'titanic', 'el padrino', 'studio ghibli', 'juego de tronos', 'la casa de papel', 'breaking bad', 'el juego del calamar', 'dibujos animados', 'mickey', 'el rey leon', 'cenicienta', 'sirenita', 'elsa\\b', 'bugs bunny', 'olaf', 'woody', 'buzz', 'parque jurasico', 'indiana jones', 'darth vader', 'piratas del caribe', 'bollywood', 'que la fuerza'])),
+  },
+  musica: {
+    name: 'Música',
+    title: 'Preguntas de música con respuestas',
+    desc: 'Preguntas de música con respuestas: grupos, cantantes, compositores clásicos, instrumentos y estilos musicales. Juega gratis.',
+    intro:
+      'Preguntas de música con respuestas: grupos y cantantes míticos, estrellas actuales, compositores clásicos, ópera, instrumentos y estilos como el jazz, el reggae o el flamenco. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['arte'], words(['cancion', 'canciones', 'cantante', 'canto\\b', 'grupo', 'compuso', 'compositor', 'sinfonia', 'opera\\b', 'instrumento', 'guitarra', 'piano', 'violin', 'teclas', 'cuerdas', 'musica', 'musical', 'jazz', 'reggae', 'tango', 'samba', 'flamenco', 'sevillanas', 'beatles', 'queen\\b', 'abba', 'rock', 'pop\\b', 'bob marley', 'shakira', 'rosalia', 'adele', 'taylor swift', 'mozart', 'beethoven', 'vivaldi', 'chaikovski', 'verdi', 'ravel', 'manuel de falla', 'joaquin rodrigo', 'tenor\\b', 'soprano', 'notas', 'elvis', 'michael jackson', 'jimi hendrix', 'placido domingo', 'montserrat caballe', 'eurovision'], ['poema', 'escribio', 'pelicula'])),
+  },
+  literatura: {
+    name: 'Literatura',
+    title: 'Preguntas de literatura con respuestas',
+    desc: 'Preguntas de literatura con respuestas: El Quijote, García Lorca, Shakespeare, novelas famosas, poetas y escritores españoles.',
+    intro:
+      'Preguntas de literatura con respuestas: del Quijote y el Siglo de Oro a la Generación del 27, Shakespeare, los grandes novelistas rusos, la literatura hispanoamericana y los libros juveniles más famosos. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['arte'], words(['escribio', 'escritor', 'novela', 'libro', 'poeta', 'poema', 'autor', 'obra de teatro', 'cuento', 'quijote', 'cervantes', 'lorca', 'machado', 'becquer', 'shakespeare', 'tolkien', 'rowling', 'lazarillo', 'celestina', 'cantar de mio cid', 'dulcinea', 'rocinante', 'sherlock', 'poirot', 'dracula', 'frankenstein', 'principito', 'homero', 'iliada', 'odisea', 'dante', 'garcia marquez', 'neruda', 'borges', 'delibes', 'galdos', 'unamuno', 'quevedo', 'lope de vega', 'calderon', 'zorrilla', 'generacion del'], ['pelicula', 'harry potter', 'hogwarts', 'gandalf'])),
+  },
+  'cuerpo-humano': {
+    name: 'Cuerpo humano',
+    title: 'Preguntas sobre el cuerpo humano con respuestas',
+    desc: 'Preguntas sobre el cuerpo humano con respuestas: huesos, órganos, sangre, músculos, sentidos y vitaminas. Aprende jugando.',
+    intro:
+      'Preguntas sobre el cuerpo humano con respuestas: cuántos huesos tenemos, cuál es el órgano más grande, para qué sirve cada parte del cuerpo, la sangre, los músculos, los sentidos y las vitaminas. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['ciencia'], words(['cuerpo', 'hueso', 'organo', 'sangre', 'musculo', 'diente', 'vitamina', 'corazon', 'pulmon', 'higado', 'rinon', 'cerebro', 'cerebelo', 'piel\\b', 'ojo\\b', 'iris\\b', 'oido', 'olfato', 'sentido', 'cromosoma', 'plaquetas', 'globulos', 'aorta', 'femur', 'pancreas', 'alveolo', 'escorbuto', 'calcio', 'glute', 'respira', 'bombea', 'craneo', 'bilis'], ['simbolo quimico', 'energia'])),
+  },
+  espacio: {
+    name: 'El espacio',
+    title: 'Preguntas sobre el espacio y los planetas con respuestas',
+    desc: 'Preguntas sobre el espacio con respuestas: planetas, el Sol, la Luna, estrellas, galaxias, astronautas y misiones espaciales.',
+    intro:
+      'Preguntas sobre el espacio con respuestas: los planetas del sistema solar, el Sol y la Luna, estrellas y galaxias, eclipses, astronautas y las misiones espaciales más famosas. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: (q, cat) => ['ciencia', 'historia'].includes(cat) && words(['planeta', 'luna\\b', 'sol\\b', 'estrella', 'galaxia', 'via lactea', 'astronauta', 'cosmonauta', 'espacio', 'espacial', 'nasa', 'apolo', 'sputnik', 'eclipse', 'anillos', 'marte', 'jupiter', 'saturno', 'venus', 'neptuno', 'pluton', 'telescopio', 'james webb', 'perseverance', 'laika', 'ganimedes', 'satelite', 'gagarin', 'armstrong', 'tereshkova', 'transbordador'], ['rey', 'vitamina', 'placas', 'gotas de lluvia', 'dios principal'])(q),
+  },
+};
+const MIN_THEME = 20;
+
 const LEVELS = { 1: 'Preguntas fáciles', 2: 'Preguntas de dificultad media', 3: 'Preguntas difíciles' };
 
 const esc = (s) =>
@@ -143,6 +266,7 @@ function indexPage(base) {
         <p>Más de ${(Math.floor(total / 100) * 100).toLocaleString('es-ES')} preguntas de cultura general con sus respuestas, divididas por categorías y por dificultad. Úsalas para un trivial con amigos, para clase o para repasar… y cuando estés listo, demuestra lo que sabes jugando online.</p>
       </section>
       ${cards}
+      <section class="card qa-head"><h2>Por temas</h2>${themeLinks(null)}</section>
       ${cta(null)}
     </main>`;
   return layout({
@@ -153,9 +277,34 @@ function indexPage(base) {
   });
 }
 
+function themeQuestions(slug) {
+  const t = THEMES[slug];
+  const all = load();
+  const seen = new Set();
+  const out = [];
+  for (const cat of ORDER) {
+    for (const q of all[cat]) {
+      if (!seen.has(q.text) && t.filter(q, cat)) {
+        seen.add(q.text);
+        out.push(q);
+      }
+    }
+  }
+  return out;
+}
+
+const activeThemes = () => Object.keys(THEMES).filter((slug) => themeQuestions(slug).length >= MIN_THEME);
+
+function themeLinks(current) {
+  return `<nav class="qa-cats" aria-label="Temas">${activeThemes()
+    .map((t) => `<a href="/preguntas/${t}"${t === current ? ' aria-current="page"' : ''}>${esc(THEMES[t].name)}</a>`)
+    .join('')}</nav>`;
+}
+
 function categoryPage(base, cat) {
-  const info = CATS[cat];
-  const list = load()[cat];
+  const isTheme = !CATS[cat];
+  const info = isTheme ? THEMES[cat] : CATS[cat];
+  const list = isTheme ? themeQuestions(cat) : load()[cat];
   let n = 0;
   const sections = [1, 2, 3]
     .map((level) => {
@@ -179,10 +328,11 @@ function categoryPage(base, cat) {
         <p class="qa-crumbs"><a href="/preguntas">Preguntas con respuestas</a> › ${esc(info.name)}</p>
         <h1>${esc(info.title)}</h1>
         <p>${esc(info.intro)}</p>
-        ${catLinks(cat)}
+        ${catLinks(isTheme ? null : cat)}
+        ${themeLinks(isTheme ? cat : null)}
       </section>
       ${sections}
-      ${cta(cat)}
+      ${cta(isTheme ? null : cat)}
     </main>`;
   return layout({
     title: `${info.title} (${list.length}) · Yo Soy Listo`,
@@ -192,6 +342,7 @@ function categoryPage(base, cat) {
   });
 }
 
-const SEO_PATHS = ['/preguntas', ...ORDER.map((c) => `/preguntas/${c}`)];
+const exists = (slug) => !!CATS[slug] || activeThemes().includes(slug);
+const SEO_PATHS = ['/preguntas', ...ORDER.map((c) => `/preguntas/${c}`), ...activeThemes().map((t) => `/preguntas/${t}`)];
 
-module.exports = { indexPage, categoryPage, CATS, ORDER, SEO_PATHS };
+module.exports = { indexPage, categoryPage, exists, themeQuestions, CATS, THEMES, ORDER, SEO_PATHS };
