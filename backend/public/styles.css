@@ -1257,3 +1257,5 @@ body.cq-playing .cq-player { padding: 4px 6px; }
 @media (prefers-reduced-motion: reduce) {
   .cq-map .region.pickable, .cq-map .swords { animation: none; }
 }
+.cq-map .castle-halo { opacity: 0.55; }
+.cq-map .castle.dead .castle-halo { opacity: 0.15; }

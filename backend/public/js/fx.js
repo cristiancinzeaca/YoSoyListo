@@ -668,7 +668,7 @@
   const screen = (el) => retrigger(el, 'screen-in', 450);
 
   const CASTLE_BY_COLOR = { '#e5484d': 'rojo', '#3e8ef7': 'azul', '#2fbf71': 'verde' };
-  const castleSrc = (color) => `/img/castillo-${CASTLE_BY_COLOR[String(color).toLowerCase()] || 'rojo'}.webp`;
+  const castleSrc = (color) => `/img/castillo-${CASTLE_BY_COLOR[String(color).toLowerCase()] || 'rojo'}.webp?v=2`;
 
   // ---------- botón de sonido en la cabecera ----------
   function soundButton() {
