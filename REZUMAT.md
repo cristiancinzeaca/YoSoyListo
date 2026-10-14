@@ -214,7 +214,7 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Adresa veche `*.up.railway.app` redirecționează 301 la domeniul nou (în afară de `/api/` și `/health`).
 
 ## 5o. Pagini SEO cu întrebări și răspunsuri + Search Console
-- `/preguntas` (index) și `/preguntas/<categorie>` (general, historia, geografia, ciencia, arte, deportes): generate pe server din `db/questions/*.json` (`modules/seo/pages.js`), grupate pe dificultate, răspunsul în `<details>` (fără JS), canonical + meta description, buton „Jugar” spre Blitz pe categoria respectivă și spre Conquista. Sunt în sitemap și au link din footer.
+- `/preguntas` (index), `/preguntas/<categorie>` (general, historia, geografia, ciencia, arte, deportes) și `/preguntas/<tema>` (para-ninos, faciles, dificiles, espana, historia-de-espana, capitales, futbol, animales, cine-y-series, musica, literatura, cuerpo-humano, espacio — filtre pe cuvinte în `THEMES`, apar doar dacă au ≥20 de întrebări): generate pe server din `db/questions/*.json` (`modules/seo/pages.js`), grupate pe dificultate, răspunsul în `<details>` (fără JS), canonical + meta description, buton „Jugar” spre Blitz pe categoria respectivă și spre Conquista. Sunt în sitemap și au link din footer.
 - Google Search Console: proprietate de domeniu `yosoylisto.es` pe contul cristiancinzeaca@gmail.com, verificată cu TXT `google-site-verification=…` pe `@` în IONOS (nu se șterge). Sitemap trimis.
 
 ## 6. Alte idei în așteptare

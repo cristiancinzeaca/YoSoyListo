@@ -112,7 +112,7 @@ function createApp() {
     res.set('Cache-Control', 'public, max-age=3600').type('html').send(seoPages.indexPage(baseUrl(req)));
   });
   app.get('/preguntas/:cat', (req, res, next) => {
-    if (!seoPages.CATS[req.params.cat]) return next();
+    if (!seoPages.exists(req.params.cat)) return next();
     res.set('Cache-Control', 'public, max-age=3600').type('html').send(seoPages.categoryPage(baseUrl(req), req.params.cat));
   });
 
