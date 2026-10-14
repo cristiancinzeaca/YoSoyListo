@@ -1,4 +1,6 @@
 (function () {
+  // Música medieval de fondo en el menú (suena tras el primer toque, como exigen los navegadores).
+  if (window.FX && FX.music) FX.music.start();
   const select = document.getElementById('category');
   const rankingList = document.getElementById('ranking');
   const rankingEmpty = document.getElementById('ranking-empty');

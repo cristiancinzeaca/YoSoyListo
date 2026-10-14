@@ -199,6 +199,11 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - **Duel**: întâi caută rival cu diferență ≤100 puncte; fereastra crește cu 25/secundă; după 8 s acceptă pe oricine; după 12 s, bot **de nivelul tău** (boții sunt mai buni pentru rangurile mari). La fel pentru Conquista (grupuri de 3 cât mai apropiate; la expirarea timpului se completează cu boți de nivelul grupului). Cozile se reverifică în fiecare secundă.
 - **Provocare prin link** („⚔️ Retar a un amigo” pe prima pagină → `/duelo?amigo=1`): duel privat, codul/linkul `/duelo?reto=COD` se trimite pe WhatsApp; începe când intră prietenul. **Nu schimbă ELO-ul** (ca să nu se poată „dărui” puncte). **Revanșă** când o cer amândoi.
 
+## 5l. Grafica Conquistei și sunete (ramura `grafica-sonidos`)
+- Harta e generată din nou din es-atlas, cu mai multe detalii (scriptul de generare nu e în repo; păstrează aceleași id-uri, centre și vecini). Aspect de „machetă”: spumă pe coastă, grosime maro sub regiuni, degradeuri pe culori, cifrele în insigne rotunde, turnurile castelului ca 3 scuturi aurii, ⚔️ pe regiunea atacată, regiunile de ales se ridică și strălucesc. Fără pătratul de la atingere (tap highlight).
+- În partidă pagina ocupă tot ecranul, fără scroll: întrebarea stă într-o „foaie” peste partea de jos a hărții; harta se micșorează cât să încapă în spațiul rămas (acoperită cel mult ~45%).
+- Sunete sintetizate în `fx.js`: tobe de război la începutul bătăliei, redoblare + săbii la fiecare luptă, corn când e rândul tău, fanfară la început, fanfară când cucerești, trompete triste când pierzi o regiune, castel care se prăbușește, scut la apărare, fanfară regală la victorie. Muzică medievală de lăută în meniu (prima pagină, așteptare, meniurile +18). Butonul de sunet are 3 stări: 🎶 muzică + efecte → 🔊 doar efecte → 🔇.
+
 ## 6. Alte idei în așteptare
 
 - **Conquista cu prietenii** (sală privată cu cod pentru 3 jucători).
