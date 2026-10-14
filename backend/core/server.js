@@ -64,6 +64,15 @@ function createApp() {
   app.use('/api', cors());
   app.use(express.json({ limit: '1mb' }));
 
+  // Con dominio propio, la dirección antigua de Railway manda a la nueva (una sola copia para Google).
+  app.use((req, res, next) => {
+    const target = process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/+$/, '') : '';
+    const host = (req.get('host') || '').toLowerCase();
+    if (!target || !host.endsWith('.up.railway.app') || target.includes(host)) return next();
+    if ((req.method !== 'GET' && req.method !== 'HEAD') || req.path === '/health' || req.path.startsWith('/api/')) return next();
+    res.redirect(301, target + req.originalUrl);
+  });
+
   app.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'yosoylisto-backend' });
   });

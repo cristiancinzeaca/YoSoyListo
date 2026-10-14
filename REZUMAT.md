@@ -30,7 +30,7 @@ Joc de întrebări de cultură generală **în spaniolă** (public: Spania), gâ
 - **Cod**: GitHub `cristiancinzeaca/YoSoyListo`, ramura `main`.
 - **Hosting**: Railway, proiectul „YoSoyListo”, regiunea EU West. **Fiecare modificare pusă în `main` se publică automat** în 1–2 minute.
 - **Baza de date**: PostgreSQL în același proiect Railway. Serverul creează singur tabelele și încarcă întrebările la pornire.
-- **Variabile în Railway** (serviciul YoSoyListo): `DATABASE_URL = ${{Postgres.DATABASE_URL}}`, `ADMIN_KEY` (parola panoului admin), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` și `PUBLIC_URL` (adresa site-ului, ex. `https://yosoylisto.up.railway.app`) — fără ultimele trei nu se poate intra în joc.
+- **Variabile în Railway** (serviciul YoSoyListo): `DATABASE_URL = ${{Postgres.DATABASE_URL}}`, `ADMIN_KEY` (parola panoului admin), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` și `PUBLIC_URL` (adresa site-ului: `https://www.yosoylisto.es`) — fără ultimele trei nu se poate intra în joc.
 - **Domeniu**: încă nu există (se folosește adresa `*.up.railway.app`). Plan: un domeniu `.es`/`.com` (~10–15 €/an) legat din Railway → Settings → Networking → Custom Domain, apoi variabila `PUBLIC_URL`.
 - **Cost**: Railway Hobby ~5 $/lună.
 - Proiectul Supabase creat la început **nu mai este folosit** (poate fi șters).
@@ -207,6 +207,11 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 ## 5m. Conquista cu prietenii și liga săptămânală (ramura `amigos-liga`)
 - **Conquista con amigos**: butonul „👥 Conquista con amigos” de pe prima pagină → `/conquista?amigos=1` creează o sală privată (cod `C…`); prietenii intră cu linkul `/conquista?c=COD`. Sala de așteptare arată cine a intrat; partida pornește singură când sunt 3, iar anfitrionul poate porni mai devreme (locurile goale le iau boți). Server: `privateCq` are acum `guests`, mesaje `cq_lobby` / `cq_lobby_closed`; dacă anfitrionul iese, sala se închide. Merge la fel pentru modul +18 (2 jucători).
 - **Liga săptămânală** (`modules/weekly`): fiecare punct de experiență câștigat de luni până duminică (ora Madridului) contează (`add_week_points`, apelat din `heroes.addXp`). La începutul săptămânii următoare, primii 10 primesc monede: 1.000 / 600 / 400 / 150 (locurile 4–10). Plata e atomică și o singură dată (`pay_weekly_prizes`, tabelul `weekly_payouts`); serverul verifică la pornire și în fiecare oră. Pe prima pagină: cardul „🏆 Liga semanal” cu top 10, poziția ta, cât mai e până se închide și un mesaj de felicitare cu confetti când ai câștigat (`/api/weekly`, `/api/weekly/seen`).
+
+## 5n. Domeniu propriu
+- Site-ul e pe **https://www.yosoylisto.es** (domeniu cumpărat la IONOS). În IONOS: CNAME `www` → ținta dată de Railway + TXT `_railway-verify.www`; `yosoylisto.es` (fără www) are redirecționare HTTP 301 către `https://www.yosoylisto.es` (fără bifa „también para subdominios www”).
+- Railway: domeniul custom `www.yosoylisto.es` pe portul 8080; `PUBLIC_URL = https://www.yosoylisto.es`. Google OAuth („Yo Soy Listo web”) are și redirect URI-ul `https://www.yosoylisto.es/auth/google/callback`.
+- Adresa veche `*.up.railway.app` redirecționează 301 la domeniul nou (în afară de `/api/` și `/health`).
 
 ## 6. Alte idei în așteptare
 
