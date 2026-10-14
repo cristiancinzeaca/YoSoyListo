@@ -213,9 +213,12 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Railway: domeniul custom `www.yosoylisto.es` pe portul 8080; `PUBLIC_URL = https://www.yosoylisto.es`. Google OAuth („Yo Soy Listo web”) are și redirect URI-ul `https://www.yosoylisto.es/auth/google/callback`.
 - Adresa veche `*.up.railway.app` redirecționează 301 la domeniul nou (în afară de `/api/` și `/health`).
 
+## 5o. Pagini SEO cu întrebări și răspunsuri + Search Console
+- `/preguntas` (index) și `/preguntas/<categorie>` (general, historia, geografia, ciencia, arte, deportes): generate pe server din `db/questions/*.json` (`modules/seo/pages.js`), grupate pe dificultate, răspunsul în `<details>` (fără JS), canonical + meta description, buton „Jugar” spre Blitz pe categoria respectivă și spre Conquista. Sunt în sitemap și au link din footer.
+- Google Search Console: proprietate de domeniu `yosoylisto.es` pe contul cristiancinzeaca@gmail.com, verificată cu TXT `google-site-verification=…` pe `@` în IONOS (nu se șterge). Sitemap trimis.
+
 ## 6. Alte idei în așteptare
 
-- **SEO**: pagini pe categorii, domeniu propriu, Google Search Console.
 - **Monetizare** (când există trafic): Google AdSense + banner de cookie-uri (obligatoriu în UE) + pagina „Aviso legal” (cere numele și NIF-ul titularului).
 - Mai multe întrebări și categorii (de exemplu „España”, cinema, muzică). Formatul e explicat în `README.md`.
 - Aplicație pentru magazinele Android/iOS din același cod.

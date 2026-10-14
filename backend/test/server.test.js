@@ -29,3 +29,23 @@ test('la dirección antigua de Railway redirige al dominio propio', async () => 
     server.close();
   }
 });
+
+test('páginas de preguntas con respuestas para Google', async () => {
+  const server = createApp().listen(0);
+  await new Promise((r) => server.once('listening', r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const idx = await fetch(`${base}/preguntas`);
+    assert.equal(idx.status, 200);
+    assert.match(await idx.text(), /Preguntas de trivial con respuestas/);
+    const cat = await (await fetch(`${base}/preguntas/historia`)).text();
+    assert.match(cat, /<h1>Preguntas de historia con respuestas<\/h1>/);
+    assert.match(cat, /<details><summary>Ver respuesta<\/summary>/);
+    assert.match(cat, /rel="canonical" href="http:\/\/127\.0\.0\.1:\d+\/preguntas\/historia"/);
+    assert.equal((await fetch(`${base}/preguntas/inventada`)).status, 404);
+    const map = await (await fetch(`${base}/sitemap.xml`)).text();
+    assert.match(map, /\/preguntas\/deportes<\/loc>/);
+  } finally {
+    server.close();
+  }
+});
