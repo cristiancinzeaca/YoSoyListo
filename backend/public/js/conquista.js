@@ -381,8 +381,10 @@
       if (castleOf) {
         const g = svgEl('g', {}, castleOf.eliminated ? 'castle dead' : 'castle');
         g.dataset.player = castleOf.id;
-        g.append(svgEl('ellipse', { cx: r.cx, cy: r.cy + 16, rx: 46, ry: 13 }, 'castle-shadow'));
-        const icon = svgEl('image', { x: r.cx - 58, y: r.cy - 96, width: 116, height: 116 }, 'castle-img');
+        const halo = svgEl('ellipse', { cx: r.cx, cy: r.cy + 14, rx: 62, ry: 18 }, 'castle-halo');
+        halo.style.fill = castleOf.color;
+        g.append(svgEl('ellipse', { cx: r.cx, cy: r.cy + 16, rx: 56, ry: 15 }, 'castle-shadow'), halo);
+        const icon = svgEl('image', { x: r.cx - 78, y: r.cy - 132, width: 156, height: 156 }, 'castle-img');
         icon.setAttribute('href', FX.castleSrc(castleOf.color));
         g.appendChild(icon);
         // Torres que le quedan: tres escuditos (llenos o vacíos).
