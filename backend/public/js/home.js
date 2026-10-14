@@ -120,6 +120,77 @@
     if (x18) x18.hidden = !me.adult;
   }
 
+
+  // ---------- liga semanal ----------
+  function timeLeft(ms) {
+    const h = Math.floor(ms / 3600_000);
+    const d = Math.floor(h / 24);
+    if (d >= 1) return `${d} ${d === 1 ? 'día' : 'días'} y ${h % 24} h`;
+    if (h >= 1) return `${h} h y ${Math.floor((ms % 3600_000) / 60_000)} min`;
+    return `${Math.max(1, Math.ceil(ms / 60_000))} min`;
+  }
+
+  async function loadLeague() {
+    const list = document.getElementById('league-list');
+    if (!list) return;
+    let data;
+    try {
+      data = await api.get('/api/weekly');
+    } catch {
+      document.getElementById('league-left').textContent = 'domingo a medianoche';
+      return;
+    }
+    document.getElementById('league-left').textContent = timeLeft(data.endsInMs);
+    const fmt = (n) => Number(n).toLocaleString('es-ES');
+    list.replaceChildren(
+      ...data.leaderboard.slice(0, 10).map((e) => {
+        const li = row(e.rank, e.name, `${fmt(e.points)} pts`, e.avatar);
+        if (Player.has() && Player.data && e.playerId === Player.data.id) li.classList.add('me');
+        if (e.prize) {
+          const prize = document.createElement('span');
+          prize.className = 'prize';
+          prize.textContent = `🪙${fmt(e.prize)}`;
+          li.appendChild(prize);
+        }
+        return li;
+      })
+    );
+    document.getElementById('league-empty').hidden = data.leaderboard.length > 0;
+    const me = document.getElementById('league-me');
+    if (data.me) {
+      me.hidden = false;
+      me.textContent = data.me.rank
+        ? `Vas ${data.me.rank}º con ${fmt(data.me.points)} puntos${data.me.rank <= 10 ? ' · ¡estás en premios!' : ''}`
+        : 'Aún no has puntuado esta semana: cualquier partida cuenta.';
+    }
+    // Premio de la semana pasada (se enseña una vez).
+    if (data.won && data.won.length) {
+      const box = document.getElementById('league-won');
+      const total = data.won.reduce((s, w) => s + w.coins, 0);
+      const best = Math.min(...data.won.map((w) => w.rank));
+      const title = document.createElement('strong');
+      title.textContent = `🎉 ¡Quedaste ${best}º en la liga!`;
+      const txt = document.createElement('span');
+      txt.textContent = `Has ganado ${fmt(total)} monedas. Ya están en tu monedero.`;
+      const ok = document.createElement('button');
+      ok.type = 'button';
+      ok.className = 'btn';
+      ok.textContent = '¡Genial!';
+      ok.addEventListener('click', async () => {
+        box.hidden = true;
+        try {
+          await api.post('/api/weekly/seen', {});
+        } catch {
+          // se volverá a enseñar la próxima vez
+        }
+      });
+      box.replaceChildren(title, txt, ok);
+      box.hidden = false;
+      FX.confetti(120);
+      FX.play('royalVictory');
+    }
+  }
+
   // Reto diario: racha y si ya se ha jugado hoy.
   async function retoBanner() {
     if (!Player.has()) return;
@@ -142,4 +213,5 @@
   loadRanking('week');
   heroBanner();
   retoBanner();
+  loadLeague();
 })();

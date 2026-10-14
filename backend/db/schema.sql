@@ -752,3 +752,66 @@ begin
   return query select s, greatest(me.streak_best, s);
 end;
 $$;
+
+-- ---------- Liga semanal ----------
+-- week = lunes en que empieza la semana ('YYYY-MM-DD', hora de Madrid). Puntos = experiencia ganada esa semana.
+create table if not exists weekly_points (
+  week text not null,
+  player_id uuid not null references players (id) on delete cascade,
+  points int not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (week, player_id)
+);
+create index if not exists weekly_points_rank_idx on weekly_points (week, points desc, updated_at);
+alter table weekly_points enable row level security;
+
+create table if not exists weekly_payouts (
+  week text primary key,
+  paid_at timestamptz not null default now()
+);
+alter table weekly_payouts enable row level security;
+
+create table if not exists weekly_prizes (
+  week text not null,
+  player_id uuid not null references players (id) on delete cascade,
+  rank int not null,
+  coins int not null,
+  seen boolean not null default false,
+  primary key (week, player_id)
+);
+alter table weekly_prizes enable row level security;
+
+create or replace function add_week_points(p_id uuid, p_week text, p_amount int)
+returns void
+language sql as $$
+  insert into weekly_points (week, player_id, points) values (p_week, p_id, greatest(p_amount, 0))
+  on conflict (week, player_id) do update set points = weekly_points.points + excluded.points, updated_at = now();
+$$;
+
+-- Reparte los premios de una semana ya cerrada. Solo la primera llamada paga; devuelve cuántos cobraron.
+create or replace function pay_weekly_prizes(p_week text, p_prizes int[])
+returns table (paid int)
+language plpgsql as $$
+declare
+  r record;
+  n int := 0;
+begin
+  insert into weekly_payouts (week) values (p_week) on conflict do nothing;
+  if not found then
+    return query select 0;
+    return;
+  end if;
+  for r in
+    select w.player_id, row_number() over (order by w.points desc, w.updated_at asc) as rk
+    from weekly_points w
+    where w.week = p_week and w.points > 0
+    order by w.points desc, w.updated_at asc
+    limit coalesce(array_length(p_prizes, 1), 0)
+  loop
+    insert into weekly_prizes (week, player_id, rank, coins) values (p_week, r.player_id, r.rk, p_prizes[r.rk]);
+    perform add_coins(r.player_id, p_prizes[r.rk], 'weekly:' || p_week);
+    n := n + 1;
+  end loop;
+  return query select n;
+end;
+$$;

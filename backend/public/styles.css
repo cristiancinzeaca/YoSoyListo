@@ -1259,3 +1259,23 @@ body.cq-playing .cq-player { padding: 4px 6px; }
 }
 .cq-map .castle-halo { opacity: 0.55; }
 .cq-map .castle.dead .castle-halo { opacity: 0.15; }
+
+/* Conquista con amigos: sala de espera */
+.lobby-members { list-style: none; padding: 0; margin: 12px auto; width: min(100%, 360px); display: grid; gap: 8px; }
+.lobby-members li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 14px; border: 3px solid var(--ink); background: linear-gradient(180deg, rgba(58,37,119,0.9), rgba(36,22,77,0.9)); font-weight: 800; text-align: left; }
+.lobby-members li.empty { opacity: 0.55; border-style: dashed; }
+.lobby-members .avatar, .lobby-members .slot { width: 36px; height: 36px; flex: none; }
+.lobby-members .slot { display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,0.1); font-weight: 900; }
+.lobby-members .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lobby-members .tag { font-size: 0.75rem; color: var(--primary); }
+#s-cq-lobby .btn { width: min(100%, 360px); margin: 6px auto; display: block; }
+
+/* Liga semanal */
+.league-sub { text-align: center; margin: 0 0 8px; }
+.league-me { text-align: center; font-weight: 900; color: var(--primary); margin: 0 0 6px; }
+.league .ranking li.me { background: rgba(255,203,43,0.12); border-radius: 10px; }
+.league .ranking .prize { font-size: 0.8rem; font-weight: 900; color: var(--primary); white-space: nowrap; }
+.league-prizes { font-size: 0.8rem; text-align: center; margin: 8px 0 0; color: var(--muted); }
+.league-won { display: grid; gap: 6px; text-align: center; padding: 12px; margin-bottom: 10px; border-radius: 14px; border: 3px solid var(--primary); background: rgba(255,203,43,0.12); }
+.league-won strong { font-size: 1.2rem; color: var(--primary); }
+.league-won .btn { width: auto; justify-self: center; margin-top: 4px; }

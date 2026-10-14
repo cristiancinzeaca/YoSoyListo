@@ -1,7 +1,7 @@
 (function () {
   const $ = (id) => document.getElementById(id);
   const SVG = 'http://www.w3.org/2000/svg';
-  const SCREENS = ['s-connecting', 's-x18-gate', 's-x18-warn', 's-x18-menu', 's-x18-wait', 's-queue', 's-game', 's-end', 's-fatal'];
+  const SCREENS = ['s-connecting', 's-cq-lobby', 's-x18-gate', 's-x18-warn', 's-x18-menu', 's-x18-wait', 's-queue', 's-game', 's-end', 's-fatal'];
   // /pareja = Conquista para 2 con preguntas +18.
   const VARIANT = location.pathname.startsWith('/pareja') ? 'x18' : 'normal';
   const params = new URLSearchParams(location.search);
@@ -17,7 +17,7 @@
     if (state.shown !== id) FX.screen($(id));
     state.shown = id;
     // Música medieval en los menús y la espera; en la partida, solo efectos.
-    if (['s-x18-menu', 's-x18-wait', 's-queue'].includes(id)) FX.music.start();
+    if (['s-x18-menu', 's-x18-wait', 's-queue', 's-cq-lobby'].includes(id)) FX.music.start();
     else FX.music.stop();
     document.body.classList.toggle('cq-playing', id === 's-game');
   }
@@ -146,7 +146,9 @@
   function onMessage(msg) {
     if (msg.t === 'welcome') return onWelcome(msg);
     if (msg.t === 'cq_queued') return onQueued(msg);
-    if (msg.t === 'cq_private') return onPrivate(msg);
+    if (msg.t === 'cq_private') return VARIANT === 'x18' ? onPrivate(msg) : null;
+    if (msg.t === 'cq_lobby') return VARIANT === 'x18' ? null : onLobby(msg);
+    if (msg.t === 'cq_lobby_closed') return fatal('Partida cancelada', msg.message || 'La partida privada se ha cerrado.');
     if (msg.t === 'cq_state') return onState(msg);
     if ((msg.t === 'queue_cancelled' || msg.t === 'left') && VARIANT === 'x18') return x18Menu();
     if (msg.t === 'queue_cancelled' || msg.t === 'left') return (location.href = '/');
@@ -160,6 +162,8 @@
       }
       if (msg.code === 'replaced') return fatal('Partida abierta en otra pestaña', 'Sigue jugando en la otra pestaña o dispositivo.');
       if (msg.code === 'auth') return;
+      // Enlace de amigos que ya no vale.
+      if (VARIANT === 'normal' && state.joining && state.shown === 's-connecting') return fatal('No se pudo entrar', msg.message);
       banner(msg.message, true);
       // Código equivocado o caducado: de vuelta al menú del modo +18.
       if (VARIANT === 'x18' && state.shown === 's-connecting' && state.me) show('s-x18-menu');
@@ -174,15 +178,79 @@
       hintBar.refresh();
       fiftyBar.refresh();
     });
-    if (msg.roomCode) return;
+    if (msg.roomCode || msg.lobbyCode) return;
     if (state.introDone && state.phase !== 'queue' && state.phase !== 'connecting') {
       if (state.phase !== 'end') fatal('La partida se ha cortado', 'El servidor se ha reiniciado y la partida se ha perdido. ¡Lo sentimos!');
       return;
     }
     state.introDone = true;
     if (VARIANT === 'x18') return x18Start(msg.player);
+    // Conquista con amigos: crear (?amigos=1) o entrar con el enlace (?c=CÓDIGO).
+    const code = params.get('c');
+    const friends = params.get('amigos');
+    if (code || friends) {
+      params.delete('c');
+      params.delete('amigos');
+      history.replaceState(null, '', '/conquista');
+    }
+    if (code) {
+      state.joining = true;
+      return socket.send({ t: 'cq_join', code: code.toUpperCase() });
+    }
+    if (friends) return socket.send({ t: 'cq_private' });
     socket.send({ t: 'cq_queue' });
   }
+
+  // ---------- sala de espera con amigos ----------
+  function onLobby(msg) {
+    state.phase = 'queue';
+    state.lobby = msg;
+    const amHost = msg.host === state.me.id;
+    $('lb-code').textContent = msg.code;
+    const list = $('lb-members');
+    list.replaceChildren();
+    for (let i = 0; i < msg.needed; i++) {
+      const m = msg.members[i];
+      const li = el('li', m ? 'in' : 'empty');
+      if (m) {
+        li.append(FX.avatar(m.name, m.avatar), el('span', 'grow', m.name + (m.id === state.me.id ? ' (tú)' : '')));
+        if (m.host) li.appendChild(el('span', 'tag', '👑 anfitrión'));
+      } else {
+        li.append(el('span', 'slot', '?'), el('span', 'grow', 'Esperando a un amigo…'));
+      }
+      list.appendChild(li);
+    }
+    const missing = msg.needed - msg.members.length;
+    $('lb-help').textContent = amHost
+      ? missing > 0
+        ? `Pasa el enlace a ${missing === 1 ? 'un amigo más' : 'dos amigos'}. La partida empieza sola cuando estéis los ${msg.needed}.`
+        : '¡Ya estáis todos!'
+      : `Esperando a que entre${missing === 1 ? ' uno más' : 'n más amigos'} o a que el anfitrión empiece.`;
+    $('lb-bots').hidden = !amHost;
+    if (state.lastMembers !== undefined && msg.members.length > state.lastMembers) {
+      FX.play('horn');
+      FX.vibrate(40);
+    }
+    state.lastMembers = msg.members.length;
+    show('s-cq-lobby');
+  }
+  $('lb-share').addEventListener('click', async () => {
+    const code = state.lobby && state.lobby.code;
+    if (!code) return;
+    const url = `${location.origin}/conquista?c=${code}`;
+    const text = '⚔️ ¡Te reto a conquistar España! Únete a mi partida en Yo Soy Listo:';
+    try {
+      if (navigator.share) await navigator.share({ title: 'Conquista con amigos', text, url });
+      else {
+        await navigator.clipboard.writeText(`${text} ${url}`);
+        banner('Enlace copiado: pégalo en WhatsApp');
+      }
+    } catch {
+      // compartir cancelado
+    }
+  });
+  $('lb-bots').addEventListener('click', () => socket.send({ t: 'cq_private_bot' }));
+  $('lb-cancel').addEventListener('click', () => socket.send({ t: 'cq_cancel' }));
 
   // ---------- modo +18 ----------
   const X18_OK = 'ysl:x18-ok';
