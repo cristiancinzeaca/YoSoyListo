@@ -1279,3 +1279,25 @@ body.cq-playing .cq-player { padding: 4px 6px; }
 .league-won { display: grid; gap: 6px; text-align: center; padding: 12px; margin-bottom: 10px; border-radius: 14px; border: 3px solid var(--primary); background: rgba(255,203,43,0.12); }
 .league-won strong { font-size: 1.2rem; color: var(--primary); }
 .league-won .btn { width: auto; justify-self: center; margin-top: 4px; }
+
+/* Páginas de preguntas con respuestas (SEO) */
+.qa-head h1 { font-size: 1.5rem; margin: 0 0 8px; }
+.qa-crumbs { font-size: 0.85rem; margin: 0 0 6px; }
+.qa-crumbs a, .qa-cats a { color: var(--primary); }
+.qa-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.qa-cats a { padding: 5px 10px; border-radius: 99px; background: rgba(255,255,255,0.08); font-weight: 800; font-size: 0.85rem; text-decoration: none; }
+.qa-cats a[aria-current] { background: var(--primary); color: var(--ink); }
+.qa-cat-card { display: grid; gap: 4px; text-decoration: none; color: inherit; }
+.qa-cat-card strong { font-size: 1.1rem; color: var(--primary); }
+.qa-cat-card span { color: var(--muted); font-size: 0.9rem; }
+.qa-level h2 { font-size: 1.2rem; margin: 0 0 8px; }
+.qa-list { list-style: none; margin: 0; padding: 0; }
+.qa-item { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.qa-item:last-child { border-bottom: 0; }
+.qa-q { margin: 0 0 6px; font-weight: 800; }
+.qa-n { color: var(--primary); }
+.qa-opts { margin: 0 0 6px; padding-left: 22px; color: var(--muted); }
+.qa-item details summary { cursor: pointer; color: var(--primary); font-weight: 800; font-size: 0.9rem; }
+.qa-a { margin: 6px 0 0; }
+.qa-expl { color: var(--muted); }
+.qa-cta .btn { margin-top: 8px; }

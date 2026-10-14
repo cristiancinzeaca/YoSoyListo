@@ -20,13 +20,14 @@ const dailyRoutes = require('../modules/daily/routes');
 const weeklyRoutes = require('../modules/weekly/routes');
 const weekly = require('../modules/weekly/service');
 const chat = require('../modules/chat/service');
+const seoPages = require('../modules/seo/pages');
 const { attachMultiplayer } = require('../modules/multiplayer/hub');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
 
 // Páginas que queremos que Google indexe.
-const SITEMAP_PAGES = ['/', '/reto', '/conquista', '/mundo', '/campana', '/privacidad'];
+const SITEMAP_PAGES = ['/', '/reto', '/conquista', '/mundo', '/campana', '/privacidad', ...seoPages.SEO_PATHS];
 
 function baseUrl(req) {
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, '');
@@ -104,6 +105,15 @@ function createApp() {
     res
       .type('application/xml')
       .send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
+  });
+
+  // Preguntas con respuestas (para Google).
+  app.get('/preguntas', (req, res) => {
+    res.set('Cache-Control', 'public, max-age=3600').type('html').send(seoPages.indexPage(baseUrl(req)));
+  });
+  app.get('/preguntas/:cat', (req, res, next) => {
+    if (!seoPages.CATS[req.params.cat]) return next();
+    res.set('Cache-Control', 'public, max-age=3600').type('html').send(seoPages.categoryPage(baseUrl(req), req.params.cat));
   });
 
   // Duelos y salas usan la misma página; el código de sala va en ?c=XXXXX.
