@@ -19,7 +19,9 @@
     },
   };
 
+  // ysl:sound = on (efectos) | off ; ysl:music = on | off (música de menú)
   let soundOn = store.get('ysl:sound') !== 'off';
+  let musicOn = soundOn && store.get('ysl:music') !== 'off';
 
   // ---------- sonido ----------
   let ctx = null;
@@ -77,6 +79,116 @@
     src.start(t);
   }
 
+
+  // Ruido filtrado con forma: lowpass/highpass/bandpass.
+  function noiseF(start, dur, { vol = 0.4, type = 'lowpass', freq = 900, q = 0.7, attack = 0.005, out } = {}) {
+    const a = audio();
+    if (!a) return;
+    const t = a.currentTime + start;
+    const len = Math.max(1, Math.floor(a.sampleRate * dur));
+    const buf = a.createBuffer(1, len, a.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    const src = a.createBufferSource();
+    src.buffer = buf;
+    const filter = a.createBiquadFilter();
+    filter.type = type;
+    filter.frequency.value = freq;
+    filter.Q.value = q;
+    const g = a.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(filter).connect(g).connect(out || master);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  }
+
+  // Tambor de guerra: golpe grave con caída de tono + parche.
+  function drum(start, { freq = 95, vol = 0.9, decay = 0.55, out } = {}) {
+    const a = audio();
+    if (!a) return;
+    const t = a.currentTime + start;
+    const osc = a.createOscillator();
+    const g = a.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq * 1.8, t);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.55, t + decay);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+    osc.connect(g).connect(out || master);
+    osc.start(t);
+    osc.stop(t + decay + 0.05);
+    noiseF(start, 0.12, { vol: vol * 0.35, freq: 700, out });
+  }
+
+  // Metal contra metal (espadas, escudos).
+  function clang(start, { vol = 0.35, base = 1200 } = {}) {
+    [1, 1.56, 2.21, 2.76, 3.4].forEach((k, i) => tone(base * k, start, 0.5 - i * 0.07, { type: i ? 'sine' : 'triangle', vol: vol / (i + 1) }));
+    noiseF(start, 0.08, { vol: vol * 0.8, type: 'highpass', freq: 3000 });
+  }
+
+  // Trompa/clarín: diente de sierra con filtro que se abre.
+  function brass(freq, start, dur, { vol = 0.28, out } = {}) {
+    const a = audio();
+    if (!a) return;
+    const t = a.currentTime + start;
+    const f = a.createBiquadFilter();
+    f.type = 'lowpass';
+    f.Q.value = 1.2;
+    f.frequency.setValueAtTime(freq * 1.2, t);
+    f.frequency.linearRampToValueAtTime(freq * 5, t + 0.08);
+    f.frequency.linearRampToValueAtTime(freq * 3, t + dur);
+    const g = a.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.05);
+    g.gain.setValueAtTime(vol * 0.85, t + Math.max(0.06, dur - 0.08));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.12);
+    f.connect(g).connect(out || master);
+    for (const det of [-6, 5]) {
+      const o = a.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(freq, t);
+      o.detune.value = det;
+      o.connect(f);
+      o.start(t);
+      o.stop(t + dur + 0.15);
+    }
+  }
+
+  // Cuerda pulsada (laúd).
+  function pluck(freq, start, { vol = 0.25, dur = 0.9, out } = {}) {
+    const a = audio();
+    if (!a) return;
+    const t = a.currentTime + start;
+    const f = a.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(freq * 6, t);
+    f.frequency.exponentialRampToValueAtTime(freq * 1.5, t + dur);
+    const g = a.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    f.connect(g).connect(out || master);
+    [
+      ['triangle', 1, 1],
+      ['sawtooth', 1, 0.25],
+      ['sine', 2, 0.3],
+    ].forEach(([type, mult, level]) => {
+      const o = a.createOscillator();
+      const og = a.createGain();
+      o.type = type;
+      o.frequency.value = freq * mult;
+      og.gain.value = level;
+      o.connect(og).connect(f);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    });
+  }
+
+  const N = (semi, base = 293.66) => base * Math.pow(2, semi / 12); // semitonos desde re4
+
   const SOUNDS = {
     click: () => tone(660, 0, 0.06, { type: 'square', vol: 0.12 }),
     tick: () => tone(880, 0, 0.05, { type: 'square', vol: 0.15 }),
@@ -121,6 +233,85 @@
       });
     },
     defeat: () => [392, 370, 349, 262].forEach((f, i) => tone(f, i * 0.22, 0.3, { type: 'triangle', vol: 0.35 })),
+
+    // Tambores de guerra: empieza la batalla.
+    battle: () => {
+      [0, 0.42, 0.84, 1.05, 1.26].forEach((t, i) => drum(t, { freq: i < 3 ? 80 : 110, vol: i === 4 ? 1 : 0.8 }));
+      drum(1.5, { freq: 70, vol: 1, decay: 0.9 });
+      brass(N(-12), 1.5, 0.5, { vol: 0.22 });
+      brass(N(-5), 1.5, 0.5, { vol: 0.18 });
+      clang(1.55, { vol: 0.25 });
+    },
+    // Redoble corto antes de cada combate + choque de espadas.
+    clash: () => {
+      [0, 0.1, 0.2, 0.3].forEach((t) => drum(t, { freq: 120, vol: 0.5, decay: 0.25 }));
+      clang(0.42, { vol: 0.35 });
+    },
+    // Cuerno: te toca.
+    horn: () => {
+      brass(N(-14), 0, 0.22, { vol: 0.25 });
+      brass(N(-7), 0.24, 0.45, { vol: 0.28 });
+    },
+    // Fanfarria de inicio de partida.
+    fanfare: () => {
+      const seq = [[-5, 0, 0.16], [-5, 0.18, 0.16], [0, 0.36, 0.16], [4, 0.54, 0.5]];
+      seq.forEach(([n, t, d]) => {
+        brass(N(n), t, d, { vol: 0.24 });
+        brass(N(n - 12), t, d, { vol: 0.14 });
+      });
+      drum(0, { freq: 90, vol: 0.6 });
+      drum(0.54, { freq: 70, vol: 0.9, decay: 0.8 });
+    },
+    // Ganas un territorio.
+    conquer: () => {
+      drum(0, { freq: 100, vol: 0.7 });
+      [[0, 0.05, 0.14], [4, 0.2, 0.14], [7, 0.35, 0.14], [12, 0.5, 0.55]].forEach(([n, t, d]) => {
+        brass(N(n - 12), t, d, { vol: 0.24 });
+        brass(N(n - 5), t, d, { vol: 0.12 });
+      });
+      noiseF(0.5, 0.6, { vol: 0.12, type: 'highpass', freq: 5000, attack: 0.05 });
+    },
+    // Pierdes un territorio.
+    lost: () => {
+      drum(0, { freq: 70, vol: 0.9, decay: 0.8 });
+      [[3, 0, 0.3], [1, 0.32, 0.3], [0, 0.64, 0.3], [-4, 0.96, 0.8]].forEach(([n, t, d]) => brass(N(n - 12), t, d, { vol: 0.22 }));
+    },
+    // Ocupas una región libre (se clava la bandera).
+    claim: () => {
+      drum(0, { freq: 140, vol: 0.45, decay: 0.3 });
+      [0, 4, 7].forEach((n, i) => pluck(N(n), 0.04 + i * 0.05, { vol: 0.22 }));
+    },
+    // Otro jugador ocupa o conquista (más discreto).
+    other: () => {
+      drum(0, { freq: 110, vol: 0.4, decay: 0.3 });
+      pluck(N(-5), 0.05, { vol: 0.15 });
+    },
+    // Defensa: escudo.
+    shield: () => {
+      clang(0, { vol: 0.3, base: 700 });
+      brass(N(-12), 0.1, 0.4, { vol: 0.2 });
+    },
+    // Castillo derrumbándose.
+    crumble: () => {
+      noiseF(0, 0.5, { vol: 0.9, freq: 300 });
+      tone(90, 0, 0.6, { type: 'sine', vol: 0.7, slide: -50 });
+      for (let i = 0; i < 9; i++) noiseF(0.25 + i * 0.09 + Math.random() * 0.05, 0.12, { vol: 0.25, type: 'bandpass', freq: 400 + Math.random() * 900, q: 3 });
+      noiseF(0.2, 1.4, { vol: 0.35, freq: 220, attack: 0.2 });
+    },
+    royalVictory: () => {
+      drum(0, { freq: 80 });
+      const seq = [[0, 0, 0.15], [0, 0.17, 0.15], [0, 0.34, 0.15], [4, 0.51, 0.4], [2, 0.93, 0.15], [4, 1.1, 0.15], [7, 1.27, 0.9]];
+      seq.forEach(([n, t, d]) => {
+        brass(N(n), t, d, { vol: 0.24 });
+        brass(N(n - 12), t, d, { vol: 0.16 });
+      });
+      [0.51, 1.27].forEach((t) => drum(t, { freq: 70, vol: 0.9, decay: 0.8 }));
+      noiseF(1.3, 1.2, { vol: 0.12, type: 'highpass', freq: 6000, attack: 0.05 });
+    },
+    royalDefeat: () => {
+      [[0, 0, 0.5], [-2, 0.55, 0.5], [-4, 1.1, 0.5], [-9, 1.65, 1.2]].forEach(([n, t, d]) => brass(N(n - 12), t, d, { vol: 0.2 }));
+      [0, 1.65].forEach((t) => drum(t, { freq: 60, vol: 0.7, decay: 1 }));
+    },
   };
 
   function play(name) {
@@ -129,6 +320,73 @@
     } catch {
       /* el audio nunca debe romper el juego */
     }
+  }
+
+
+  // ---------- música de menú (laúd medieval en re dórico) ----------
+  // [semitono desde re4 | null, duración en pasos]
+  const TUNE = [
+    [0, 1], [3, 1], [7, 1], [5, 1], [3, 1], [2, 1], [0, 1], [2, 1], [3, 1], [2, 1], [-2, 1], [-5, 1],
+    [0, 1], [3, 1], [7, 1], [9, 1], [7, 1], [5, 1], [3, 1], [2, 1], [0, 1], [0, 2], [null, 1],
+    [7, 1], [10, 1], [12, 1], [10, 1], [7, 1], [5, 1], [7, 1], [5, 1], [3, 1], [2, 2], [null, 1],
+    [3, 1], [2, 1], [0, 1], [-2, 1], [2, 1], [5, 1], [3, 1], [2, 1], [-2, 1], [0, 2], [null, 1],
+  ];
+  const BASS = [-24, -24, -26, -29, -24, -24, -24, -24, -17, -17, -19, -21, -21, -26, -24, -24]; // una nota por compás de 3 pasos
+  const STEP = 0.3;
+  const music = { want: false, timer: 0, next: 0, i: 0, bar: 0, gain: null };
+
+  function musicTick() {
+    const a = ctx;
+    if (!a || !music.want || !musicOn) return;
+    while (music.next < a.currentTime + 0.6) {
+      const startIn = music.next - a.currentTime;
+      const [n, len] = TUNE[music.i];
+      if (n !== null) pluck(N(n), Math.max(0, startIn), { vol: 0.2, dur: 0.6 + len * 0.3, out: music.gain });
+      // bajo + pandero al empezar cada compás de 3 pasos
+      const stepIndex = Math.round((music.next - music.t0) / STEP);
+      if (stepIndex % 3 === 0) {
+        const b = BASS[music.bar % BASS.length];
+        pluck(N(b), Math.max(0, startIn), { vol: 0.24, dur: 1.4, out: music.gain });
+        pluck(N(b + 7), Math.max(0, startIn) + 0.02, { vol: 0.1, dur: 1.2, out: music.gain });
+        noiseF(Math.max(0, startIn), 0.08, { vol: 0.05, type: 'highpass', freq: 6500, out: music.gain });
+        music.bar += 1;
+      } else {
+        noiseF(Math.max(0, startIn), 0.04, { vol: 0.025, type: 'highpass', freq: 8000, out: music.gain });
+      }
+      music.next += STEP * len;
+      music.i = (music.i + 1) % TUNE.length;
+    }
+  }
+
+  function musicStart() {
+    music.want = true;
+    if (!musicOn || music.timer) return;
+    const a = audio();
+    if (!a) return; // se reintenta con el primer toque del jugador
+    music.gain = a.createGain();
+    music.gain.gain.setValueAtTime(0.0001, a.currentTime);
+    music.gain.gain.exponentialRampToValueAtTime(0.55, a.currentTime + 1.5);
+    music.gain.connect(master);
+    music.next = music.t0 = a.currentTime + 0.1;
+    music.i = 0;
+    music.bar = 0;
+    music.timer = setInterval(musicTick, 200);
+    musicTick();
+  }
+
+  function musicStop(keepWanted = false) {
+    if (!keepWanted) music.want = false;
+    if (!music.timer) return;
+    clearInterval(music.timer);
+    music.timer = 0;
+    const g = music.gain;
+    if (g && ctx) {
+      g.gain.cancelScheduledValues(ctx.currentTime);
+      g.gain.setValueAtTime(Math.max(0.0001, g.gain.value), ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+      setTimeout(() => g.disconnect(), 800);
+    }
+    music.gain = null;
   }
 
   function vibrate(pattern) {
@@ -420,15 +678,27 @@
     b.type = 'button';
     b.className = 'sound-btn';
     const paint = () => {
-      b.textContent = soundOn ? '🔊' : '🔇';
-      b.setAttribute('aria-label', soundOn ? 'Silenciar sonidos y vibración' : 'Activar sonidos y vibración');
-      b.setAttribute('aria-pressed', String(!soundOn));
+      b.textContent = !soundOn ? '🔇' : musicOn ? '🎶' : '🔊';
+      b.setAttribute(
+        'aria-label',
+        !soundOn ? 'Sonido apagado: tocar para activar música y efectos' : musicOn ? 'Música y efectos: tocar para quitar la música' : 'Solo efectos: tocar para silenciar todo'
+      );
+      b.title = b.getAttribute('aria-label');
     };
     paint();
     b.addEventListener('click', () => {
-      soundOn = !soundOn;
+      // 🎶 música + efectos → 🔊 solo efectos → 🔇 nada → 🎶 …
+      if (soundOn && musicOn) musicOn = false;
+      else if (soundOn) soundOn = false;
+      else {
+        soundOn = true;
+        musicOn = true;
+      }
       store.set('ysl:sound', soundOn ? 'on' : 'off');
+      store.set('ysl:music', musicOn ? 'on' : 'off');
       paint();
+      if (musicOn && music.want) musicStart();
+      else musicStop(true);
       play('click');
     });
     const chip = header.querySelector('.me-chip');
@@ -449,6 +719,7 @@
     (e) => {
       const t = e.target.closest && e.target.closest('.btn, .option:not(:disabled), .tab, .seg button, .sound-btn');
       if (t && !t.classList.contains('sound-btn')) play('click');
+      if (music.want && !music.timer) setTimeout(musicStart, 0);
     },
     { passive: true }
   );
@@ -462,6 +733,12 @@
     });
   }
 
+  // En segundo plano los temporizadores se frenan: mejor pausar la música.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) musicStop(true);
+    else if (music.want) musicStart();
+  });
+
   function init() {
     soundButton();
     reveal();
@@ -471,6 +748,7 @@
 
   window.FX = {
     play,
+    music: { start: musicStart, stop: () => musicStop() },
     vibrate,
     confetti,
     burst,

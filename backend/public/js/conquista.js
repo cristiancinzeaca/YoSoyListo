@@ -16,6 +16,10 @@
     for (const s of SCREENS) $(s).hidden = s !== id;
     if (state.shown !== id) FX.screen($(id));
     state.shown = id;
+    // Música medieval en los menús y la espera; en la partida, solo efectos.
+    if (['s-x18-menu', 's-x18-wait', 's-queue'].includes(id)) FX.music.start();
+    else FX.music.stop();
+    document.body.classList.toggle('cq-playing', id === 's-game');
   }
 
   let bannerTimer;
@@ -273,40 +277,69 @@
   });
 
   // ---------- mapa ----------
+  const svgEl = (tag, attrs = {}, cls) => {
+    const e = document.createElementNS(SVG, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    if (cls) e.setAttribute('class', cls);
+    return e;
+  };
+
+  // Degradado por color de jugador (más claro arriba), creado la primera vez que se usa.
+  function shade(hex, k) {
+    const n = parseInt(hex.slice(1), 16);
+    const ch = (v) => Math.max(0, Math.min(255, Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k))));
+    return `rgb(${ch(n >> 16)},${ch((n >> 8) & 255)},${ch(n & 255)})`;
+  }
+  function gradientFor(color) {
+    const m = state.map;
+    const key = String(color).toLowerCase();
+    const id = `cq-g-${key.replace(/[^a-z0-9]/g, '')}`;
+    if (!m.grads.has(id)) {
+      m.grads.add(id);
+      const g = svgEl('linearGradient', { id, x1: 0, y1: 0, x2: 0, y2: 1 });
+      g.append(svgEl('stop', { offset: '0', 'stop-color': /^#[0-9a-f]{6}$/.test(key) ? shade(key, 0.28) : color }));
+      g.append(svgEl('stop', { offset: '1', 'stop-color': /^#[0-9a-f]{6}$/.test(key) ? shade(key, -0.22) : color }));
+      m.defs.appendChild(g);
+    }
+    return `url(#${id})`;
+  }
+
   async function loadMap() {
     const res = await fetch('/map/espana.json');
     const map = await res.json();
-    const svg = document.createElementNS(SVG, 'svg');
-    svg.setAttribute('viewBox', `0 0 ${map.width} ${map.height}`);
-    svg.setAttribute('role', 'img');
-    svg.setAttribute('aria-label', 'Mapa de España por comunidades autónomas');
-    const [[x0, y0], [x1, y1]] = map.canaryFrame;
-    const frame = document.createElementNS(SVG, 'rect');
-    frame.setAttribute('class', 'frame');
-    frame.setAttribute('x', x0);
-    frame.setAttribute('y', y0);
-    frame.setAttribute('width', x1 - x0);
-    frame.setAttribute('height', y1 - y0);
-    frame.setAttribute('rx', 10);
-    svg.appendChild(frame);
+    const svg = svgEl('svg', { viewBox: `-10 -10 ${map.width + 20} ${map.height + 20}`, role: 'img', 'aria-label': 'Mapa de España por comunidades autónomas', preserveAspectRatio: 'xMidYMid meet' });
+    const defs = svgEl('defs');
+    const free = svgEl('linearGradient', { id: 'cq-g-free', x1: 0, y1: 0, x2: 0.3, y2: 1 });
+    free.append(svgEl('stop', { offset: '0', 'stop-color': '#f7ead0' }), svgEl('stop', { offset: '1', 'stop-color': '#d8bf8c' }));
+    defs.appendChild(free);
+    svg.appendChild(defs);
 
+    const [[x0, y0], [x1, y1]] = map.canaryFrame;
+    svg.appendChild(svgEl('rect', { x: x0, y: y0, width: x1 - x0, height: y1 - y0, rx: 14 }, 'frame'));
+
+    // Capas: espuma de la costa → grosor de la «maqueta» → regiones → brillo → castillos y cifras.
+    const foam = svgEl('g', {}, 'coast');
+    const base = svgEl('g', { transform: 'translate(0 9)' }, 'extrude');
+    const land = svgEl('g', {}, 'land');
+    const shine = svgEl('g', {}, 'shine');
     const paths = {};
     for (const r of map.regions) {
-      const p = document.createElementNS(SVG, 'path');
-      p.setAttribute('d', r.d);
-      p.setAttribute('class', 'region free');
-      const title = document.createElementNS(SVG, 'title');
+      foam.appendChild(svgEl('path', { d: r.d }));
+      base.appendChild(svgEl('path', { d: r.d }));
+      shine.appendChild(svgEl('path', { d: r.d, transform: 'translate(0 -1.5)' }));
+      const p = svgEl('path', { d: r.d }, 'region free');
+      const title = svgEl('title');
       title.textContent = r.name;
       p.appendChild(title);
       p.addEventListener('click', () => onRegionClick(r.id));
-      svg.appendChild(p);
+      land.appendChild(p);
       paths[r.id] = p;
     }
-    const labels = document.createElementNS(SVG, 'g');
-    svg.appendChild(labels);
+    const labels = svgEl('g', {}, 'labels');
+    svg.append(foam, base, land, shine, labels);
     $('cq-map').replaceChildren(svg);
     $('cq-attrib').textContent = map.attribution;
-    state.map = { ...map, svg, paths, labels, byId: Object.fromEntries(map.regions.map((r) => [r.id, r])) };
+    state.map = { ...map, svg, defs, grads: new Set(), paths, labels, byId: Object.fromEntries(map.regions.map((r) => [r.id, r])) };
   }
 
   function onRegionClick(region) {
@@ -329,40 +362,51 @@
     const target = s.attack ? s.attack.region : null;
     for (const [id, p] of Object.entries(m.paths)) {
       const owner = s.owner[id];
-      p.setAttribute('fill', owner ? colorOf(owner) : '#e6d3a3');
+      p.style.fill = owner ? gradientFor(colorOf(owner)) : 'url(#cq-g-free)';
       p.classList.toggle('free', !owner);
+      p.classList.toggle('mine', owner === state.me.id);
       p.classList.toggle('pickable', myPick && s.options.includes(id));
       p.classList.toggle('target', id === target);
     }
-    // Castillos y valores.
+    // Las regiones elegibles y la atacada se dibujan encima para que el borde se vea entero.
+    for (const id of Object.keys(m.paths)) {
+      const p = m.paths[id];
+      if (p.classList.contains('pickable') || p.classList.contains('target')) p.parentNode.appendChild(p);
+    }
+    // Castillos, cifras y espadas.
     m.labels.replaceChildren();
     for (const r of m.regions) {
       const owner = s.owner[r.id];
       const castleOf = s.players.find((p) => p.castle === r.id);
       if (castleOf) {
-        const g = document.createElementNS(SVG, 'g');
-        g.setAttribute('class', castleOf.eliminated ? 'castle dead' : 'castle');
+        const g = svgEl('g', {}, castleOf.eliminated ? 'castle dead' : 'castle');
         g.dataset.player = castleOf.id;
-        const icon = document.createElementNS(SVG, 'image');
-        icon.setAttribute('class', 'castle-img');
+        g.append(svgEl('ellipse', { cx: r.cx, cy: r.cy + 16, rx: 46, ry: 13 }, 'castle-shadow'));
+        const icon = svgEl('image', { x: r.cx - 58, y: r.cy - 96, width: 116, height: 116 }, 'castle-img');
         icon.setAttribute('href', FX.castleSrc(castleOf.color));
-        icon.setAttribute('x', r.cx - 55);
-        icon.setAttribute('y', r.cy - 92);
-        icon.setAttribute('width', 110);
-        icon.setAttribute('height', 110);
-        const towers = document.createElementNS(SVG, 'text');
-        towers.setAttribute('class', 'towers');
-        towers.setAttribute('x', r.cx);
-        towers.setAttribute('y', r.cy + 40);
-        towers.textContent = castleOf.eliminated ? '✖' : '▮'.repeat(Math.max(0, castleOf.towers));
-        g.append(icon, towers);
+        g.appendChild(icon);
+        // Torres que le quedan: tres escuditos (llenos o vacíos).
+        const pips = svgEl('g', {}, 'towers');
+        for (let i = 0; i < 3; i++) {
+          const x = r.cx - 30 + i * 30;
+          const alive = !castleOf.eliminated && i < castleOf.towers;
+          pips.appendChild(svgEl('path', { d: `M${x - 11},${r.cy + 22}h22v12q0,10 -11,15q-11,-5 -11,-15z` }, alive ? 'pip on' : 'pip'));
+        }
+        g.appendChild(pips);
         m.labels.appendChild(g);
       } else if (owner && s.value[r.id]) {
-        const t = document.createElementNS(SVG, 'text');
-        t.setAttribute('class', 'value');
-        t.setAttribute('x', r.cx);
-        t.setAttribute('y', r.cy + 11);
-        t.textContent = s.value[r.id];
+        const txt = String(s.value[r.id]);
+        const w = 30 + txt.length * 23;
+        const g = svgEl('g', {}, 'value');
+        g.append(svgEl('rect', { x: r.cx - w / 2, y: r.cy - 26, width: w, height: 52, rx: 26 }));
+        const t = svgEl('text', { x: r.cx, y: r.cy + 1 });
+        t.textContent = txt;
+        g.appendChild(t);
+        m.labels.appendChild(g);
+      }
+      if (r.id === target) {
+        const t = svgEl('text', { x: r.cx + (castleOf ? 52 : 0), y: r.cy - (castleOf ? 70 : 34) }, 'swords');
+        t.textContent = '⚔️';
         m.labels.appendChild(t);
       }
     }
@@ -614,12 +658,9 @@
     $('cq-event').textContent = s.event || '';
     renderPlayers();
     renderMap();
-    // Cuando te toca responder, el mapa se encoge para que la pregunta quepa en la pantalla.
-    const answering = s.participants.includes(state.me.id) && s.myAnswer === null && !s.phase.endsWith('_pick');
-    const wasAnswering = $('s-game').classList.contains('answering');
-    $('s-game').classList.toggle('answering', answering);
+    // La pregunta va en una hoja encima del mapa; cuando hay que elegir región, la hoja es pequeña.
+    $('s-game').classList.toggle('picking', s.phase.endsWith('_pick'));
     renderPanel();
-    if (answering && !wasAnswering) $('cq-panel').scrollIntoView({ behavior: 'smooth', block: 'end' });
     state.duration = s.durationMs;
     state.deadline = performance.now() + s.timeLeftMs;
     requestAnimationFrame(tick);
@@ -643,10 +684,18 @@
     const fxKey = [s.phase, s.round, s.question?.text, s.picker, !!s.result].join('|');
     const newStep = fxKey !== state.fxKey;
     state.fxKey = fxKey;
-    if (!prev) return;
+    if (!prev) {
+      if (s.phase === 'intro') FX.play('fanfare');
+      return;
+    }
 
     // Regiones que cambian de dueño.
     let conquered = 0;
+    let regionSound = null; // el más importante: lost > conquer > claim > other
+    const rank = { other: 1, claim: 2, conquer: 3, lost: 4 };
+    const want = (k) => {
+      if (!regionSound || rank[k] > rank[regionSound]) regionSound = k;
+    };
     for (const [id, owner] of Object.entries(s.owner)) {
       if (!owner || prev.owner[id] === owner) continue;
       const path = state.map.paths[id];
@@ -658,7 +707,9 @@
       const color = colorOf(owner);
       FX.burst(regionPoint(id), { colors: [color, '#ffffff', '#ffcb2b'], amount: prev.owner[id] ? 40 : 22, power: prev.owner[id] ? 9 : 6 });
       if (prev.owner[id]) conquered += 1;
-      else FX.play('turn');
+      if (prev.owner[id] === me) want('lost');
+      else if (owner === me) want(prev.owner[id] ? 'conquer' : 'claim');
+      else want('other');
     }
 
     // Castillos: torres perdidas y eliminaciones.
@@ -673,7 +724,7 @@
           g.classList.add('fx-hit');
           FX.burst(g.getBoundingClientRect ? g : null, { colors: ['#ffffff', '#c9c2d9', p.color], amount: 34, power: 9 });
         }
-        FX.play('boom');
+        FX.play(p.eliminated && !before.eliminated ? 'crumble' : 'boom');
         if (p.id === me) {
           FX.vibrate([120, 60, 120]);
           FX.flash('bad');
@@ -686,8 +737,9 @@
         FX.bump(sc);
       }
     }
+    if (regionSound && !castleFell) FX.play(regionSound);
+    if (regionSound === 'lost' && !castleFell) FX.bigText('😩 ¡Has perdido una región!', 'bad');
     if (conquered && !castleFell) {
-      FX.play('conquer');
       const attacker = s.attack ? s.attack.attackerId : prev.attack ? prev.attack.attackerId : null;
       if (attacker === me) {
         FX.vibrate([30, 30, 30]);
@@ -697,18 +749,26 @@
 
     if (!newStep) return;
 
+    // Empieza la fase de batalla: tambores de guerra.
+    const battleStarts = s.phase.startsWith('bat_') && !prev.phase.startsWith('bat_');
+    if (battleStarts) {
+      FX.play('battle');
+      FX.vibrate([80, 120, 80, 120, 200]);
+      FX.bigText('🥁 ¡Comienza la batalla!', 'cool');
+    }
+
     // Te toca elegir en el mapa.
     const myPick = s.phase.endsWith('_pick') && s.picker === me && s.myAnswer === null;
     if (myPick) {
-      FX.play('turn');
+      if (!battleStarts) FX.play('horn');
       FX.vibrate([40, 30, 40]);
-      FX.bigText(s.phase === 'exp_pick' ? '👆 ¡Elige región!' : '⚔️ ¡Elige a quién atacar!', 'cool');
+      if (!battleStarts) FX.bigText(s.phase === 'exp_pick' ? '👆 ¡Elige región!' : '⚔️ ¡Elige a quién atacar!', 'cool');
     }
 
     // Empieza una pregunta en la que participas.
     if ((s.phase === 'exp_question' || s.phase === 'bat_question' || s.phase === 'bat_tiebreak') && s.participants.includes(me)) {
       state.lastTick = null;
-      FX.play('go');
+      if (!battleStarts) FX.play(s.phase === 'bat_question' ? 'clash' : 'go');
       if (s.phase === 'bat_question' && s.attack) {
         FX.bigText(s.attack.attackerId === me ? '⚔️ ¡Al ataque!' : s.attack.defenderId === me ? '🛡️ ¡Defiéndete!' : '⚔️ ¡Combate!', 'cool');
       }
@@ -745,7 +805,7 @@
           FX.vibrate([60, 40, 60]);
           FX.shake($('cq-panel'));
         }
-      } else if (r.outcome === 'defender') FX.play('defend');
+      } else if (r.outcome === 'defender') FX.play('shield');
       if (r.outcome === 'defender' && s.attack && s.attack.defenderId === me) {
         FX.float('🛡️ ¡Defendida!', $('cq-panel'), 'big');
       }
@@ -763,7 +823,7 @@
       state.endShown = s.code;
       FX.endMascot($('s-end').querySelector('.card'), !!(me && me.position <= 2));
       if (me && me.position === 1) {
-        FX.play('victory');
+        FX.play('royalVictory');
         FX.flash('gold');
         FX.confetti(220);
         setTimeout(() => FX.confetti(120), 1400);
@@ -771,7 +831,7 @@
         FX.play('streak');
         FX.confetti(50);
       } else {
-        FX.play('defeat');
+        FX.play('royalDefeat');
       }
     }
     const coinsBox = $('end-coins');
@@ -797,6 +857,21 @@
       list.appendChild(li);
     }
   }
+
+  // El mapa ocupa el hueco que deja la hoja de preguntas (como mucho la tapa un poco por abajo).
+  function fitStage() {
+    const stage = document.querySelector('.cq-stage');
+    const sheet = document.querySelector('.cq-sheet');
+    if (!stage || !sheet || !window.ResizeObserver) return;
+    const apply = () => {
+      const h = stage.clientHeight;
+      const covered = Math.min(sheet.offsetHeight + 8, h * 0.45);
+      stage.style.setProperty('--sheet-room', `${Math.round(covered)}px`);
+    };
+    new ResizeObserver(apply).observe(sheet);
+    new ResizeObserver(apply).observe(stage);
+  }
+  fitStage();
 
   (async function init() {
     show('s-connecting');
