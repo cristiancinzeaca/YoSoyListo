@@ -164,20 +164,8 @@
       col.title = `${d.day}: ${d.signups} registros, ${d.matches} partidas, ${d.blitz} blitz, ${d.daily} retos`;
       bars.appendChild(col);
     }
-    table(
-      $('act-players'),
-      ['Nombre', 'Registro', 'Visto', 'Cuenta', 'Nivel', 'Partidas', 'Blitz', 'Monedas'],
-      (s.recent_players || []).map((p) => [
-        p.name + (p.hero ? ' 🛡️' : ''),
-        fmtDate(p.created_at),
-        ago(p.last_seen_at),
-        `${p.method === 'google' ? 'Google' : 'Correo'} · ${p.email || ''}`,
-        String(p.level),
-        String(p.games),
-        String(p.blitz),
-        String(p.coins),
-      ])
-    );
+    state.players = s.recent_players || [];
+    renderPlayers();
     table(
       $('act-matches'),
       ['Cuándo', 'Modo', 'Jugadores (en orden)'],
@@ -189,6 +177,29 @@
     );
     $('act-at').textContent = `Actualizado: ${fmtDate(s.at)}. «Visto» = última vez que abrió el juego (se apunta cada 10 min como mucho).`;
   }
+  const state = { players: [] };
+  const mask = (e) => (e ? e.replace(/^(.).*(@.*)$/, '$1***$2') : '—');
+  function renderPlayers() {
+    const full = $('act-show-email').checked;
+    const q = $('act-search').value.trim().toLowerCase();
+    const list = state.players.filter((p) => !q || p.name.toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q));
+    table(
+      $('act-players'),
+      ['Nombre', 'Registro', 'Visto', 'Cuenta', 'Nivel', 'Partidas', 'Blitz', 'Monedas'],
+      list.map((p) => [
+        p.name + (p.hero ? ' 🛡️' : ''),
+        fmtDate(p.created_at),
+        ago(p.last_seen_at),
+        `${p.method === 'google' ? 'Google' : 'Correo'} · ${full ? p.email || '—' : mask(p.email)}${p.method === 'email' && !p.verified ? ' (sin confirmar)' : ''}`,
+        String(p.level),
+        String(p.games),
+        String(p.blitz),
+        String(p.coins),
+      ])
+    );
+  }
+  $('act-show-email').addEventListener('change', renderPlayers);
+  $('act-search').addEventListener('input', renderPlayers);
   $('act-refresh').addEventListener('click', loadActivity);
 
   // ---------- Formulario ----------

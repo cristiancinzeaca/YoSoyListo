@@ -21,7 +21,7 @@ test('panel de administración: actividad solo con la clave', async () => {
     const me = s.recent_players.find((p) => p.name === 'Recién Llegada');
     assert.ok(me, 'aparece entre los últimos registros');
     assert.equal(me.level, 1);
-    assert.ok(!me.email || me.email.includes('***'), 'el correo se muestra tapado');
+    assert.ok('email' in me, 'el panel recibe el correo completo');
   } finally {
     server.close();
   }

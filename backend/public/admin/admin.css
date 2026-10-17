@@ -62,3 +62,5 @@ h3 { font-size: 0.95rem; margin: 18px 0 8px; }
 .tbl { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 .tbl th { text-align: left; color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--border); padding: 6px; white-space: nowrap; }
 .tbl td { border-bottom: 1px solid #f0ecf8; padding: 6px; white-space: nowrap; }
+label.inline { display: flex; gap: 6px; align-items: center; font-weight: 600; margin: 0; }
+#act-search { margin-bottom: 8px; }
