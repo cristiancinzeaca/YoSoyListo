@@ -51,16 +51,38 @@ async function findById(id) {
 
 // Devuelve el jugador de un token (sesión de Google o perfil de invitado antiguo), o null.
 // Ojo: un perfil de invitado tiene hasAccount = false y ya no puede jugar hasta entrar con Google.
+// «Visto por última vez» (para el panel de administración): como mucho una escritura cada 10 minutos por jugador.
+const lastTouch = new Map();
+function touch(player) {
+  if (!player || !player.id) return;
+  const now = Date.now();
+  if (now - (lastTouch.get(player.id) || 0) < 10 * 60_000) return;
+  lastTouch.set(player.id, now);
+  if (lastTouch.size > 50_000) lastTouch.clear();
+  getDb()
+    .from('players')
+    .update({ last_seen_at: new Date(now).toISOString() })
+    .eq('id', player.id)
+    .select('id')
+    .then(({ error }) => error && console.error('[players] last_seen', error.message))
+    .catch(() => {});
+}
+
 async function findByToken(token) {
   if (typeof token !== 'string' || token.length < 20 || token.length > 100) return null;
   const hash = hashToken(token);
   const db = getDb();
   const { data: session, error: sErr } = await db.from('player_sessions').select('player_id').eq('token_hash', hash).maybeSingle();
   if (sErr) throw dbError(sErr, 'players.findByToken.session');
-  if (session) return findById(session.player_id);
-  const { data, error } = await db.from('players').select(PUBLIC_FIELDS).eq('token_hash', hash).maybeSingle();
-  if (error) throw dbError(error, 'players.findByToken');
-  return data ? toPublic(data) : null;
+  let player = null;
+  if (session) player = await findById(session.player_id);
+  else {
+    const { data, error } = await db.from('players').select(PUBLIC_FIELDS).eq('token_hash', hash).maybeSingle();
+    if (error) throw dbError(error, 'players.findByToken');
+    player = data ? toPublic(data) : null;
+  }
+  touch(player);
+  return player;
 }
 
 async function createSession(playerId) {

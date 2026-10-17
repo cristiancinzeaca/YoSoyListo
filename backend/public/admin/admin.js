@@ -66,11 +66,130 @@
       loadList();
       loadReports();
       loadChatReports();
+      loadActivity();
     } catch (err) {
       status.className = 'status err';
       status.textContent = err.message;
     }
   });
+
+
+  // ---------- Actividad ----------
+  const MODE_NAMES = { duel: '⚔️ Duelo', room: '👥 Sala', conquista: '🏰 Conquista', conquista18: '🔞 Pareja' };
+  const fmtDate = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  };
+  function ago(iso) {
+    if (!iso) return '—';
+    const m = Math.round((Date.now() - Date.parse(iso)) / 60000);
+    if (m < 1) return 'ahora';
+    if (m < 60) return `hace ${m} min`;
+    const h = Math.round(m / 60);
+    if (h < 24) return `hace ${h} h`;
+    return `hace ${Math.round(h / 24)} d`;
+  }
+  const mk = (tag, cls, text) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  };
+  function tile(label, value, sub) {
+    const t = mk('div', 'tile');
+    t.append(mk('div', 'tile-v', String(value ?? 0)), mk('div', 'tile-l', label));
+    if (sub) t.appendChild(mk('div', 'tile-s', sub));
+    return t;
+  }
+  function table(el, headers, rows) {
+    el.replaceChildren();
+    const thead = mk('thead');
+    const tr = mk('tr');
+    headers.forEach((h) => tr.appendChild(mk('th', '', h)));
+    thead.appendChild(tr);
+    const tbody = mk('tbody');
+    for (const r of rows) {
+      const row = mk('tr');
+      r.forEach((c) => row.appendChild(mk('td', '', c)));
+      tbody.appendChild(row);
+    }
+    if (!rows.length) {
+      const row = mk('tr');
+      const td = mk('td', 'hint', 'Todavía no hay datos');
+      td.colSpan = headers.length;
+      row.appendChild(td);
+      tbody.appendChild(row);
+    }
+    el.append(thead, tbody);
+  }
+
+  async function loadActivity() {
+    const msg = $('act-msg');
+    message(msg, '');
+    let s;
+    try {
+      s = await api('/api/admin/stats');
+    } catch (err) {
+      return message(msg, err.message, false);
+    }
+    const online = s.online || {};
+    const m7 = s.matches_7d || {};
+    const totalM7 = Object.values(m7).reduce((a, b) => a + b, 0);
+    $('act-tiles').replaceChildren(
+      tile('Jugadores registrados', s.players, `Google ${s.by_google} · correo ${s.by_email}`),
+      tile('Nuevos hoy', s.new_today, `7 días: ${s.new_7d} · 30 días: ${s.new_30d}`),
+      tile('Activos hoy', s.active_today, `7 días: ${s.active_7d}`),
+      tile('Conectados ahora', online.players ?? '—', online.rooms !== undefined ? `${online.rooms} partidas en curso` : ''),
+      tile('Partidas online (7 d)', totalM7, Object.entries(m7).map(([k, v]) => `${MODE_NAMES[k] || k} ${v}`).join(' · ')),
+      tile('Blitz (7 d)', s.blitz_7d),
+      tile('Reto diario hoy', s.daily_today),
+      tile('Con héroe creado', s.with_hero)
+    );
+    // Barras por día
+    const days = s.per_day || [];
+    const max = Math.max(1, ...days.flatMap((d) => [d.signups, d.matches, d.blitz, d.daily]));
+    const bars = $('act-days');
+    bars.replaceChildren();
+    for (const d of days) {
+      const col = mk('div', 'day');
+      const group = mk('div', 'group');
+      [['s1', d.signups], ['s2', d.matches], ['s3', d.blitz], ['s4', d.daily]].forEach(([cls, v]) => {
+        const b = mk('div', `bar ${cls}`);
+        b.style.height = `${Math.round((v / max) * 100)}%`;
+        b.title = `${v}`;
+        group.appendChild(b);
+      });
+      col.append(group, mk('div', 'day-l', d.day.slice(8) + '/' + d.day.slice(5, 7)));
+      col.title = `${d.day}: ${d.signups} registros, ${d.matches} partidas, ${d.blitz} blitz, ${d.daily} retos`;
+      bars.appendChild(col);
+    }
+    table(
+      $('act-players'),
+      ['Nombre', 'Registro', 'Visto', 'Cuenta', 'Nivel', 'Partidas', 'Blitz', 'Monedas'],
+      (s.recent_players || []).map((p) => [
+        p.name + (p.hero ? ' 🛡️' : ''),
+        fmtDate(p.created_at),
+        ago(p.last_seen_at),
+        `${p.method === 'google' ? 'Google' : 'Correo'} · ${p.email || ''}`,
+        String(p.level),
+        String(p.games),
+        String(p.blitz),
+        String(p.coins),
+      ])
+    );
+    table(
+      $('act-matches'),
+      ['Cuándo', 'Modo', 'Jugadores (en orden)'],
+      (s.recent_matches || []).map((m) => [
+        fmtDate(m.finished_at),
+        (MODE_NAMES[m.mode] || m.mode) + (m.vs_bot ? ' · con bots' : ''),
+        (m.players || []).map((p) => `${p.pos}. ${p.name}`).join('  '),
+      ])
+    );
+    $('act-at').textContent = `Actualizado: ${fmtDate(s.at)}. «Visto» = última vez que abrió el juego (se apunta cada 10 min como mucho).`;
+  }
+  $('act-refresh').addEventListener('click', loadActivity);
 
   // ---------- Formulario ----------
   function addOptionRow(value = '', checked = false) {
@@ -438,4 +557,5 @@
   loadList();
   loadReports();
   loadChatReports();
+  loadActivity();
 })();
