@@ -218,7 +218,7 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Google Search Console: proprietate de domeniu `yosoylisto.es` pe contul cristiancinzeaca@gmail.com, verificată cu TXT `google-site-verification=…` pe `@` în IONOS (nu se șterge). Sitemap trimis.
 
 ## 5p. Panou admin: activitate
-- În `/admin/` (cu `ADMIN_KEY`) e secțiunea **📊 Actividad**: jucători înregistrați (Google/correo), noi azi/7/30 zile, activi azi/7 zile, conectați acum (din serverul de partide, `core/live.js`), partide online pe mod (7 zile), Blitz, provocarea zilnică, grafic pe 14 zile, ultimii 50 de înregistrați (email mascat `c***@gmail.com`, nivel, partide, monede, „visto”) și ultimele 30 de partide online.
+- În `/admin/` (cu `ADMIN_KEY`) e secțiunea **📊 Actividad**: jucători înregistrați (Google/correo), noi azi/7/30 zile, activi azi/7 zile, conectați acum (din serverul de partide, `core/live.js`), partide online pe mod (7 zile), Blitz, provocarea zilnică, grafic pe 14 zile, ultimii 500 de înregistrați (email mascat implicit, cu bifa „Mostrar correos completos” se vede întreg; căutare după nume sau email; nivel, partide, monede, „visto”) și ultimele 30 de partide online.
 - Date: funcția SQL `admin_stats()` (ora Madridului), ruta `GET /api/admin/stats`. `last_seen_at` se actualizează la orice cerere cu sesiune, cel mult o dată la 10 minute per jucător (`touch` în `players/service.js`).
 
 ## 6. Alte idei în așteptare

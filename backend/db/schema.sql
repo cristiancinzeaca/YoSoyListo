@@ -857,11 +857,11 @@ language sql stable as $$
       select coalesce(jsonb_agg(p order by p.created_at desc), '[]'::jsonb) from (
         select a.name, a.created_at, a.last_seen_at, a.xp, a.coins, a.streak,
           case when a.google_sub is not null then 'google' else 'email' end as method,
-          regexp_replace(coalesce(a.email, ''), '^(.).*(@.*)$', '\1***\2') as email,
+          coalesce(a.email, '') as email, a.email_verified as verified,
           a.duels_played + a.rooms_played + a.conquista_played as games,
           (select count(*) from blitz_sessions b where b.player_id = a.id) as blitz,
           (a.hero is not null) as hero
-        from acc a order by a.created_at desc limit 50
+        from acc a order by a.created_at desc limit 500
       ) p
     ),
     'recent_matches', (
