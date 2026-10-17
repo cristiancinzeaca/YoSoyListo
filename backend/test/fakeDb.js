@@ -362,6 +362,46 @@ function createFakeDb() {
         });
         return { data: [{ paid: top.length }], error: null };
       }
+      if (name === 'admin_stats') {
+        const acc = tables.players.filter((p) => p.google_sub || p.password_hash);
+        const recent = [...acc].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).slice(0, 50);
+        return {
+          data: [
+            {
+              stats: {
+                players: acc.length,
+                new_today: acc.length,
+                new_7d: acc.length,
+                new_30d: acc.length,
+                active_today: acc.length,
+                active_7d: acc.length,
+                by_google: acc.filter((p) => p.google_sub).length,
+                by_email: acc.filter((p) => !p.google_sub).length,
+                with_hero: acc.filter((p) => p.hero).length,
+                matches_7d: {},
+                blitz_7d: 0,
+                daily_today: 0,
+                per_day: [],
+                recent_players: recent.map((p) => ({
+                  name: p.name,
+                  created_at: p.created_at,
+                  last_seen_at: p.last_seen_at || p.created_at,
+                  xp: p.xp,
+                  coins: p.coins,
+                  streak: p.streak,
+                  method: p.google_sub ? 'google' : 'email',
+                  email: (p.email || '').replace(/^(.).*(@.*)$/, '$1***$2'),
+                  games: 0,
+                  blitz: 0,
+                  hero: !!p.hero,
+                })),
+                recent_matches: [],
+              },
+            },
+          ],
+          error: null,
+        };
+      }
       if (name === 'question_categories') {
         const counts = {};
         for (const q of active) counts[q.category] = (counts[q.category] || 0) + 1;

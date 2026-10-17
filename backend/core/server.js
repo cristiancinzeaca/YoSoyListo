@@ -18,6 +18,8 @@ const heroesRoutes = require('../modules/heroes/routes');
 const campaignRoutes = require('../modules/campaign/routes');
 const dailyRoutes = require('../modules/daily/routes');
 const weeklyRoutes = require('../modules/weekly/routes');
+const adminRoutes = require('../modules/admin/routes');
+const live = require('./live');
 const weekly = require('../modules/weekly/service');
 const chat = require('../modules/chat/service');
 const seoPages = require('../modules/seo/pages');
@@ -89,6 +91,7 @@ function createApp() {
   app.use('/api/campaign', campaignRoutes);
   app.use('/api/daily', dailyRoutes);
   app.use('/api/weekly', weeklyRoutes);
+  app.use('/api/admin', adminRoutes);
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
   app.use('/auth', authRoutes.pages);
@@ -151,6 +154,7 @@ function createServer(deps) {
   const server = http.createServer(createApp());
   const multiplayer = attachMultiplayer(server, deps);
   server.multiplayer = multiplayer;
+  live.setStats(multiplayer.stats);
   return server;
 }
 

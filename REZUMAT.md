@@ -217,6 +217,10 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - `/preguntas` (index), `/preguntas/<categorie>` (general, historia, geografia, ciencia, arte, deportes) și `/preguntas/<tema>` (para-ninos, faciles, dificiles, espana, historia-de-espana, capitales, futbol, animales, cine-y-series, musica, literatura, cuerpo-humano, espacio — filtre pe cuvinte în `THEMES`, apar doar dacă au ≥20 de întrebări): generate pe server din `db/questions/*.json` (`modules/seo/pages.js`), grupate pe dificultate, răspunsul în `<details>` (fără JS), canonical + meta description, buton „Jugar” spre Blitz pe categoria respectivă și spre Conquista. Sunt în sitemap și au link din footer.
 - Google Search Console: proprietate de domeniu `yosoylisto.es` pe contul cristiancinzeaca@gmail.com, verificată cu TXT `google-site-verification=…` pe `@` în IONOS (nu se șterge). Sitemap trimis.
 
+## 5p. Panou admin: activitate
+- În `/admin/` (cu `ADMIN_KEY`) e secțiunea **📊 Actividad**: jucători înregistrați (Google/correo), noi azi/7/30 zile, activi azi/7 zile, conectați acum (din serverul de partide, `core/live.js`), partide online pe mod (7 zile), Blitz, provocarea zilnică, grafic pe 14 zile, ultimii 50 de înregistrați (email mascat `c***@gmail.com`, nivel, partide, monede, „visto”) și ultimele 30 de partide online.
+- Date: funcția SQL `admin_stats()` (ora Madridului), ruta `GET /api/admin/stats`. `last_seen_at` se actualizează la orice cerere cu sesiune, cel mult o dată la 10 minute per jucător (`touch` în `players/service.js`).
+
 ## 6. Alte idei în așteptare
 
 - **Monetizare** (când există trafic): Google AdSense + banner de cookie-uri (obligatoriu în UE) + pagina „Aviso legal” (cere numele și NIF-ul titularului).

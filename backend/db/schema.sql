@@ -815,3 +815,62 @@ begin
   return query select n;
 end;
 $$;
+
+-- ---------- Panel de administración: actividad ----------
+-- Un resumen de quién se registra y quién juega (horas de Madrid). Solo lo usa /api/admin/stats.
+create or replace function admin_stats()
+returns table (stats jsonb)
+language sql stable as $$
+  with
+  tz as (select (now() at time zone 'Europe/Madrid')::date as today),
+  acc as (select * from players where google_sub is not null or password_hash is not null),
+  days as (select generate_series((select today from tz) - 13, (select today from tz), interval '1 day')::date as day),
+  human_matches as (
+    select m.id, m.mode, m.vs_bot, m.finished_at, (m.finished_at at time zone 'Europe/Madrid')::date as day
+    from matches m
+    where m.finished_at > now() - interval '30 days'
+  )
+  select jsonb_build_object(
+    'players', (select count(*) from acc),
+    'new_today', (select count(*) from acc where (created_at at time zone 'Europe/Madrid')::date = (select today from tz)),
+    'new_7d', (select count(*) from acc where created_at > now() - interval '7 days'),
+    'new_30d', (select count(*) from acc where created_at > now() - interval '30 days'),
+    'active_today', (select count(*) from acc where (last_seen_at at time zone 'Europe/Madrid')::date = (select today from tz)),
+    'active_7d', (select count(*) from acc where last_seen_at > now() - interval '7 days'),
+    'by_google', (select count(*) from acc where google_sub is not null),
+    'by_email', (select count(*) from acc where google_sub is null and password_hash is not null),
+    'with_hero', (select count(*) from acc where hero is not null),
+    'matches_7d', (select coalesce(jsonb_object_agg(mode, n), '{}'::jsonb) from (select mode, count(*) as n from human_matches where finished_at > now() - interval '7 days' group by mode) x),
+    'blitz_7d', (select count(*) from blitz_sessions where player_id is not null and started_at > now() - interval '7 days'),
+    'daily_today', (select count(*) from daily_runs where day = to_char((select today from tz), 'YYYY-MM-DD') and status = 'done'),
+    'per_day', (
+      select jsonb_agg(jsonb_build_object(
+        'day', to_char(d.day, 'YYYY-MM-DD'),
+        'signups', (select count(*) from acc where (created_at at time zone 'Europe/Madrid')::date = d.day),
+        'matches', (select count(*) from human_matches h where h.day = d.day),
+        'blitz', (select count(*) from blitz_sessions b where b.player_id is not null and (b.started_at at time zone 'Europe/Madrid')::date = d.day),
+        'daily', (select count(*) from daily_runs r where r.day = to_char(d.day, 'YYYY-MM-DD') and r.status = 'done')
+      ) order by d.day)
+      from days d
+    ),
+    'recent_players', (
+      select coalesce(jsonb_agg(p order by p.created_at desc), '[]'::jsonb) from (
+        select a.name, a.created_at, a.last_seen_at, a.xp, a.coins, a.streak,
+          case when a.google_sub is not null then 'google' else 'email' end as method,
+          regexp_replace(coalesce(a.email, ''), '^(.).*(@.*)$', '\1***\2') as email,
+          a.duels_played + a.rooms_played + a.conquista_played as games,
+          (select count(*) from blitz_sessions b where b.player_id = a.id) as blitz,
+          (a.hero is not null) as hero
+        from acc a order by a.created_at desc limit 50
+      ) p
+    ),
+    'recent_matches', (
+      select coalesce(jsonb_agg(m order by m.finished_at desc), '[]'::jsonb) from (
+        select h.mode, h.finished_at, h.vs_bot,
+          (select jsonb_agg(jsonb_build_object('name', mp.name, 'bot', mp.is_bot, 'pos', mp.position) order by mp.position)
+             from match_players mp where mp.match_id = h.id) as players
+        from human_matches h order by h.finished_at desc limit 30
+      ) m
+    )
+  );
+$$;
