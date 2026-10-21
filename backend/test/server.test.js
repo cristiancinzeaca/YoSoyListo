@@ -49,3 +49,21 @@ test('páginas de preguntas con respuestas para Google', async () => {
     server.close();
   }
 });
+
+test('assetlinks.json para la app de Android', async () => {
+  process.env.ANDROID_CERT_SHA256 = 'aa:bb, no-vale';
+  const server = createApp().listen(0);
+  await new Promise((r) => server.once('listening', r));
+  try {
+    const res = await fetch(`http://127.0.0.1:${server.address().port}/.well-known/assetlinks.json`);
+    assert.equal(res.status, 200);
+    const [entry] = await res.json();
+    assert.equal(entry.target.package_name, 'es.yosoylisto.app');
+    assert.deepEqual(entry.relation, ['delegate_permission/common.handle_all_urls']);
+    assert.equal(entry.target.sha256_cert_fingerprints.length, 1);
+    assert.match(entry.target.sha256_cert_fingerprints[0], /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/);
+  } finally {
+    delete process.env.ANDROID_CERT_SHA256;
+    server.close();
+  }
+});
