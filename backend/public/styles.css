@@ -1351,3 +1351,12 @@ html.portal .chat-btn {
   margin: 8px auto 0;
   width: max-content;
 }
+
+/* Portal en pantalla apaisada (CrazyGames en ordenador): mapa a la izquierda, preguntas a la derecha. */
+@media (min-aspect-ratio: 4/3) and (min-width: 700px) {
+  html.portal body.cq-playing .container.wide { max-width: 1400px; }
+  html.portal body.cq-playing .cq-stage { --side: min(420px, 40%); }
+  html.portal body.cq-playing .cq-stage .cq-map { padding: 40px calc(var(--side) + 14px) 4px 4px; }
+  html.portal body.cq-playing .cq-sheet { left: auto; right: 8px; top: 8px; bottom: 8px; width: var(--side); max-height: none; justify-content: center; }
+  html.portal body.cq-playing .cq-stage .cq-event { left: calc((100% - var(--side) - 14px) / 2); max-width: calc(100% - var(--side) - 30px); }
+}
