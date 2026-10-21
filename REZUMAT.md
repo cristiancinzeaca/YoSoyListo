@@ -221,6 +221,14 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - În `/admin/` (cu `ADMIN_KEY`) e secțiunea **📊 Actividad**: jucători înregistrați (Google/correo), noi azi/7/30 zile, activi azi/7 zile, conectați acum (din serverul de partide, `core/live.js`), partide online pe mod (7 zile), Blitz, provocarea zilnică, grafic pe 14 zile, ultimii 500 de înregistrați (email mascat implicit, cu bifa „Mostrar correos completos” se vede întreg; căutare după nume sau email; nivel, partide, monede, „visto”) și ultimele 30 de partide online.
 - Date: funcția SQL `admin_stats()` (ora Madridului), ruta `GET /api/admin/stats`. `last_seen_at` se actualizează la orice cerere cu sesiune, cel mult o dată la 10 minute per jucător (`touch` în `players/service.js`).
 
+## 5q. Versiunea pentru CrazyGames (ramura `crazygames`)
+- `/portal` (meniu: un buton „PLAY”, engleză/spaniolă) și `/portal/conquista` (aceeași pagină ca `/conquista`). Doar aceste pagini pot fi puse în iframe (`frame-ancestors 'self' https:`); restul site-ului rămâne `'none'`. `robots.txt` le exclude.
+- Cont anonim de portal: `POST /api/players/portal {source:'crazygames'}` (coloana `players.portal_source`, `hasAccount` = true, fără e-mail și fără dată de naștere → fără +18). Primește monedele de bun venit.
+- `public/js/i18n.js`: detectează portalul și limba (`?lang=` → ales înainte → browser). În engleză traduce interfața din mers (dicționar + modele, MutationObserver). Expune `YSL` (`portal`, `en`, `t()`, `home`, `notify()`); `notify` trimite `gameplayStart/Stop` și `loadingStart/Stop` către pagina-părinte.
+- Conquista în engleză = varianta `en` din hub: întrebări din `db/en/choice.json` (378) și `db/en/numeric.json` (116), texte de eveniment în engleză (`ConquistaGame` cu `lang`), nume de regiuni în engleză (`NAMES_EN`), fără aliați, bot după 6 s.
+- În portal: fără chat, fără linkuri către magazin sau profil, fără raportare de întrebări în engleză.
+- `crazygames/index.html` = pagina care se urcă pe CrazyGames (zip): încarcă SDK-ul v3, alege limba (locale/countryCode) și pune `https://www.yosoylisto.es/portal` în iframe; transmite evenimentele către SDK.
+
 ## 6. Alte idei în așteptare
 
 - **Monetizare** (când există trafic): Google AdSense + banner de cookie-uri (obligatoriu în UE) + pagina „Aviso legal” (cere numele și NIF-ul titularului).

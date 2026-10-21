@@ -57,6 +57,16 @@ const Player = {
     this.clear();
     Wallet.data = null;
   },
+  async portalAccount() {
+    try {
+      const res = await api.post('/api/players/portal', { source: YSL.source });
+      this.save(res.player, res.token);
+      return res.player;
+    } catch (err) {
+      if (window.FX) console.error(err);
+      throw err;
+    }
+  },
   loginUrl(next = location.pathname + location.search) {
     return `/auth/google?next=${encodeURIComponent(next)}`;
   },
@@ -65,6 +75,8 @@ const Player = {
   // next: a dónde volver después de entrar (por defecto, esta misma página).
   ensure(message, next) {
     if (this.has()) return Promise.resolve(this.data);
+    // En los portales de juegos se juega al momento, con una cuenta anónima.
+    if (window.YSL && YSL.portal) return this.portalAccount();
     showLogin(message || 'Para jugar necesitas una cuenta: entra con Google o con tu correo. Así guardamos tus monedas, tu héroe y tus estadísticas en todos tus dispositivos.', next);
     // No se resuelve: al entrar con Google se vuelve a esta misma página.
     return new Promise(() => {});
@@ -286,6 +298,7 @@ function renderMeChip() {
 // La fecha de nacimiento es obligatoria: sin ella, se pide antes de seguir.
 const BIRTHDATE_FREE_PAGES = ['/edad', '/entrar', '/privacidad', '/verificar'];
 function needsBirthdate(data) {
+  if (window.YSL && YSL.portal) return false;
   return data && data.hasAccount && data.birthdateSet === false && !BIRTHDATE_FREE_PAGES.includes(location.pathname);
 }
 function askBirthdate() {

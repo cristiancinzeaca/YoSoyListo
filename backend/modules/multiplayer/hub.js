@@ -14,6 +14,7 @@ const shop = require('../shop/service');
 const countries = require('../countries/service');
 const chat = require('../chat/service');
 const adultQuestions = require('../adult/questions');
+const englishQuestions = require('../english/questions');
 
 function shuffleList(list) {
   const a = [...list];
@@ -45,6 +46,8 @@ function attachMultiplayer(server, deps = {}) {
   const reloadPlayer = deps.reloadPlayer || players.findById;
   const loadNumeric18 = deps.loadNumeric18 || adultQuestions.loadNumeric;
   const loadChoice18 = deps.loadChoice18 || adultQuestions.loadChoice;
+  const loadNumericEn = deps.loadNumericEn || englishQuestions.loadNumeric;
+  const loadChoiceEn = deps.loadChoiceEn || englishQuestions.loadChoice;
   // Antes de entrar en una partida se recargan sus datos (nivel, héroe, nombre) por si han cambiado.
   const FRESH_BEFORE = new Set(['queue', 'create_room', 'join_room', 'cq_queue', 'cq_private', 'cq_join', 'challenge_create', 'challenge_join']);
 
@@ -53,8 +56,8 @@ function attachMultiplayer(server, deps = {}) {
   const membership = new Map(); // playerId → código de sala
   const rooms = new Map(); // código → Room
   const queue = new Map(); // playerId → { since, botTimer }
-  const cqQueues = { normal: new Map(), x18: new Map() }; // playerId → desde cuándo espera
-  const cqTimers = { normal: null, x18: null };
+  const cqQueues = { normal: new Map(), x18: new Map(), en: new Map() }; // playerId → desde cuándo espera
+  const cqTimers = { normal: null, x18: null, en: null };
   const privateCq = new Map(); // código → { variant, hostId, guests: [ids] } (partidas privadas esperando a los invitados)
   const ipCounts = new Map();
 
@@ -129,6 +132,10 @@ function attachMultiplayer(server, deps = {}) {
       rounds: CQ.battleRounds + 1,
       adult: true,
     },
+    // Versión internacional (CrazyGames…): preguntas y textos en inglés, sin aliados (sus preguntas son en español).
+    en: { players: CQ.players, prefix: 'E', loadNumeric: loadNumericEn, loadChoice: loadChoiceEn, allyQuestion: null, rounds: CQ.battleRounds, adult: false, lang: 'en',
+      // En los portales hay que llegar rápido a jugar: se espera menos antes de poner bots.
+      botWaitMs: Math.min(CQ.botWaitMs, 6_000) },
   };
   const variantOf = (v) => (Object.prototype.hasOwnProperty.call(CQ_VARIANTS, v) ? v : 'normal');
 
@@ -181,6 +188,7 @@ function attachMultiplayer(server, deps = {}) {
       onEmpty,
       variant,
       battleRounds: cfg.rounds,
+      lang: cfg.lang || 'es',
     });
     game.privateGame = privateGame;
     rooms.set(game.code, game);
@@ -222,10 +230,11 @@ function attachMultiplayer(server, deps = {}) {
 
   function armCqTimer(variant) {
     if (cqTimers[variant]) return;
-    const at = Date.now() + CQ.botWaitMs;
+    const waitMs = CQ_VARIANTS[variant].botWaitMs ?? CQ.botWaitMs;
+    const at = Date.now() + waitMs;
     cqTimers[variant] = {
       at,
-      handle: setTimeout(() => startConquista(variant).catch((e) => console.error('[conquista] inicio', e)), CQ.botWaitMs),
+      handle: setTimeout(() => startConquista(variant).catch((e) => console.error('[conquista] inicio', e)), waitMs),
     };
   }
 
@@ -693,7 +702,7 @@ function attachMultiplayer(server, deps = {}) {
 
   return {
     wss,
-    stats: () => ({ connections: wss.clients.size, players: clients.size, rooms: rooms.size, queue: queue.size, cqQueue: cqQueues.normal.size, cqQueue18: cqQueues.x18.size }),
+    stats: () => ({ connections: wss.clients.size, players: clients.size, rooms: rooms.size, queue: queue.size, cqQueue: cqQueues.normal.size, cqQueue18: cqQueues.x18.size, cqQueueEn: cqQueues.en.size }),
     close() {
       clearInterval(heartbeat);
       clearInterval(cleanup);

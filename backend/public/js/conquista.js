@@ -3,7 +3,10 @@
   const SVG = 'http://www.w3.org/2000/svg';
   const SCREENS = ['s-connecting', 's-cq-lobby', 's-x18-gate', 's-x18-warn', 's-x18-menu', 's-x18-wait', 's-queue', 's-game', 's-end', 's-fatal'];
   // /pareja = Conquista para 2 con preguntas +18.
-  const VARIANT = location.pathname.startsWith('/pareja') ? 'x18' : 'normal';
+  // En los portales (CrazyGames) en inglés: preguntas y textos en inglés.
+  const PORTAL = !!(window.YSL && YSL.portal);
+  const HOME = PORTAL ? YSL.home : '/';
+  const VARIANT = location.pathname.startsWith('/pareja') ? 'x18' : PORTAL && YSL.en ? 'en' : 'normal';
   const params = new URLSearchParams(location.search);
   if (VARIANT === 'x18') {
     document.body.classList.add('x18');
@@ -151,7 +154,7 @@
     if (msg.t === 'cq_lobby_closed') return fatal('Partida cancelada', msg.message || 'La partida privada se ha cerrado.');
     if (msg.t === 'cq_state') return onState(msg);
     if ((msg.t === 'queue_cancelled' || msg.t === 'left') && VARIANT === 'x18') return x18Menu();
-    if (msg.t === 'queue_cancelled' || msg.t === 'left') return (location.href = '/');
+    if (msg.t === 'queue_cancelled' || msg.t === 'left') return (location.href = HOME);
     if (msg.t === 'chat') return window.Chat && Chat.match.receive(msg.message);
     if (msg.t === 'helper') return onHelper(msg);
     if (msg.t === 'error') {
@@ -163,7 +166,7 @@
       if (msg.code === 'replaced') return fatal('Partida abierta en otra pestaña', 'Sigue jugando en la otra pestaña o dispositivo.');
       if (msg.code === 'auth') return;
       // Enlace de amigos que ya no vale.
-      if (VARIANT === 'normal' && state.joining && state.shown === 's-connecting') return fatal('No se pudo entrar', msg.message);
+      if (VARIANT !== 'x18' && state.joining && state.shown === 's-connecting') return fatal('No se pudo entrar', msg.message);
       banner(msg.message, true);
       // Código equivocado o caducado: de vuelta al menú del modo +18.
       if (VARIANT === 'x18' && state.shown === 's-connecting' && state.me) show('s-x18-menu');
@@ -198,7 +201,7 @@
       return socket.send({ t: 'cq_join', code: code.toUpperCase() });
     }
     if (friends) return socket.send({ t: 'cq_private' });
-    socket.send({ t: 'cq_queue' });
+    socket.send({ t: 'cq_queue', variant: VARIANT });
   }
 
   // ---------- sala de espera con amigos ----------
@@ -341,7 +344,7 @@
     if (VARIANT === 'x18') return x18Menu();
     state.phase = 'queue';
     show('s-queue');
-    socket.send({ t: 'cq_queue' });
+    socket.send({ t: 'cq_queue', variant: VARIANT });
   });
 
   // ---------- mapa ----------
@@ -520,15 +523,18 @@
   // ---------- panel de acciones ----------
   function parseNumber(text) {
     let t = String(text).trim().replace(/\s/g, '');
-    if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+    // En inglés la coma separa los miles (1,500) y el punto los decimales.
+    if (VARIANT === 'en') t = t.replace(/,/g, '');
+    else if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
     else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
     const n = Number(t);
     return t !== '' && Number.isFinite(n) ? n : null;
   }
 
   // Para los años no hace falta mostrar la unidad («1492», no «1492 año»).
-  const unitLabel = (u) => (u && u !== 'año' ? u : '');
-  const fmt = (n) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-ES', { maximumFractionDigits: 3 }));
+  const unitLabel = (u) => (u && u !== 'año' && u !== 'year' ? u : '');
+  const LOCALE = VARIANT === 'en' ? 'en-US' : 'es-ES';
+  const fmt = (n) => (n === null || n === undefined ? '—' : Number(n).toLocaleString(LOCALE, { maximumFractionDigits: 3 }));
 
   function answeredChips(s) {
     const box = el('div', 'who-answered');
@@ -687,7 +693,7 @@
         none: 'Ninguno acierta.',
       }[r.outcome];
       panel.appendChild(el('p', 'reveal-note', (r.explanation ? `${r.explanation} · ` : '') + outcome));
-      if (r.questionId) {
+      if (r.questionId && VARIANT !== 'en') {
         const rep = el('button', 'link-btn', '⚑ Avisar de un error en esta pregunta');
         rep.type = 'button';
         rep.addEventListener('click', () => reportQuestion(r.questionId));
@@ -723,6 +729,7 @@
     state.s = s;
     if (!state.me) return;
     if (s.phase === 'end') return renderEnd(s);
+    if (state.phase !== 'game' && PORTAL) YSL.notify('gameplayStart');
     state.phase = 'game';
     show('s-game');
     $('cq-event').textContent = s.event || '';
@@ -883,6 +890,7 @@
   }
 
   function renderEnd(s) {
+    if (state.phase !== 'end' && PORTAL) YSL.notify('gameplayStop');
     state.phase = 'end';
     show('s-end');
     const ranking = s.result.ranking;
@@ -943,7 +951,16 @@
   }
   fitStage();
 
+  // En el portal no hay enlaces a la web (tienda, perfil): se vuelve al menú del portal.
+  if (PORTAL) {
+    document.querySelectorAll('a[href="/"]').forEach((a) => (a.href = HOME));
+    document.querySelectorAll('#s-end a[href="/tienda"], #me-chip').forEach((a) => a.remove());
+    const logo = document.querySelector('.site-header .logo');
+    if (logo) logo.href = HOME;
+  }
+
   (async function init() {
+    if (PORTAL) YSL.notify('loadingStart');
     show('s-connecting');
     try {
       await loadMap();
@@ -951,6 +968,7 @@
       return fatal('No se pudo cargar el mapa', 'Revisa tu conexión e inténtalo de nuevo.');
     }
     await Player.ensure();
+    if (PORTAL) YSL.notify('loadingStop');
     socket.connect();
   })();
 })();

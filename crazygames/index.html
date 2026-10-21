@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yo Soy Listo · Trivia Conquest</title>
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+  <style>
+    html, body { margin: 0; height: 100%; background: #1b1035; overflow: hidden; }
+    iframe { border: 0; width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+  <!-- El juego vive en www.yosoylisto.es (necesita nuestro servidor para el multijugador).
+       Esta página solo lo contiene y pasa los avisos de partida al SDK de CrazyGames. -->
+  <iframe id="game" title="Yo Soy Listo" allow="autoplay; fullscreen; clipboard-write; vibrate"></iframe>
+  <script>
+    (async function () {
+      var GAME = 'https://www.yosoylisto.es';
+      var SPANISH = ['ES', 'MX', 'AR', 'CO', 'CL', 'PE', 'VE', 'EC', 'GT', 'CU', 'BO', 'DO', 'HN', 'PY', 'SV', 'NI', 'CR', 'PA', 'UY', 'PR', 'GQ'];
+      var sdk = null;
+      var lang = (navigator.language || 'en').slice(0, 2).toLowerCase();
+      try {
+        await window.CrazyGames.SDK.init();
+        sdk = window.CrazyGames.SDK;
+        var info = sdk.user && sdk.user.systemInfo;
+        if (info && info.locale) lang = String(info.locale).slice(0, 2).toLowerCase();
+        else if (info && info.countryCode) lang = SPANISH.indexOf(String(info.countryCode).toUpperCase()) >= 0 ? 'es' : lang;
+      } catch (e) {
+        sdk = null; // fuera de CrazyGames el SDK no funciona: el juego va igual
+      }
+      if (lang !== 'es') lang = 'en';
+      document.getElementById('game').src = GAME + '/portal?portal=crazygames&lang=' + lang;
+
+      function call(name) {
+        try {
+          if (sdk && sdk.game && typeof sdk.game[name] === 'function') sdk.game[name]();
+        } catch (e) {
+          // nada
+        }
+      }
+      call('loadingStart');
+      window.addEventListener('message', function (e) {
+        if (e.origin !== GAME || !e.data || typeof e.data.ysl !== 'string') return;
+        if (['gameplayStart', 'gameplayStop', 'loadingStart', 'loadingStop'].indexOf(e.data.ysl) >= 0) call(e.data.ysl);
+      });
+    })();
+  </script>
+</body>
+</html>

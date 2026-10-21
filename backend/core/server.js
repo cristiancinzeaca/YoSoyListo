@@ -36,13 +36,17 @@ function baseUrl(req) {
   return `${req.protocol}://${req.get('host')}`;
 }
 
+const isPortalPath = (p) => p === '/portal' || p.startsWith('/portal/');
+
 function createApp() {
   const app = express();
   app.disable('x-powered-by');
   // Railway pone un proxy delante: así req.ip es la IP real del jugador.
   app.set('trust proxy', 1);
 
-  app.use(
+  // Las páginas de /portal se pueden meter en un iframe (CrazyGames y otros portales de juegos);
+  // el resto de la web, no.
+  const securityHeaders = (frameAncestors) =>
     helmet({
       contentSecurityPolicy: {
         directives: {
@@ -53,16 +57,20 @@ function createApp() {
           fontSrc: ["'self'"],
           connectSrc: ["'self'", (req) => `wss://${req.get('host')}`, (req) => `ws://${req.get('host')}`],
           objectSrc: ["'none'"],
-          frameAncestors: ["'none'"],
+          frameAncestors,
           baseUri: ["'self'"],
           formAction: ["'self'"],
           upgradeInsecureRequests: isProduction ? [] : null,
         },
       },
+      // Sin X-Frame-Options en las páginas de portal (la CSP manda).
+      frameguard: frameAncestors[0] === "'none'" ? { action: 'sameorigin' } : false,
       // El panel de administración se puede abrir desde otro sitio (o desde un archivo).
       crossOriginResourcePolicy: { policy: 'cross-origin' },
-    })
-  );
+    });
+  const strictHeaders = securityHeaders(["'none'"]);
+  const portalHeaders = securityHeaders(["'self'", 'https:']);
+  app.use((req, res, next) => (isPortalPath(req.path) ? portalHeaders : strictHeaders)(req, res, next));
   app.use(compression());
   app.use('/api', cors());
   app.use(express.json({ limit: '1mb' }));
@@ -98,7 +106,7 @@ function createApp() {
 
   app.get('/robots.txt', (req, res) => {
     res.type('text/plain').send(
-      ['User-agent: *', 'Disallow: /admin/', 'Disallow: /api/', 'Disallow: /pareja', 'Disallow: /auth/', '', `Sitemap: ${baseUrl(req)}/sitemap.xml`, ''].join('\n')
+      ['User-agent: *', 'Disallow: /admin/', 'Disallow: /api/', 'Disallow: /pareja', 'Disallow: /auth/', 'Disallow: /portal', '', `Sitemap: ${baseUrl(req)}/sitemap.xml`, ''].join('\n')
     );
   });
 
@@ -117,6 +125,14 @@ function createApp() {
   app.get('/preguntas/:cat', (req, res, next) => {
     if (!seoPages.exists(req.params.cat)) return next();
     res.set('Cache-Control', 'public, max-age=3600').type('html').send(seoPages.categoryPage(baseUrl(req), req.params.cat));
+  });
+
+  // Versión para portales de juegos (CrazyGames): menú propio y la Conquista dentro de un iframe.
+  app.get(['/portal', '/portal/'], (req, res) => {
+    res.set('Cache-Control', 'no-cache').sendFile(path.join(PUBLIC_DIR, 'portal.html'));
+  });
+  app.get('/portal/conquista', (req, res) => {
+    res.set('Cache-Control', 'no-cache').sendFile(path.join(PUBLIC_DIR, 'conquista.html'));
   });
 
   // Duelos y salas usan la misma página; el código de sala va en ?c=XXXXX.

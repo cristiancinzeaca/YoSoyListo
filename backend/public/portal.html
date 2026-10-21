@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yo Soy Listo · Trivia Conquest</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="portal-home">
+  <div class="container">
+    <header class="site-header">
+      <span class="logo"><img src="/img/logo.webp" alt="Yo Soy Listo" width="900" height="580"></span>
+    </header>
+    <main class="portal-main">
+      <h1 id="p-title"></h1>
+      <p class="portal-sub" id="p-sub"></p>
+      <div class="portal-castles" aria-hidden="true">
+        <img src="/img/castillo-rojo.webp?v=2" alt="" width="320" height="320">
+        <img src="/img/castillo-azul.webp?v=2" alt="" width="320" height="320">
+        <img src="/img/castillo-verde.webp?v=2" alt="" width="320" height="320">
+      </div>
+      <a class="btn portal-play" id="p-play" href="/portal/conquista"></a>
+      <ul class="portal-how" id="p-how"></ul>
+      <div class="seg portal-lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en">English</button>
+        <button type="button" data-lang="es">Español</button>
+      </div>
+    </main>
+  </div>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/fx.js"></script>
+  <script src="/js/portal.js"></script>
+</body>
+</html>

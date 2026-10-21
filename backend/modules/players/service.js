@@ -8,7 +8,7 @@ const age = require('./age');
 const mm = require('../multiplayer/matchmaking');
 
 const PUBLIC_FIELDS =
-  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, password_hash, email_verified, coins, avatar, xp, hero, campaign, birthdate, birthday_gift_year, free_rename_used';
+  'id, name, rating, duels_played, duels_won, rooms_played, rooms_won, conquista_played, conquista_won, created_at, google_sub, password_hash, email_verified, coins, avatar, xp, hero, campaign, birthdate, birthday_gift_year, free_rename_used, portal_source';
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -29,7 +29,9 @@ function toPublic(row) {
     conquistaPlayed: row.conquista_played ?? 0,
     conquistaWon: row.conquista_won ?? 0,
     createdAt: row.created_at,
-    hasAccount: !!(row.google_sub || row.password_hash),
+    hasAccount: !!(row.google_sub || row.password_hash || row.portal_source),
+    // Jugador que entra desde un portal de juegos (CrazyGames…): sin correo ni fecha de nacimiento.
+    portal: row.portal_source || null,
     coins: row.coins ?? 0,
     avatar: row.avatar && AVATARS[row.avatar] ? row.avatar : null,
     // Héroe, nivel y poder (lo que ven los rivales).
@@ -199,6 +201,29 @@ async function loginWithGoogle(identity, guestToken, { onCreated } = {}) {
   return { player: await findById(playerId), token, created };
 }
 
+// Jugador de un portal de juegos (CrazyGames…): cuenta anónima creada al momento, sin correo.
+// No tiene fecha de nacimiento, así que nunca ve el modo +18.
+const PORTALS = ['crazygames'];
+async function createPortal(source, { onCreated } = {}) {
+  if (!PORTALS.includes(source)) throw httpError(400, 'Portal no válido');
+  const db = getDb();
+  let playerId;
+  for (let attempt = 0; !playerId; attempt++) {
+    const name = numberedName('Listo', crypto.randomInt(1000, 1000000));
+    const { data: row, error } = await db
+      .from('players')
+      .insert({ name, name_key: nameKey(name), portal_source: source, coins: COINS.welcome, avatar: randomFreeAvatar() })
+      .select('id')
+      .single();
+    if (error && error.code === '23505' && attempt < 5) continue;
+    if (error) throw dbError(error, 'players.portal.create');
+    playerId = row.id;
+  }
+  if (onCreated) await onCreated(playerId);
+  const token = await createSession(playerId);
+  return { player: await findById(playerId), token };
+}
+
 // Fecha de nacimiento: obligatoria, se pone una sola vez. Menores de 14 años no pueden tener cuenta.
 async function setBirthdate(playerId, text) {
   const parsed = age.parseDate(text);
@@ -364,4 +389,4 @@ async function leaderboard(limit = 20, mode = 'duel') {
   }));
 }
 
-module.exports = { createLocal, setBirthdate, birthdayGift, checkName, findByToken, findById, rename, profile, leaderboard, hashToken, loginWithGoogle, createSession, logout };
+module.exports = { createPortal, createLocal, setBirthdate, birthdayGift, checkName, findByToken, findById, rename, profile, leaderboard, hashToken, loginWithGoogle, createSession, logout };
