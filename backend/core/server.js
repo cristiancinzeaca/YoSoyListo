@@ -36,6 +36,9 @@ function baseUrl(req) {
   return `${req.protocol}://${req.get('host')}`;
 }
 
+// Huella de la clave de subida de la app de Android (no es secreta).
+const ANDROID_CERTS = ['3A:79:37:F0:8C:AE:C8:32:B5:A5:5A:06:AD:FA:C9:2F:34:3A:4F:5A:B7:0E:FF:22:41:DB:BD:E9:D4:FA:11:EE'];
+
 const isPortalPath = (p) => p === '/portal' || p.startsWith('/portal/');
 
 function createApp() {
@@ -103,6 +106,20 @@ function createApp() {
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
   app.use('/auth', authRoutes.pages);
+
+  // App de Android (Trusted Web Activity): Google comprueba aquí que la app es nuestra.
+  // Huellas SHA-256 de las firmas: la clave de subida y, cuando la haya, la de Google Play (ANDROID_CERT_SHA256, separadas por comas).
+  app.get('/.well-known/assetlinks.json', (req, res) => {
+    const prints = [...ANDROID_CERTS, ...String(process.env.ANDROID_CERT_SHA256 || '').split(',')]
+      .map((x) => x.trim().toUpperCase())
+      .filter((x) => /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/.test(x));
+    res.set('Cache-Control', 'public, max-age=3600').json([
+      {
+        relation: ['delegate_permission/common.handle_all_urls'],
+        target: { namespace: 'android_app', package_name: 'es.yosoylisto.app', sha256_cert_fingerprints: [...new Set(prints)] },
+      },
+    ]);
+  });
 
   app.get('/robots.txt', (req, res) => {
     res.type('text/plain').send(

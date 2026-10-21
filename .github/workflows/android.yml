@@ -1,0 +1,70 @@
+# Construye la app de Android (Trusted Web Activity) y la deja en Releases → «android-latest».
+# Sin clave de firma (secretos ANDROID_KEYSTORE_B64 y ANDROID_KEYSTORE_PASSWORD) solo sale un APK de prueba.
+name: Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Clave de firma
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+            echo "Firmado con la clave de subida."
+          else
+            echo "Sin clave de firma: solo APK de prueba."
+          fi
+
+      - name: Compilar
+        working-directory: android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: 1.0.${{ github.run_number }}
+        run: |
+          if [ -n "$KEYSTORE_PATH" ]; then
+            gradle --no-daemon :app:bundleRelease :app:assembleRelease
+          else
+            gradle --no-daemon :app:assembleDebug
+          fi
+          mkdir -p ../out
+          find app/build/outputs -name '*.aab' -exec cp {} ../out/yosoylisto.aab \; || true
+          find app/build/outputs/apk -name '*.apk' -exec cp {} ../out/yosoylisto.apk \; || true
+          ls -la ../out
+
+      - name: Huella SHA-256 de la firma (para assetlinks.json)
+        if: env.KEYSTORE_PATH != ''
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: keytool -list -v -keystore "$KEYSTORE_PATH" -alias upload -storepass "$KEYSTORE_PASSWORD" | grep 'SHA256:' | tee out/sha256.txt
+
+      - name: Publicar en Releases (android-latest)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-latest --yes --cleanup-tag || true
+          gh release create android-latest out/* --prerelease --title "Android 1.0.${{ github.run_number }}" \
+            --notes "App de Android de Yo Soy Listo (versión ${{ github.run_number }}). yosoylisto.aab → Google Play · yosoylisto.apk → instalar en el móvil para probar."

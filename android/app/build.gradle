@@ -1,0 +1,61 @@
+// App de Android de Yo Soy Listo: la web dentro de una Trusted Web Activity (pantalla completa, sin barra del navegador).
+plugins {
+    id 'com.android.application'
+}
+
+def host = 'www.yosoylisto.es'
+def launchUrl = "https://${host}/?utm_source=android"
+def keystore = System.getenv('KEYSTORE_PATH')
+
+android {
+    namespace 'es.yosoylisto.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'es.yosoylisto.app'
+        minSdk 21
+        targetSdk 36
+        versionCode((System.getenv('VERSION_CODE') ?: '1') as int)
+        versionName(System.getenv('VERSION_NAME') ?: '1.0.0')
+
+        resValue 'string', 'appName', 'Yo Soy Listo'
+        resValue 'string', 'launchUrl', launchUrl
+        resValue 'string', 'hostName', host
+        resValue 'string', 'providerAuthority', 'es.yosoylisto.app.fileprovider'
+        resValue 'color', 'colorPrimary', '#1b1035'
+        resValue 'color', 'navigationColor', '#1b1035'
+        resValue 'color', 'backgroundColor', '#1b1035'
+        resValue 'string', 'assetStatements', """[{ "relation": ["delegate_permission/common.handle_all_urls"], "target": { "namespace": "web", "site": "https://${host}" } }]"""
+    }
+
+    signingConfigs {
+        if (keystore) {
+            release {
+                storeFile file(keystore)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias 'upload'
+                keyPassword System.getenv('KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (keystore) signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        resValues true
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}
