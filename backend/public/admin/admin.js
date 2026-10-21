@@ -137,7 +137,7 @@
     const m7 = s.matches_7d || {};
     const totalM7 = Object.values(m7).reduce((a, b) => a + b, 0);
     $('act-tiles').replaceChildren(
-      tile('Jugadores registrados', s.players, `Google ${s.by_google} · correo ${s.by_email}`),
+      tile('Jugadores registrados', s.players, `Google ${s.by_google} · correo ${s.by_email} · portales ${s.by_portal || 0}`),
       tile('Nuevos hoy', s.new_today, `7 días: ${s.new_7d} · 30 días: ${s.new_30d}`),
       tile('Activos hoy', s.active_today, `7 días: ${s.active_7d}`),
       tile('Conectados ahora', online.players ?? '—', online.rooms !== undefined ? `${online.rooms} partidas en curso` : ''),
@@ -190,7 +190,7 @@
         p.name + (p.hero ? ' 🛡️' : ''),
         fmtDate(p.created_at),
         ago(p.last_seen_at),
-        `${p.method === 'google' ? 'Google' : 'Correo'} · ${full ? p.email || '—' : mask(p.email)}${p.method === 'email' && !p.verified ? ' (sin confirmar)' : ''}`,
+        `${p.method === 'google' ? 'Google' : p.method === 'email' ? 'Correo' : `🎮 ${p.method}`} · ${full ? p.email || '—' : mask(p.email)}${p.method === 'email' && !p.verified ? ' (sin confirmar)' : ''}`,
         String(p.level),
         String(p.games),
         String(p.blitz),

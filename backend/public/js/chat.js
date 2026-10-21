@@ -5,6 +5,8 @@
 // General y privados se consultan a la API cada pocos segundos mientras el panel está abierto.
 (function () {
   if (typeof Player === 'undefined' || typeof api === 'undefined') return;
+  // En los portales de juegos no hay chat (no se puede moderar ahí).
+  if (window.YSL && YSL.portal) return;
 
   const MAX = 200;
   const POLL_OPEN_MS = 3000;

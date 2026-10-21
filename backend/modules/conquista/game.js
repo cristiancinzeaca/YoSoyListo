@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const { CQ } = require('./config');
-const { REGIONS, NAMES, ADJ, CASTLE_SETS } = require('./map');
+const { REGIONS, NAMES: NAMES_ES, NAMES_EN, ADJ, CASTLE_SETS } = require('./map');
 const { GameError } = require('../multiplayer/room');
 
 const COLORS = ['#e5484d', '#3e8ef7', '#2fbf71'];
@@ -41,11 +41,13 @@ function gaussian() {
 // Partida del modo Conquista (estilo Honfoglaló / Conquistador) para 3 jugadores.
 // Igual que Room, no sabe nada de WebSockets ni de la base de datos.
 class ConquistaGame {
-  constructor({ code, players, send, loadNumeric, loadChoice, allyQuestion = null, onFinished, onEmpty, variant = 'normal', battleRounds = CQ.battleRounds }) {
+  constructor({ code, players, send, loadNumeric, loadChoice, allyQuestion = null, onFinished, onEmpty, variant = 'normal', battleRounds = CQ.battleRounds, lang = 'es' }) {
     this.code = code;
     this.mode = 'conquista';
     this.variant = variant; // 'normal' (3 jugadores) o 'x18' (2 jugadores, preguntas +18)
     this.rounds = battleRounds;
+    this.lang = lang === 'en' ? 'en' : 'es';
+    this.names = this.lang === 'en' ? NAMES_EN : NAMES_ES;
     this.send = send;
     this.loadNumeric = loadNumeric;
     this.loadChoice = loadChoice;
@@ -357,9 +359,14 @@ class ConquistaGame {
     } catch (err) {
       if (err instanceof Cancelled || this.destroyed) return;
       console.error('[conquista] error en la partida', err);
-      for (const p of this.players) if (!p.isBot) this.send(p.id, { t: 'error', message: 'La partida ha fallado, lo sentimos' });
+      for (const p of this.players) if (!p.isBot) this.send(p.id, { t: 'error', message: this.t('La partida ha fallado, lo sentimos', 'The game crashed, sorry') });
       this.destroy();
     }
+  }
+
+  // Texto en el idioma de la partida.
+  t(es, en) {
+    return this.lang === 'en' ? en : es;
   }
 
   async intro() {
@@ -369,7 +376,7 @@ class ConquistaGame {
       this.owner[castles[i]] = p.id;
       this.value[castles[i]] = CQ.castleValue;
     });
-    this.event = 'Cada jugador empieza con un castillo. ¡A repartirse España!';
+    this.event = this.t('Cada jugador empieza con un castillo. ¡A repartirse España!', 'Each player starts with a castle. Let\'s split up Spain!');
     this.setPhase('intro');
     await this.wait(CQ.introMs);
   }
@@ -388,7 +395,7 @@ class ConquistaGame {
 
   async expansionRound() {
     const ids = this.players.map((p) => p.id);
-    this.event = 'Reparto: el que más se acerque elige dos regiones; el segundo, una.';
+    this.event = this.t('Reparto: el que más se acerque elige dos regiones; el segundo, una.', 'Claim round: the closest answer picks two regions; second place picks one.');
     const { q, ranking } = await this.numericRound('exp_question', ids);
     this.setPhase('exp_result', {}, { result: { kind: 'numeric', answer: q.answer, unit: q.unit, text: q.text, ranking } });
     await this.wait(CQ.resultMs);
@@ -399,7 +406,7 @@ class ConquistaGame {
       await this.pickRegion('exp_pick', id, this.pickableFor(id), (region) => {
         this.owner[region] = id;
         this.value[region] = CQ.regionValue;
-        this.event = `${this.player(id).name} ocupa ${NAMES[region]}`;
+        this.event = this.t(`${this.player(id).name} ocupa ${this.names[region]}`, `${this.player(id).name} claims ${this.names[region]}`);
       });
     }
   }
@@ -433,14 +440,14 @@ class ConquistaGame {
     if (targets.length === 0) targets = REGIONS.filter(enemy);
     if (targets.length === 0) return;
 
-    this.event = `Ronda ${this.round} de ${this.rounds}: ataca ${attacker.name}`;
+    this.event = this.t(`Ronda ${this.round} de ${this.rounds}: ataca ${attacker.name}`, `Round ${this.round} of ${this.rounds}: ${attacker.name} attacks`);
     const target = await this.pickRegion('bat_pick', attacker.id, targets, () => {}, { attackerId: attacker.id });
     const defender = this.player(this.owner[target]);
     const attack = { attackerId: attacker.id, defenderId: defender.id, region: target };
     const isCastle = defender.castle === target;
     this.event = isCastle
-      ? `¡${attacker.name} ataca el castillo de ${defender.name}!`
-      : `${attacker.name} ataca ${NAMES[target]} (de ${defender.name})`;
+      ? this.t(`¡${attacker.name} ataca el castillo de ${defender.name}!`, `${attacker.name} attacks ${defender.name}'s castle!`)
+      : this.t(`${attacker.name} ataca ${this.names[target]} (de ${defender.name})`, `${attacker.name} attacks ${this.names[target]} (${defender.name}'s)`);
 
     // Pregunta con opciones para atacante y defensor (o de su país aliado, si lo ha elegido).
     const ally = this.allyPick.get(attacker.id);
@@ -478,7 +485,7 @@ class ConquistaGame {
     await this.wait(CQ.resultMs);
 
     if (outcome === 'tiebreak') {
-      this.event = '¡Empate! Desempate con una pregunta de aproximación.';
+      this.event = this.t('¡Empate! Desempate con una pregunta de aproximación.', 'Tie! Tiebreaker with a closest-number question.');
       const { q: tq, ranking } = await this.numericRound('bat_tiebreak', [attacker.id, defender.id], { attack });
       outcome = ranking[0].playerId === attacker.id ? 'attacker' : 'defender';
       this.setPhase('bat_tie_result', { attack }, {
@@ -490,9 +497,9 @@ class ConquistaGame {
     if (outcome === 'attacker') this.conquer(attacker, defender, target, isCastle);
     else if (outcome === 'defender') {
       defender.bonus += CQ.defenseBonus;
-      this.event = `🛡️ ${defender.name} defiende ${NAMES[target]} (+${CQ.defenseBonus})`;
+      this.event = this.t(`🛡️ ${defender.name} defiende ${this.names[target]} (+${CQ.defenseBonus})`, `🛡️ ${defender.name} defends ${this.names[target]} (+${CQ.defenseBonus})`);
     } else {
-      this.event = `Nadie acierta: ${NAMES[target]} sigue siendo de ${defender.name}`;
+      this.event = this.t(`Nadie acierta: ${this.names[target]} sigue siendo de ${defender.name}`, `Nobody got it: ${this.names[target]} stays with ${defender.name}`);
     }
     this.setPhase('bat_outcome', { attack: { ...attack, outcome } });
     await this.wait(Math.round(CQ.resultMs * 0.6));
@@ -502,18 +509,18 @@ class ConquistaGame {
     if (!isCastle) {
       this.owner[region] = attacker.id;
       this.value[region] += CQ.conquestBonus;
-      this.event = `⚔️ ${attacker.name} conquista ${NAMES[region]}`;
+      this.event = this.t(`⚔️ ${attacker.name} conquista ${this.names[region]}`, `⚔️ ${attacker.name} conquers ${this.names[region]}`);
       return;
     }
     defender.towers -= 1;
     if (defender.towers > 0) {
-      this.event = `💥 ${attacker.name} derriba una torre del castillo de ${defender.name} (quedan ${defender.towers})`;
+      this.event = this.t(`💥 ${attacker.name} derriba una torre del castillo de ${defender.name} (quedan ${defender.towers})`, `💥 ${attacker.name} knocks down a tower of ${defender.name}'s castle (${defender.towers} left)`);
       return;
     }
     // Castillo tomado: el atacante se queda con todo el territorio del defensor.
     for (const r of this.regionsOf(defender.id)) this.owner[r] = attacker.id;
     defender.eliminated = true;
-    this.event = `🏰 ¡${attacker.name} toma el castillo de ${defender.name} y se queda con todo su territorio!`;
+    this.event = this.t(`🏰 ¡${attacker.name} toma el castillo de ${defender.name} y se queda con todo su territorio!`, `🏰 ${attacker.name} takes ${defender.name}'s castle and all their land!`);
   }
 
   ranking() {
@@ -551,7 +558,7 @@ class ConquistaGame {
     }
     if (this.destroyed) return;
     this.status = 'finished';
-    this.event = 'Fin de la partida';
+    this.event = this.t('Fin de la partida', 'Game over');
     this.setPhase('end', {}, { result: { kind: 'end', ranking } });
   }
 

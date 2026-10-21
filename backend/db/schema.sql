@@ -687,6 +687,8 @@ $$;
 -- ---------- Cuentas con correo y contraseña ----------
 alter table players add column if not exists password_hash text;
 alter table players add column if not exists email_verified boolean not null default false;
+-- Portal de juegos del que viene (crazygames…): cuentas anónimas, sin correo.
+alter table players add column if not exists portal_source text;
 create unique index if not exists players_email_password_idx on players (lower(email)) where password_hash is not null;
 
 -- Enlaces de un solo uso: confirmar el correo ('verify') o cambiar la contraseña ('reset').
@@ -823,7 +825,7 @@ returns table (stats jsonb)
 language sql stable as $$
   with
   tz as (select (now() at time zone 'Europe/Madrid')::date as today),
-  acc as (select * from players where google_sub is not null or password_hash is not null),
+  acc as (select * from players where google_sub is not null or password_hash is not null or portal_source is not null),
   days as (select generate_series((select today from tz) - 13, (select today from tz), interval '1 day')::date as day),
   human_matches as (
     select m.id, m.mode, m.vs_bot, m.finished_at, (m.finished_at at time zone 'Europe/Madrid')::date as day
@@ -839,6 +841,7 @@ language sql stable as $$
     'active_7d', (select count(*) from acc where last_seen_at > now() - interval '7 days'),
     'by_google', (select count(*) from acc where google_sub is not null),
     'by_email', (select count(*) from acc where google_sub is null and password_hash is not null),
+    'by_portal', (select count(*) from acc where portal_source is not null),
     'with_hero', (select count(*) from acc where hero is not null),
     'matches_7d', (select coalesce(jsonb_object_agg(mode, n), '{}'::jsonb) from (select mode, count(*) as n from human_matches where finished_at > now() - interval '7 days' group by mode) x),
     'blitz_7d', (select count(*) from blitz_sessions where player_id is not null and started_at > now() - interval '7 days'),
@@ -856,7 +859,7 @@ language sql stable as $$
     'recent_players', (
       select coalesce(jsonb_agg(p order by p.created_at desc), '[]'::jsonb) from (
         select a.name, a.created_at, a.last_seen_at, a.xp, a.coins, a.streak,
-          case when a.google_sub is not null then 'google' else 'email' end as method,
+          case when a.google_sub is not null then 'google' when a.password_hash is not null then 'email' else coalesce(a.portal_source, 'email') end as method,
           coalesce(a.email, '') as email, a.email_verified as verified,
           a.duels_played + a.rooms_played + a.conquista_played as games,
           (select count(*) from blitz_sessions b where b.player_id = a.id) as blitz,

@@ -1301,3 +1301,53 @@ body.cq-playing .cq-player { padding: 4px 6px; }
 .qa-a { margin: 6px 0 0; }
 .qa-expl { color: var(--muted); }
 .qa-cta .btn { margin-top: 8px; }
+
+/* ---------- Versión para portales de juegos (CrazyGames) ---------- */
+html.portal .me-chip,
+html.portal .coin-chip,
+html.portal .hero-xp-go,
+html.portal .chat-btn {
+  display: none !important;
+}
+.portal-main {
+  text-align: center;
+  padding: 8px 0 32px;
+}
+.portal-main h1 {
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  margin: 6px 0 8px;
+}
+.portal-sub {
+  max-width: 34em;
+  margin: 0 auto 10px;
+  opacity: 0.9;
+}
+.portal-castles {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 6px 0 12px;
+}
+.portal-castles img {
+  width: min(28vw, 130px);
+  height: auto;
+}
+.btn.portal-play {
+  font-size: 1.6rem;
+  padding: 18px 56px;
+  min-width: 240px;
+}
+.portal-how {
+  list-style: none;
+  padding: 0;
+  margin: 18px auto;
+  max-width: 30em;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+.portal-lang {
+  justify-content: center;
+  margin: 8px auto 0;
+  width: max-content;
+}

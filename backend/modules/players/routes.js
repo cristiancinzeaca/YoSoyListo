@@ -2,12 +2,18 @@ const express = require('express');
 const { rateLimit } = require('../../core/rateLimit');
 const { requirePlayer } = require('./auth');
 const service = require('./service');
+const shop = require('../shop/service');
 
 const router = express.Router();
 
 // Los perfiles de invitado ya no se crean: hay que entrar con Google.
 router.post('/', (req, res) => {
   res.status(410).json({ error: 'Ahora se juega con cuenta: entra con Google', code: 'login' });
+});
+
+// Portales de juegos: se juega al momento, sin registrarse (una cuenta anónima por navegador).
+router.post('/portal', rateLimit({ windowMs: 60 * 60_000, max: 20 }), async (req, res) => {
+  res.status(201).json(await service.createPortal(String(req.body?.source || ''), { onCreated: shop.grantWelcome }));
 });
 
 router.get('/leaderboard', async (req, res) => {
