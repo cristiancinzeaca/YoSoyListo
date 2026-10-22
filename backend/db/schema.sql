@@ -877,3 +877,9 @@ language sql stable as $$
     )
   );
 $$;
+
+-- Preguntas retiradas o reescritas (las nuevas versiones entran por seed.sql).
+update questions set active = false
+where active and text in (
+  '¿Cuál es el videojuego más vendido de la historia?'
+);

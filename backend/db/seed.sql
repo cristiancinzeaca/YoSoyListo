@@ -817,7 +817,7 @@ from (values
 ('¿Qué animal africano tiene el cuerpo con rayas blancas y negras?', array['La jirafa', 'El okapi', 'La cebra', 'El ñu'], 2, 'general', 1, null),
 ('¿Cuántas fichas tiene un dominó clásico?', array['24', '32', '28', '36'], 2, 'general', 2, null),
 ('¿En qué juego de cartas se intenta sumar 21 sin pasarse?', array['Póquer', 'Bridge', 'Solitario', 'Blackjack'], 3, 'general', 1, null),
-('¿Cuál es el videojuego más vendido de la historia?', array['Minecraft', 'Tetris', 'Grand Theft Auto V', 'Super Mario Bros.'], 0, 'general', 2, null),
+('¿Cuál es el videojuego más vendido de la historia como un solo juego (sin sumar versiones)?', array['Grand Theft Auto V', 'Super Mario Bros.', 'Minecraft', 'Wii Sports'], 2, 'general', 2, 'Más de 300 millones de copias. Si se suman todas las versiones de Tetris desde 1984, Tetris lo supera.'),
 ('¿Qué empresa creó la consola PlayStation?', array['Nintendo', 'Sony', 'Microsoft', 'Sega'], 1, 'general', 1, null),
 ('¿Qué empresa fabrica la consola Xbox?', array['Sony', 'Microsoft', 'Nintendo', 'Apple'], 1, 'general', 1, null),
 ('¿Qué famoso personaje de videojuegos es un erizo azul muy rápido?', array['Crash', 'Sonic', 'Kirby', 'Spyro'], 1, 'general', 1, null),

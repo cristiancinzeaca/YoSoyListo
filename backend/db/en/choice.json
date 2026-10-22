@@ -328,7 +328,7 @@
 ["What does \"www\" stand for in a website address?", "World Wide Web", ["World Web Wide", "Wide World Web", "Web World Window"], "general"],
 ["Which company created the iPhone?", "Apple", ["Samsung", "Google", "Nokia"], "general"],
 ["Which company develops the Android operating system?", "Google", ["Apple", "Microsoft", "Samsung"], "general"],
-["What is the best-selling video game of all time?", "Minecraft", ["Tetris", "GTA V", "Mario Kart 8"], "general"],
+["What is the best-selling single video game of all time (not counting all versions)?", "Minecraft", ["GTA V", "Mario Kart 8", "Wii Sports"], "general"],
 ["What is the name of the plumber in Nintendo's most famous games?", "Mario", ["Luigi", "Wario", "Toad"], "general"],
 ["In Pac-Man, what does Pac-Man eat?", "Dots", ["Coins", "Fruit only", "Ghosts only"], "general"],
 ["Which social network is known for short vertical videos and a musical note logo?", "TikTok", ["Twitter", "LinkedIn", "Pinterest"], "general"],

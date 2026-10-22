@@ -190,7 +190,7 @@
 ["¿Qué animal africano tiene el cuerpo con rayas blancas y negras?", "La cebra", ["La jirafa", "El okapi", "El ñu"], 1, null],
 ["¿Cuántas fichas tiene un dominó clásico?", "28", ["24", "32", "36"], 2, null],
 ["¿En qué juego de cartas se intenta sumar 21 sin pasarse?", "Blackjack", ["Póquer", "Bridge", "Solitario"], 1, null],
-["¿Cuál es el videojuego más vendido de la historia?", "Minecraft", ["Tetris", "Grand Theft Auto V", "Super Mario Bros."], 2, null],
+["¿Cuál es el videojuego más vendido de la historia como un solo juego (sin sumar versiones)?", "Minecraft", ["Grand Theft Auto V", "Super Mario Bros.", "Wii Sports"], 2, "Más de 300 millones de copias. Si se suman todas las versiones de Tetris desde 1984, Tetris lo supera."],
 ["¿Qué empresa creó la consola PlayStation?", "Sony", ["Nintendo", "Microsoft", "Sega"], 1, null],
 ["¿Qué empresa fabrica la consola Xbox?", "Microsoft", ["Sony", "Nintendo", "Apple"], 1, null],
 ["¿Qué famoso personaje de videojuegos es un erizo azul muy rápido?", "Sonic", ["Crash", "Kirby", "Spyro"], 1, null],
