@@ -171,6 +171,86 @@ const THEMES = {
       'Preguntas sobre el espacio con respuestas: los planetas del sistema solar, el Sol y la Luna, estrellas y galaxias, eclipses, astronautas y las misiones espaciales más famosas. Toca «Ver respuesta» para comprobar si has acertado.',
     filter: (q, cat) => ['ciencia', 'historia'].includes(cat) && words(['planeta', 'luna\\b', 'sol\\b', 'estrella', 'galaxia', 'via lactea', 'astronauta', 'cosmonauta', 'espacio', 'espacial', 'nasa', 'apolo', 'sputnik', 'eclipse', 'anillos', 'marte', 'jupiter', 'saturno', 'venus', 'neptuno', 'pluton', 'telescopio', 'james webb', 'perseverance', 'laika', 'ganimedes', 'satelite', 'gagarin', 'armstrong', 'tereshkova', 'transbordador'], ['rey', 'vitamina', 'placas', 'gotas de lluvia', 'dios principal'])(q),
   },
+  'preguntas-trampa': {
+    name: 'Preguntas trampa',
+    title: 'Preguntas trampa con respuestas',
+    desc: 'Preguntas trampa con respuestas para pillar a tus amigos: acertijos rápidos que casi todo el mundo falla. ¿Cuántas aciertas?',
+    intro:
+      'Preguntas trampa con respuestas: acertijos cortos que parecen fáciles pero esconden un truco. Son perfectas para una cena, un viaje en coche o para pillar a tus amigos. Léelas en voz alta, deja que contesten rápido… y luego toca «Ver respuesta».',
+    filter: (q) => q.tag === 'trampa',
+  },
+  halloween: {
+    name: 'Halloween',
+    title: 'Preguntas de Halloween con respuestas',
+    desc: 'Preguntas de Halloween con respuestas: origen de la fiesta, Todos los Santos, Día de Muertos, monstruos, brujas y películas de miedo.',
+    intro:
+      'Preguntas de Halloween con respuestas: de dónde viene la fiesta, cómo se celebra Todos los Santos en España, el Día de Muertos de México, vampiros, brujas, hombres lobo y películas de miedo. Ideales para una fiesta de disfraces o para clase. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: (q) => q.tag === 'halloween' || /halloween|dracula|frankenstein|todos los santos/.test(norm(`${q.text} ${q.correct}`)),
+  },
+  navidad: {
+    name: 'Navidad',
+    title: 'Preguntas de Navidad con respuestas',
+    desc: 'Preguntas de Navidad con respuestas: Reyes Magos, uvas de Nochevieja, Lotería, villancicos, turrón y tradiciones de España y del mundo.',
+    intro:
+      'Preguntas de Navidad con respuestas: los Reyes Magos, las uvas y las campanadas, la Lotería de Navidad, los villancicos, el turrón, el belén y las tradiciones de cada rincón de España y del mundo. Perfectas para la cena de Nochebuena o para jugar en familia. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: (q) => q.tag === 'navidad' || /navidad|nochebuena|nochevieja|reyes magos|papa noel|villancico|turron/.test(norm(`${q.text} ${q.correct}`)),
+  },
+  mitologia: {
+    name: 'Mitología',
+    title: 'Preguntas de mitología con respuestas',
+    desc: 'Preguntas de mitología griega, romana, nórdica y egipcia con respuestas: dioses, héroes, monstruos y leyendas.',
+    intro:
+      'Preguntas de mitología con respuestas: los dioses del Olimpo y sus nombres romanos, héroes como Aquiles, Hércules o Ulises, monstruos como Medusa o el Minotauro, y los dioses nórdicos y egipcios. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: (q) => q.tag === 'mitologia' || words(['mitolog', 'zeus', 'poseidon', 'atenea', 'afrodita', 'hades', 'aquiles', 'hercules', 'heracles', 'ulises', 'odisea', 'iliada', 'minotauro', 'medusa', 'pegaso', 'olimpo', 'odin', 'loki', 'valhalla', 'anubis', 'osiris', 'romulo'])(q),
+  },
+  inventos: {
+    name: 'Inventos',
+    title: 'Preguntas de inventos e inventores con respuestas',
+    desc: 'Preguntas sobre inventos e inventores con respuestas: la imprenta, el teléfono, la bombilla, el avión, internet e inventos españoles.',
+    intro:
+      'Preguntas sobre inventos e inventores con respuestas: quién inventó la imprenta, el teléfono, la bombilla, el avión o internet, y los grandes inventos españoles como la fregona, el submarino o el autogiro. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: (q) => q.tag === 'inventos' || words(['invent', 'patent', 'descubri'], ['asesino', 'oceano'])(q),
+  },
+  'geografia-de-espana': {
+    name: 'Geografía de España',
+    title: 'Preguntas de geografía de España con respuestas',
+    desc: 'Preguntas de geografía de España con respuestas: comunidades autónomas, provincias, capitales, ríos, montañas e islas.',
+    intro:
+      'Preguntas de geografía de España con respuestas: comunidades autónomas y sus capitales, provincias, ríos como el Ebro o el Tajo, montañas, islas y ciudades. Muy útiles para repasar para el colegio o las oposiciones. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['geografia'], (q) => /espan|madrid|comunidad|provincia|canarias|baleares|andaluc|castilla|cataluna|galicia|asturias|ebro|tajo|duero|guadalquivir|teide|pirineos|cantabr|navarra|aragon|extremadura|murcia|valencia|rioja|vasco|bilbao|sevilla|toledo|granada/.test(norm(`${q.text} ${q.correct}`))),
+  },
+  'historia-antigua': {
+    name: 'Historia antigua',
+    title: 'Preguntas de historia antigua con respuestas',
+    desc: 'Preguntas de historia antigua con respuestas: Egipto, Grecia, Roma, faraones, emperadores, pirámides y grandes batallas.',
+    intro:
+      'Preguntas de historia antigua con respuestas: el Egipto de los faraones y las pirámides, la Grecia de Atenas y Esparta, y Roma desde su fundación hasta el Imperio. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['historia', 'arte', 'general', 'geografia'], words(['romano', 'romana', 'roma\\b', 'grecia', 'griego', 'griega', 'cesar', 'augusto', 'atenas', 'esparta', 'egipt', 'faraon', 'piramide', 'cleopatra', 'alejandro magno', 'tutankamon', 'coliseo', 'pompeya', 'hispania', 'cartago', 'anibal'], ['papa', 'iglesia', 'capital', 'equipo', 'numero', 'tratado', 'continente', 'pintor', 'pinto', 'arquitecto'])),
+  },
+  pintura: {
+    name: 'Pintura y museos',
+    title: 'Preguntas de pintura y arte con respuestas',
+    desc: 'Preguntas de pintura con respuestas: Velázquez, Goya, Picasso, Dalí, Da Vinci, Van Gogh, cuadros famosos y museos.',
+    intro:
+      'Preguntas de pintura con respuestas: quién pintó los cuadros más famosos, en qué museo están y los grandes pintores españoles y del mundo, de Velázquez y Goya a Picasso, Dalí, Da Vinci o Van Gogh. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['arte', 'general', 'historia'], words(['pinto', 'pintor', 'pintora', 'pintura', 'cuadro', 'museo', 'lienzo', 'escultur', 'velazquez', 'goya', 'picasso', 'dali\\b', 'miro\\b', 'van gogh', 'da vinci', 'gioconda', 'mona lisa', 'meninas', 'guernica', 'prado', 'louvre'], ['premios'])),
+  },
+  tecnologia: {
+    name: 'Tecnología',
+    title: 'Preguntas de tecnología e internet con respuestas',
+    desc: 'Preguntas de tecnología con respuestas: internet, ordenadores, móviles, videojuegos, redes sociales y grandes empresas tecnológicas.',
+    intro:
+      'Preguntas de tecnología con respuestas: internet y las redes sociales, ordenadores y móviles, videojuegos y consolas, y las empresas que lo cambiaron todo. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: words(['internet', 'ordenador', 'movil', 'smartphone', 'app\\b', 'aplicacion', 'google', 'apple', 'microsoft', 'facebook', 'amazon', 'videojuego', 'consola', 'nintendo', 'playstation', 'software', 'wifi', 'correo electronico', 'robot', 'inteligencia artificial', 'www', 'tecnolog', 'byte', 'bits?\\b', 'informatic', 'red social', 'redes sociales', 'tiktok', 'instagram', 'youtube', 'whatsapp', 'minecraft', 'tetris', 'mario\\b'], ['tipos moviles', 'amazonas', 'rio\\b', 'vargas llosa', 'orellana']),
+  },
+  matematicas: {
+    name: 'Matemáticas',
+    title: 'Preguntas de matemáticas y lógica con respuestas',
+    desc: 'Preguntas de matemáticas y lógica con respuestas: cálculo mental, números romanos, geometría y problemas rápidos.',
+    intro:
+      'Preguntas de matemáticas y lógica con respuestas: cálculo mental, fracciones y porcentajes, números romanos, geometría y pequeños problemas para pensar rápido. Toca «Ver respuesta» para comprobar si has acertado.',
+    filter: inCats(['general', 'ciencia'], (q) => /(\bcuanto es\b|\bnumeros?\b|\bsuma\b|\braiz\b|\bimpar\b|\bprimo\b|\bmultiplic|\bdivid|\bporcentaje|\bgeometr|\btriangulo|\bcirculo|\bangulo|\bpi\b|\becuacion|\bfraccion|\bromano|\blados\b|\bhexagono|\boctogono|\bpentagono|\bdocena|\bcentena|\bmillon)/.test(norm(`${q.text} ${q.correct}`)) && !/emergencia|mala suerte|personas|supercontinente|planta/.test(norm(q.text))),
+  },
 };
 const MIN_THEME = 20;
 
@@ -196,7 +276,7 @@ function load() {
   cache = {};
   for (const cat of ORDER) {
     const list = JSON.parse(fs.readFileSync(path.join(DIR, `${cat}.json`), 'utf8'));
-    cache[cat] = list.map(([text, correct, wrong, difficulty, explanation]) => ({ text, correct, wrong, difficulty: difficulty || 2, explanation }));
+    cache[cat] = list.map(([text, correct, wrong, difficulty, explanation, tag]) => ({ text, correct, wrong, difficulty: difficulty || 2, explanation, tag: tag || null }));
   }
   return cache;
 }
@@ -326,7 +406,7 @@ function categoryPage(base, cat) {
   const body = `    <main>
       <section class="card prose qa-head">
         <p class="qa-crumbs"><a href="/preguntas">Preguntas con respuestas</a> › ${esc(info.name)}</p>
-        <h1>${esc(info.title)}</h1>
+        <h1>${esc(info.title)} (${list.length})</h1>
         <p>${esc(info.intro)}</p>
         ${catLinks(isTheme ? null : cat)}
         ${themeLinks(isTheme ? cat : null)}
@@ -334,9 +414,14 @@ function categoryPage(base, cat) {
       ${sections}
       ${cta(isTheme ? null : cat)}
     </main>`;
+  // Título pensado para el clic: «125 preguntas de arte con respuestas (fáciles y difíciles)».
+  const count = list.length >= 100 ? Math.floor(list.length / 10) * 10 : list.length;
+  const levels = new Set(list.map((q) => q.difficulty));
+  const tail = levels.has(1) && levels.has(3) ? ' (fáciles y difíciles)' : '';
+  const lead = `${count}${list.length > count ? '+' : ''} ${info.title.charAt(0).toLowerCase()}${info.title.slice(1)}`;
   return layout({
-    title: `${info.title} (${list.length}) · Yo Soy Listo`,
-    description: info.desc,
+    title: `${lead}${tail}`,
+    description: `${info.desc} ${count} preguntas con soluciones, gratis.`,
     canonical: `${base}/preguntas/${cat}`,
     body,
   });
