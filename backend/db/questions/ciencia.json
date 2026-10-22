@@ -208,5 +208,11 @@
 ["¿Qué planeta tarda 365 días en dar la vuelta al Sol?", "La Tierra", ["Marte", "Venus", "Júpiter"], 1, null],
 ["¿En qué parte del cuerpo están los alvéolos?", "En los pulmones", ["En los riñones", "En el corazón", "En el estómago"], 2, null],
 ["¿Cómo se llama el científico que estudia los volcanes?", "Vulcanólogo", ["Geógrafo", "Meteorólogo", "Sismólogo"], 2, null],
-["¿Qué estudia la meteorología?", "El tiempo y la atmósfera", ["Los meteoritos", "Las rocas", "Los océanos"], 1, null]
+["¿Qué estudia la meteorología?", "El tiempo y la atmósfera", ["Los meteoritos", "Las rocas", "Los océanos"], 1, null],
+["¿Qué hermanos franceses inventaron el cinematógrafo?", "Los hermanos Lumière", ["Los hermanos Wright", "Los hermanos Montgolfier", "Los hermanos Pathé"], 2, null, "inventos"],
+["¿Qué inventó Alfred Nobel?", "La dinamita", ["La pólvora", "La bombilla", "El motor de explosión"], 2, "Con su fortuna se crearon los Premios Nobel.", "inventos"],
+["¿Qué inventó Samuel Morse?", "El telégrafo y su código", ["El teléfono", "La radio", "El télex"], 2, null, "inventos"],
+["¿Qué inventó Karl Benz?", "El primer automóvil de gasolina", ["La bicicleta", "La motocicleta eléctrica", "El tren de vapor"], 2, "En 1886.", "inventos"],
+["¿Qué inventó Galileo Galilei para observar el cielo?", "Mejoró el telescopio", ["El microscopio", "La brújula", "El reloj de péndulo"], 2, "Lo usó para descubrir las lunas de Júpiter.", "inventos"],
+["¿Qué civilización inventó el papel?", "China", ["Egipto", "Grecia", "Mesopotamia"], 2, null, "inventos"]
 ]

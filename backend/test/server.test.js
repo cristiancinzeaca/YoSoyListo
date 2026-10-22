@@ -39,12 +39,17 @@ test('páginas de preguntas con respuestas para Google', async () => {
     assert.equal(idx.status, 200);
     assert.match(await idx.text(), /Preguntas de trivial con respuestas/);
     const cat = await (await fetch(`${base}/preguntas/historia`)).text();
-    assert.match(cat, /<h1>Preguntas de historia con respuestas<\/h1>/);
+    assert.match(cat, /<h1>Preguntas de historia con respuestas \(\d+\)<\/h1>/);
+    assert.match(cat, /<title>\d+\+? preguntas de historia con respuestas/);
+    const trampa = await fetch(`${base}/preguntas/preguntas-trampa`);
+    assert.equal(trampa.status, 200);
+    assert.match(await trampa.text(), /Si adelantas al segundo/);
     assert.match(cat, /<details><summary>Ver respuesta<\/summary>/);
     assert.match(cat, /rel="canonical" href="http:\/\/127\.0\.0\.1:\d+\/preguntas\/historia"/);
     assert.equal((await fetch(`${base}/preguntas/inventada`)).status, 404);
     const map = await (await fetch(`${base}/sitemap.xml`)).text();
     assert.match(map, /\/preguntas\/deportes<\/loc>/);
+    assert.match(map, /\/preguntas\/halloween<\/loc>/);
   } finally {
     server.close();
   }
