@@ -229,6 +229,14 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - În portal: fără chat, fără linkuri către magazin sau profil, fără raportare de întrebări în engleză.
 - `crazygames/index.html` = pagina care se urcă pe CrazyGames (zip): încarcă SDK-ul v3, alege limba (locale/countryCode) și pune `https://www.yosoylisto.es/portal` în iframe; transmite evenimentele către SDK.
 
+## 5r. Aplicația de Android (ramura `android`)
+- Trusted Web Activity (site-ul pe tot ecranul), pachet `es.yosoylisto.app`, în `android/` (androidbrowserhelper 2.5.0, AGP 8.11.1, compile/targetSdk 36, doar portret). Pornește pe `https://www.yosoylisto.es/?utm_source=android`.
+- Se construiește în GitHub Actions (`.github/workflows/android.yml`, la push pe `android/**` sau manual) și ajunge în **Releases → `android-latest`**. Fără secrete iese doar un APK de test (semnat cu cheie de debug). Cu secretele `ANDROID_KEYSTORE_B64` și `ANDROID_KEYSTORE_PASSWORD` iese AAB semnat (pentru Google Play) + APK + amprenta SHA-256.
+- `/.well-known/assetlinks.json`: amprentele din `ANDROID_CERTS` (în `core/server.js`) + variabila `ANDROID_CERT_SHA256` (adaugi amprenta cheii Google Play din Play Console → App integrity, separate prin virgulă).
+- Cheia de upload: încă nu a fost pusă în GitHub (Cristian a ales „mai târziu”). Amprenta din `ANDROID_CERTS` e a unei chei generate de test; dacă la final se folosește altă cheie, se schimbă amprenta.
+- Materiale Google Play (texte ES, iconiță, 1024x500, capturi) livrate în chat.
+- Proxy-ul sesiunii nu permite API-ul GitHub Actions (nici secrete, nici rulări); Releases se pot citi.
+
 ## 6. Alte idei în așteptare
 
 - **Monetizare** (când există trafic): Google AdSense + banner de cookie-uri (obligatoriu în UE) + pagina „Aviso legal” (cere numele și NIF-ul titularului).
