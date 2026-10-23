@@ -30,7 +30,35 @@
         sdk = null; // fuera de CrazyGames el SDK no funciona: el juego va igual
       }
       if (lang !== 'es') lang = 'en';
-      document.getElementById('game').src = GAME + '/portal?portal=crazygames&lang=' + lang;
+      // Progreso: la cuenta del jugador se guarda con el Data Module del SDK (nube de CrazyGames).
+      var token = null;
+      try {
+        if (sdk && sdk.data) token = await sdk.data.getItem('ysl:token');
+      } catch (e) {
+        token = null;
+      }
+      var hash = token && /^[A-Za-z0-9_-]{20,100}$/.test(token) ? '#t=' + encodeURIComponent(token) : '';
+      // Invitación de un amigo (sala) o multijugador instantáneo: el juego entra directo en la sala.
+      var extra = '';
+      try {
+        var room = sdk && sdk.game && sdk.game.getInviteParam ? sdk.game.getInviteParam('room') : null;
+        if (room && /^[A-Za-z0-9]{3,12}$/.test(room)) extra = '&room=' + encodeURIComponent(room);
+        else if (sdk && sdk.game && sdk.game.isInstantMultiplayer) extra = '&instant=1';
+      } catch (e) {
+        extra = '';
+      }
+      var frame = document.getElementById('game');
+      frame.src = GAME + '/portal?portal=crazygames&lang=' + lang + extra + hash;
+      try {
+        if (sdk && sdk.game && sdk.game.addJoinRoomListener) {
+          sdk.game.addJoinRoomListener(function (params) {
+            var code = params && (params.room || params.roomId);
+            if (code) frame.contentWindow.postMessage({ ysl: 'joinRoom', code: String(code) }, GAME);
+          });
+        }
+      } catch (e) {
+        // sin salas
+      }
 
       function call(name) {
         try {
@@ -43,6 +71,28 @@
       window.addEventListener('message', function (e) {
         if (e.origin !== GAME || !e.data || typeof e.data.ysl !== 'string') return;
         if (['gameplayStart', 'gameplayStop', 'loadingStart', 'loadingStop'].indexOf(e.data.ysl) >= 0) call(e.data.ysl);
+        try {
+          if (sdk && sdk.game && e.data.ysl === 'room' && /^[A-Za-z0-9]{3,12}$/.test(e.data.code || '')) {
+            sdk.game.updateRoom({ roomId: e.data.code, isJoinable: !!e.data.joinable, inviteParams: { room: e.data.code } });
+          }
+          if (sdk && sdk.game && e.data.ysl === 'leftRoom' && sdk.game.leftRoom) sdk.game.leftRoom();
+          if (e.data.ysl === 'inviteLink' && /^[A-Za-z0-9]{3,12}$/.test(e.data.code || '')) {
+            var code = e.data.code;
+            var src = e.source;
+            Promise.resolve(sdk && sdk.game && sdk.game.inviteLink ? sdk.game.inviteLink({ room: code }) : null)
+              .catch(function () { return null; })
+              .then(function (url) { src.postMessage({ ysl: 'inviteLink', code: code, url: typeof url === 'string' ? url : null }, GAME); });
+          }
+        } catch (err) {
+          // nada
+        }
+        if (e.data.ysl === 'saveToken' && typeof e.data.token === 'string' && /^[A-Za-z0-9_-]{20,100}$/.test(e.data.token)) {
+          try {
+            if (sdk && sdk.data) sdk.data.setItem('ysl:token', e.data.token);
+          } catch (err) {
+            // sin nube: queda el localStorage del juego
+          }
+        }
       });
     })();
   </script>

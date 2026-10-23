@@ -229,6 +229,7 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - `public/js/i18n.js`: detectează portalul și limba (`?lang=` → ales înainte → browser). În engleză traduce interfața din mers (dicționar + modele, MutationObserver). Expune `YSL` (`portal`, `en`, `t()`, `home`, `notify()`); `notify` trimite `gameplayStart/Stop` și `loadingStart/Stop` către pagina-părinte.
 - Conquista în engleză = varianta `en` din hub: întrebări din `db/en/choice.json` (378) și `db/en/numeric.json` (116), texte de eveniment în engleză (`ConquistaGame` cu `lang`), nume de regiuni în engleză (`NAMES_EN`), fără aliați, bot după 6 s.
 - În portal: fără chat, fără linkuri către magazin sau profil, fără raportare de întrebări în engleză.
+- SDK CrazyGames în pagina din zip: progres prin **Data Module** (`ysl:token` în cloud-ul lor; jocul îl primește în `#t=` și îl recuperează), **invitații** (`updateRoom` cu `inviteParams.room` = codul sălii, `inviteLink` pentru butonul „Invite friends”, `getInviteParam('room')` → `/portal?room=COD`, `addJoinRoomListener`), **isInstantMultiplayer** → `/portal?instant=1` (creează direct o sală). „Play again” într-o sală cu prieteni creează o sală nouă.
 - `crazygames/index.html` = pagina care se urcă pe CrazyGames (zip): încarcă SDK-ul v3, alege limba (locale/countryCode) și pune `https://www.yosoylisto.es/portal` în iframe; transmite evenimentele către SDK.
 
 ## 5r. Aplicația de Android (ramura `android`)
