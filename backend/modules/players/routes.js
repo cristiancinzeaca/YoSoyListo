@@ -12,7 +12,7 @@ router.post('/', (req, res) => {
 });
 
 // Portales de juegos: se juega al momento, sin registrarse (una cuenta anónima por navegador).
-router.post('/portal', rateLimit({ windowMs: 60 * 60_000, max: 20 }), async (req, res) => {
+router.post('/portal', rateLimit({ windowMs: 60 * 60_000, max: 60 }), async (req, res) => {
   res.status(201).json(await service.createPortal(String(req.body?.source || ''), { onCreated: shop.grantWelcome }));
 });
 

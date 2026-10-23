@@ -10,6 +10,13 @@
   );
   $('p-play').textContent = t('▶ JUGAR', '▶ PLAY');
   $('p-play').href = `/portal/conquista?lang=${YSL.lang}`;
+  $('p-friends').textContent = t('👥 Jugar con amigos', '👥 Play with friends');
+  $('p-friends').href = `/portal/conquista?lang=${YSL.lang}&amigos=1`;
+  // Invitación de un amigo (?room=) o multijugador instantáneo del portal (?instant=1): directos a la sala.
+  const q = new URLSearchParams(location.search);
+  const room = String(q.get('room') || '').toUpperCase();
+  if (/^[A-Z0-9]{3,12}$/.test(room)) return location.replace(`/portal/conquista?lang=${YSL.lang}&c=${room}`);
+  if (q.get('instant') === '1') return location.replace(`/portal/conquista?lang=${YSL.lang}&amigos=1`);
   const how = YSL.en
     ? ['🎯 Closest number wins the first pick of regions.', '⚔️ Attack neighbours with multiple-choice questions.', '🏰 Take all 3 towers of a castle to take all its land.']
     : ['🎯 El que más se acerca elige primero las regiones.', '⚔️ Ataca a tus vecinos con preguntas de opciones.', '🏰 Derriba las 3 torres de un castillo y quédate con todo.'];

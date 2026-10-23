@@ -58,9 +58,19 @@ const Player = {
     Wallet.data = null;
   },
   async portalAccount() {
+    // Cuenta que el portal nos ha devuelto (otro dispositivo, o datos borrados): se recupera.
+    if (this.token) {
+      try {
+        return await this.refresh();
+      } catch {
+        // caducada: se crea otra
+      }
+    }
     try {
       const res = await api.post('/api/players/portal', { source: YSL.source });
       this.save(res.player, res.token);
+      // El portal guarda la cuenta en su nube (progreso en todos los dispositivos del jugador).
+      YSL.notify('saveToken', { token: res.token });
       return res.player;
     } catch (err) {
       if (window.FX) console.error(err);

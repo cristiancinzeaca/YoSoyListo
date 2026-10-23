@@ -194,13 +194,13 @@
     if (code || friends) {
       params.delete('c');
       params.delete('amigos');
-      history.replaceState(null, '', '/conquista');
+      history.replaceState(null, '', PORTAL ? location.pathname + (YSL.lang ? `?lang=${YSL.lang}` : '') : '/conquista');
     }
     if (code) {
       state.joining = true;
       return socket.send({ t: 'cq_join', code: code.toUpperCase() });
     }
-    if (friends) return socket.send({ t: 'cq_private' });
+    if (friends) return socket.send({ t: 'cq_private', variant: VARIANT });
     socket.send({ t: 'cq_queue', variant: VARIANT });
   }
 
@@ -230,6 +230,7 @@
         : '¡Ya estáis todos!'
       : `Esperando a que entre${missing === 1 ? ' uno más' : 'n más amigos'} o a que el anfitrión empiece.`;
     $('lb-bots').hidden = !amHost;
+    if (PORTAL) YSL.notify('room', { code: msg.code, joinable: missing > 0 });
     if (state.lastMembers !== undefined && msg.members.length > state.lastMembers) {
       FX.play('horn');
       FX.vibrate(40);
@@ -240,8 +241,10 @@
   $('lb-share').addEventListener('click', async () => {
     const code = state.lobby && state.lobby.code;
     if (!code) return;
-    const url = `${location.origin}/conquista?c=${code}`;
-    const text = '⚔️ ¡Te reto a conquistar España! Únete a mi partida en Yo Soy Listo:';
+    let url = `${location.origin}/conquista?c=${code}`;
+    // En CrazyGames, el enlace de invitación lo da su SDK (abre el juego allí, en esta sala).
+    if (PORTAL) url = (await YSL.inviteLink(code)) || `${location.origin}/portal/conquista?lang=${YSL.lang}&c=${code}`;
+    const text = YSL && YSL.en ? '⚔️ I challenge you to conquer Spain! Join my game:' : '⚔️ ¡Te reto a conquistar España! Únete a mi partida en Yo Soy Listo:';
     try {
       if (navigator.share) await navigator.share({ title: 'Conquista con amigos', text, url });
       else {
@@ -342,6 +345,12 @@
   });
   $('end-again').addEventListener('click', () => {
     if (VARIANT === 'x18') return x18Menu();
+    // Con amigos: nueva sala para seguir con el mismo grupo.
+    if (state.lobby) {
+      state.phase = 'queue';
+      show('s-connecting');
+      return socket.send({ t: 'cq_private', variant: VARIANT });
+    }
     state.phase = 'queue';
     show('s-queue');
     socket.send({ t: 'cq_queue', variant: VARIANT });
@@ -729,7 +738,10 @@
     state.s = s;
     if (!state.me) return;
     if (s.phase === 'end') return renderEnd(s);
-    if (state.phase !== 'game' && PORTAL) YSL.notify('gameplayStart');
+    if (state.phase !== 'game' && PORTAL) {
+      YSL.notify('gameplayStart');
+      if (state.lobby) YSL.notify('room', { code: state.lobby.code, joinable: false });
+    }
     state.phase = 'game';
     show('s-game');
     $('cq-event').textContent = s.event || '';
@@ -890,7 +902,10 @@
   }
 
   function renderEnd(s) {
-    if (state.phase !== 'end' && PORTAL) YSL.notify('gameplayStop');
+    if (state.phase !== 'end' && PORTAL) {
+      YSL.notify('gameplayStop');
+      if (state.lobby) YSL.notify('leftRoom');
+    }
     state.phase = 'end';
     show('s-end');
     const ranking = s.result.ranking;
@@ -967,8 +982,15 @@
     } catch {
       return fatal('No se pudo cargar el mapa', 'Revisa tu conexión e inténtalo de nuevo.');
     }
-    await Player.ensure();
-    if (PORTAL) YSL.notify('loadingStop');
+    try {
+      await Player.ensure();
+    } catch {
+      return fatal('No se pudo entrar', 'Revisa tu conexión e inténtalo de nuevo.');
+    }
+    if (PORTAL) {
+      YSL.notify('loadingStop');
+      if (Player.token) YSL.notify('saveToken', { token: Player.token });
+    }
     socket.connect();
   })();
 })();

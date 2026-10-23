@@ -26,15 +26,26 @@
   if (PORTAL) {
     ls.set('ysl:lang', lang);
     if (params.get('portal')) ls.set('ysl:portal', params.get('portal'));
+    // Cuenta guardada en el portal (CrazyGames la guarda en su nube y nos la pasa en #t=…).
+    const saved = new URLSearchParams(location.hash.slice(1)).get('t');
+    if (saved && /^[A-Za-z0-9_-]{20,100}$/.test(saved) && ls.get('ysl:token') !== saved) {
+      ls.set('ysl:token', saved);
+      try {
+        localStorage.removeItem('ysl:player');
+      } catch {
+        // nada
+      }
+    }
+    if (saved) history.replaceState(null, '', location.pathname + location.search);
   }
   const source = ls.get('ysl:portal') || params.get('portal') || 'crazygames';
   const EN = PORTAL && lang === 'en';
 
   // Avisos al portal (la página de CrazyGames que nos contiene llama a su SDK).
-  function notify(event) {
+  function notify(event, extra) {
     if (!PORTAL || window.parent === window) return;
     try {
-      window.parent.postMessage({ ysl: event }, '*');
+      window.parent.postMessage({ ysl: event, ...(extra || {}) }, '*');
     } catch {
       // sin portal
     }
@@ -48,11 +59,35 @@
     t: (es, en) => (EN ? en : es),
     home: PORTAL ? `/portal?lang=${lang}` : '/',
     notify,
+    // Enlace de invitación del portal (CrazyGames) para una sala; null si no hay portal.
+    inviteLink(code) {
+      if (!PORTAL || window.parent === window) return Promise.resolve(null);
+      return new Promise((resolve) => {
+        const done = (e) => {
+          if (e.data && e.data.ysl === 'inviteLink' && e.data.code === code) {
+            window.removeEventListener('message', done);
+            resolve(typeof e.data.url === 'string' ? e.data.url : null);
+          }
+        };
+        window.addEventListener('message', done);
+        notify('inviteLink', { code });
+        setTimeout(() => {
+          window.removeEventListener('message', done);
+          resolve(null);
+        }, 1500);
+      });
+    },
     setLang(l) {
       ls.set('ysl:lang', l === 'es' ? 'es' : 'en');
     },
   };
   if (!PORTAL) return;
+  // El portal nos pide entrar en la sala de un amigo (invitación aceptada con el juego abierto).
+  window.addEventListener('message', (e) => {
+    if (e.source !== window.parent || !e.data || e.data.ysl !== 'joinRoom') return;
+    const code = String(e.data.code || '').toUpperCase();
+    if (/^[A-Z0-9]{3,12}$/.test(code)) location.href = `/portal/conquista?lang=${lang}&c=${code}`;
+  });
   document.documentElement.classList.add('portal');
   document.documentElement.lang = lang;
   if (!EN) return;
@@ -150,6 +185,20 @@
     'El 50/50 es para las preguntas con opciones': '50/50 is for multiple-choice questions',
     'La pista es para las preguntas de aproximación': 'The hint is for closest-number questions',
     'Límites: © Instituto Geográfico Nacional de España (CC BY 4.0), vía es-atlas': 'Boundaries: © Instituto Geográfico Nacional de España (CC BY 4.0), via es-atlas',
+    '🏰 Conquista con amigos': '🏰 Conquest with friends',
+    'Pasa el enlace a dos amigos. La partida empieza sola cuando estéis los tres.': 'Send the link to two friends. The game starts by itself when all three of you are in.',
+    '📨 Invitar amigos': '📨 Invite friends',
+    '🤖 Empezar ya (los huecos, con bots)': '🤖 Start now (bots fill the empty seats)',
+    Salir: 'Leave',
+    '👑 anfitrión': '👑 host',
+    'Esperando a un amigo…': 'Waiting for a friend…',
+    '¡Ya estáis todos!': 'Everyone is here!',
+    'Enlace copiado: pégalo en WhatsApp': 'Link copied: paste it to your friends',
+    'Partida cancelada': 'Game cancelled',
+    'La partida privada se ha cerrado.': 'The private game was closed.',
+    'No se pudo entrar': "Couldn't join",
+    'La partida ya está completa': 'The game is already full',
+    'No tienes ninguna partida privada esperando': "You don't have a private game waiting",
     ...TIERS,
     ...REGIONS,
     ...TITLES,
@@ -173,6 +222,8 @@
     [/^¡(.+) se defiende!$/, (m) => `${m[1]} holds the line!`],
     [/^💥 ¡Cae el castillo de (.+)!$/, (m) => `💥 ${m[1]}'s castle falls!`],
     [/^Has quedado (\d+)º$/, (m) => `You finished #${m[1]}`],
+    [/^Pasa el enlace a (un amigo más|dos amigos)\. La partida empieza sola cuando estéis los (\d+)\.$/, (m) => `Send the link to ${m[1] === 'un amigo más' ? 'one more friend' : 'two friends'}. The game starts by itself when all ${m[2]} of you are in.`],
+    [/^Esperando a que entre(?: uno más|n más amigos) o a que el anfitrión empiece\.$/, () => 'Waiting for more friends or for the host to start.'],
     [/^(\S+) · (\S+)$/, (m) => (RACES[m[1]] || CLASSES[m[2]] ? `${pick(RACES)(m[1])} · ${pick(CLASSES)(m[2])}` : null)],
     [/^Nivel (\d+) · (.+)$/, (m) => `Level ${m[1]} · ${m[2]}`],
     [/^Nivel (\d+) \(máximo\)$/, (m) => `Level ${m[1]} (max)`],
