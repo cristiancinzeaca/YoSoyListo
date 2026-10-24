@@ -110,6 +110,7 @@
   const DICT = {
     'Conectando…': 'Connecting…',
     'Buscando rivales…': 'Finding opponents…',
+    '▶️ Jugar ya': '▶️ Play now',
     de: 'of',
     jugadores: 'players',
     'Si no aparece nadie, completaremos la partida con bots.': "If nobody joins, we'll fill the game with bots.",

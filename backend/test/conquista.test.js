@@ -210,6 +210,32 @@ test('tres personas en cola empiezan juntas sin bots', async () => {
   assert.ok(winners.length >= 1);
 });
 
+test('«Jugar ya» en la cola empieza al momento, sin esperar a la cuenta atrás', async () => {
+  const prev = CQ.botWaitMs;
+  CQ.botWaitMs = 60_000;
+  try {
+    const p = await newPlayer('Prisas');
+    const t0 = Date.now();
+    let started = 0;
+    const r = await simpleClient(p.token, (ws, seen) => {
+      ws.send(JSON.stringify({ t: 'cq_queue' }));
+      ws.on('message', (raw) => {
+        const m = JSON.parse(raw);
+        if (m.t === 'cq_queued' && !seen.asked) {
+          seen.asked = true;
+          ws.send(JSON.stringify({ t: 'cq_now' }));
+        }
+        if (m.t === 'cq_state' && !started) started = Date.now();
+      });
+    });
+    assert.ok(r.final, r.error);
+    assert.ok(started - t0 < 3_000, 'empieza enseguida');
+    assert.equal(r.final.players.filter((x) => x.isBot).length, 2);
+  } finally {
+    CQ.botWaitMs = prev;
+  }
+});
+
 // Cliente sencillo: responde cualquier cosa (sirve para las preguntas +18, que no siguen el patrón «Pregunta n»).
 function simpleClient(token, onWelcome) {
   return new Promise((resolve, reject) => {
