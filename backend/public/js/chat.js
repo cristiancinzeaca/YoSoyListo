@@ -519,7 +519,7 @@
   }
 
   async function poll(force = false) {
-    if (!Player.has() || document.hidden) return;
+    if (!Player.has() || Player.guest || document.hidden) return;
     const now = Date.now();
     try {
       if (state.open) {
@@ -616,7 +616,7 @@
   function boot() {
     if (!mount()) return;
     const check = () => {
-      btn.hidden = !Player.has();
+      btn.hidden = !Player.has() || Player.guest;
       if (!btn.hidden) poll();
     };
     check();

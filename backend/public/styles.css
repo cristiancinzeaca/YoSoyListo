@@ -1360,3 +1360,13 @@ html.portal .chat-btn {
   html.portal body.cq-playing .cq-sheet { left: auto; right: 8px; top: 8px; bottom: 8px; width: var(--side); max-height: none; justify-content: center; }
   html.portal body.cq-playing .cq-stage .cq-event { left: calc((100% - var(--side) - 14px) / 2); max-width: calc(100% - var(--side) - 30px); }
 }
+
+/* Jugar sin cuenta: llamadas a la acción y aviso para guardar el progreso */
+.hero-cta { display: grid; gap: 10px; margin: 14px auto 0; max-width: 420px; }
+.hero-cta .btn { margin: 0; }
+.btn-whatsapp { background: #25d366; color: #fff; box-shadow: 0 5px 0 #128c4a; }
+.btn-whatsapp:active { box-shadow: 0 1px 0 #128c4a; }
+.save-nudge { margin: 14px 0; padding: 12px 14px; border-radius: 14px; background: #fff7d6; border: 2px dashed #f2c94c; color: #5b4300; text-align: center; }
+.save-nudge p, .card .save-nudge p { margin: 0 0 10px; font-size: .95rem; color: #4a3600; font-weight: 600; opacity: 1; }
+.save-nudge .btn { margin: 0; }
+.login-inapp { font-size: .85rem; opacity: .8; margin: 6px 0 10px; text-align: center; }

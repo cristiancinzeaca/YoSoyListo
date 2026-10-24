@@ -146,22 +146,35 @@
       tile('Reto diario hoy', s.daily_today),
       tile('Con héroe creado', s.with_hero)
     );
+    // Embudo: de la visita a la cuenta guardada.
+    const v = s.visits_14d || {};
+    const g = s.guests_14d || {};
+    const pct = (a, b) => (b ? `${Math.round((a / b) * 100)} %` : '—');
+    $('act-funnel').replaceChildren(
+      tile('Visitantes únicos', v.uniques, `${v.views || 0} páginas vistas`),
+      tile('Entran a jugar (invitados)', g.created, `${pct(g.created, v.uniques)} de los visitantes`),
+      tile('Juegan una partida', g.played, pct(g.played, g.created)),
+      tile('Vuelven otro día', g.came_back, pct(g.came_back, g.created)),
+      tile('Guardan su cuenta', g.saved, pct(g.saved, g.created))
+    );
+    table($('act-sources'), ['Origen (14 días)', 'Visitantes', 'Páginas'], (s.visit_sources || []).map((x) => [x.source, x.uniques, x.views]));
+    table($('act-pages'), ['Página (7 días)', 'Vistas', 'Visitantes'], (s.visit_pages || []).map((x) => [x.page, x.views, x.uniques]));
     // Barras por día
     const days = s.per_day || [];
-    const max = Math.max(1, ...days.flatMap((d) => [d.signups, d.matches, d.blitz, d.daily]));
+    const max = Math.max(1, ...days.flatMap((d) => [d.signups, d.matches, d.blitz, d.daily, d.visitors || 0, d.guests || 0]));
     const bars = $('act-days');
     bars.replaceChildren();
     for (const d of days) {
       const col = mk('div', 'day');
       const group = mk('div', 'group');
-      [['s1', d.signups], ['s2', d.matches], ['s3', d.blitz], ['s4', d.daily]].forEach(([cls, v]) => {
+      [['s1', d.signups], ['s2', d.matches], ['s3', d.blitz], ['s4', d.daily], ['s5', d.visitors || 0], ['s6', d.guests || 0]].forEach(([cls, v]) => {
         const b = mk('div', `bar ${cls}`);
         b.style.height = `${Math.round((v / max) * 100)}%`;
         b.title = `${v}`;
         group.appendChild(b);
       });
       col.append(group, mk('div', 'day-l', d.day.slice(8) + '/' + d.day.slice(5, 7)));
-      col.title = `${d.day}: ${d.signups} registros, ${d.matches} partidas, ${d.blitz} blitz, ${d.daily} retos`;
+      col.title = `${d.day}: ${d.visitors || 0} visitantes, ${d.guests || 0} invitados, ${d.signups} registros, ${d.matches} partidas, ${d.blitz} blitz, ${d.daily} retos`;
       bars.appendChild(col);
     }
     state.players = s.recent_players || [];

@@ -210,6 +210,12 @@
     state.lobby = msg;
     const amHost = msg.host === state.me.id;
     $('lb-code').textContent = msg.code;
+    // WhatsApp directo (en los navegadores de TikTok/Instagram no siempre hay «compartir»).
+    const wa = $('lb-wa');
+    if (wa) {
+      wa.hidden = PORTAL || msg.host !== state.me.id;
+      wa.href = `https://wa.me/?text=${encodeURIComponent(`⚔️ ¡Te reto a conquistar España! Únete a mi partida en Yo Soy Listo: ${location.origin}/conquista?c=${msg.code}`)}`;
+    }
     const list = $('lb-members');
     list.replaceChildren();
     for (let i = 0; i < msg.needed; i++) {
@@ -357,6 +363,13 @@
     e.preventDefault();
     socket.send({ t: 'cq_cancel' });
   });
+  // Al acabar: sala nueva con amigos (desde ahí se envía el enlace por WhatsApp).
+  $('end-friends').addEventListener('click', () => {
+    state.phase = 'queue';
+    show('s-connecting');
+    socket.send({ t: 'cq_private', variant: VARIANT });
+  });
+
   $('end-again').addEventListener('click', () => {
     if (VARIANT === 'x18') return x18Menu();
     // Con amigos: nueva sala para seguir con el mismo grupo.
@@ -946,6 +959,11 @@
       state.coinsShown = s.code;
       coinsBox.replaceChildren(me ? coinReward(me) : '');
       if (me && me.xp && window.Hero) coinsBox.appendChild(Hero.xpResult(me.xp));
+    }
+    $('end-friends').hidden = PORTAL || VARIANT === 'x18';
+    if (state.saveShown !== s.code) {
+      state.saveShown = s.code;
+      Player.refresh().catch(() => {}).finally(() => Player.nudgeSave($('end-save')));
     }
     const list = $('end-ranking');
     list.replaceChildren();

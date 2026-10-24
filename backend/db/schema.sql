@@ -689,6 +689,29 @@ alter table players add column if not exists password_hash text;
 alter table players add column if not exists email_verified boolean not null default false;
 -- Portal de juegos del que viene (crazygames…): cuentas anónimas, sin correo.
 alter table players add column if not exists portal_source text;
+-- Invitado de la web (juega sin registrarse): cuándo empezó. Se queda aunque luego guarde su cuenta.
+alter table players add column if not exists guest_at timestamptz;
+
+-- Visitas a la web (sin cookies ni datos personales): totales por día, origen y página.
+create table if not exists visits (
+  day date not null,
+  source text not null,
+  page text not null,
+  views integer not null default 0,
+  uniques integer not null default 0,
+  primary key (day, source, page)
+);
+
+create or replace function count_visits(p_rows jsonb)
+returns void
+language sql as $$
+  insert into visits (day, source, page, views, uniques)
+  select (r->>'day')::date, left(r->>'source', 20), left(r->>'page', 60), sum((r->>'views')::int), sum((r->>'uniques')::int)
+  from jsonb_array_elements(p_rows) r
+  group by 1, 2, 3
+  on conflict (day, source, page) do update
+    set views = visits.views + excluded.views, uniques = visits.uniques + excluded.uniques;
+$$;
 create unique index if not exists players_email_password_idx on players (lower(email)) where password_hash is not null;
 
 -- Enlaces de un solo uso: confirmar el correo ('verify') o cambiar la contraseña ('reset').
@@ -825,7 +848,16 @@ returns table (stats jsonb)
 language sql stable as $$
   with
   tz as (select (now() at time zone 'Europe/Madrid')::date as today),
-  acc as (select * from players where google_sub is not null or password_hash is not null or portal_source is not null),
+  acc as (select * from players where google_sub is not null or password_hash is not null or (portal_source is not null and portal_source <> 'web')),
+  guests as (
+    select p.*,
+      (p.duels_played + p.rooms_played + p.conquista_played > 0
+        or exists (select 1 from blitz_sessions b where b.player_id = p.id)
+        or exists (select 1 from daily_runs r where r.player_id = p.id)) as played,
+      (p.google_sub is not null or p.password_hash is not null) as saved,
+      ((p.last_seen_at at time zone 'Europe/Madrid')::date > (p.created_at at time zone 'Europe/Madrid')::date) as came_back
+    from players p where p.guest_at > now() - interval '14 days'
+  ),
   days as (select generate_series((select today from tz) - 13, (select today from tz), interval '1 day')::date as day),
   human_matches as (
     select m.id, m.mode, m.vs_bot, m.finished_at, (m.finished_at at time zone 'Europe/Madrid')::date as day
@@ -843,6 +875,22 @@ language sql stable as $$
     'by_email', (select count(*) from acc where google_sub is null and password_hash is not null),
     'by_portal', (select count(*) from acc where portal_source is not null),
     'with_hero', (select count(*) from acc where hero is not null),
+    'guests_14d', (select jsonb_build_object(
+        'created', count(*),
+        'played', count(*) filter (where played),
+        'came_back', count(*) filter (where came_back),
+        'saved', count(*) filter (where saved)
+      ) from guests),
+    'visits_14d', (select jsonb_build_object('views', coalesce(sum(views), 0), 'uniques', coalesce(sum(uniques), 0))
+      from visits where day > (select today from tz) - 14),
+    'visit_sources', (select coalesce(jsonb_agg(x order by x.uniques desc, x.views desc), '[]'::jsonb) from (
+        select source, sum(uniques)::int as uniques, sum(views)::int as views
+        from visits where day > (select today from tz) - 14 and source <> 'interno'
+        group by source) x),
+    'visit_pages', (select coalesce(jsonb_agg(x order by x.views desc), '[]'::jsonb) from (
+        select page, sum(views)::int as views, sum(uniques)::int as uniques
+        from visits where day > (select today from tz) - 7
+        group by page order by sum(views) desc limit 15) x),
     'matches_7d', (select coalesce(jsonb_object_agg(mode, n), '{}'::jsonb) from (select mode, count(*) as n from human_matches where finished_at > now() - interval '7 days' group by mode) x),
     'blitz_7d', (select count(*) from blitz_sessions where player_id is not null and started_at > now() - interval '7 days'),
     'daily_today', (select count(*) from daily_runs where day = to_char((select today from tz), 'YYYY-MM-DD') and status = 'done'),
@@ -850,6 +898,8 @@ language sql stable as $$
       select jsonb_agg(jsonb_build_object(
         'day', to_char(d.day, 'YYYY-MM-DD'),
         'signups', (select count(*) from acc where (created_at at time zone 'Europe/Madrid')::date = d.day),
+        'visitors', (select coalesce(sum(uniques), 0) from visits v where v.day = d.day),
+        'guests', (select count(*) from players g where (g.guest_at at time zone 'Europe/Madrid')::date = d.day),
         'matches', (select count(*) from human_matches h where h.day = d.day),
         'blitz', (select count(*) from blitz_sessions b where b.player_id is not null and (b.started_at at time zone 'Europe/Madrid')::date = d.day),
         'daily', (select count(*) from daily_runs r where r.day = to_char(d.day, 'YYYY-MM-DD') and r.status = 'done')

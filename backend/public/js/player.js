@@ -57,6 +57,11 @@ const Player = {
     this.clear();
     Wallet.data = null;
   },
+  // Invitado de la web: se juega al momento; luego puede guardar el progreso con Google o con su correo.
+  get guest() {
+    const d = this.data;
+    return !!(d && d.guest);
+  },
   async portalAccount() {
     // Cuenta que el portal nos ha devuelto (otro dispositivo, o datos borrados): se recupera.
     if (this.token) {
@@ -67,10 +72,11 @@ const Player = {
       }
     }
     try {
-      const res = await api.post('/api/players/portal', { source: YSL.source });
+      const portal = !!(window.YSL && YSL.portal);
+      const res = await api.post('/api/players/portal', { source: portal ? YSL.source : 'web' });
       this.save(res.player, res.token);
       // El portal guarda la cuenta en su nube (progreso en todos los dispositivos del jugador).
-      YSL.notify('saveToken', { token: res.token });
+      if (portal) YSL.notify('saveToken', { token: res.token });
       return res.player;
     } catch (err) {
       if (window.FX) console.error(err);
@@ -85,15 +91,37 @@ const Player = {
   // next: a dónde volver después de entrar (por defecto, esta misma página).
   ensure(message, next) {
     if (this.has()) return Promise.resolve(this.data);
-    // En los portales de juegos se juega al momento, con una cuenta anónima.
-    if (window.YSL && YSL.portal) return this.portalAccount();
-    showLogin(message || 'Para jugar necesitas una cuenta: entra con Google o con tu correo. Así guardamos tus monedas, tu héroe y tus estadísticas en todos tus dispositivos.', next);
-    // No se resuelve: al entrar con Google se vuelve a esta misma página.
-    return new Promise(() => {});
+    // Se juega al momento, con una cuenta anónima (en la web y en los portales de juegos).
+    return this.portalAccount().catch((err) => {
+      // Si no se puede crear (límite, servidor caído…), queda la ventana de entrar de siempre.
+      showLogin(message || 'Para jugar necesitas una cuenta: entra con Google o con tu correo.', next);
+      if (window.FX) console.error(err);
+      return new Promise(() => {});
+    });
+  },
+  // Aviso para invitados: «guarda tu progreso». Se mete dentro de `parent` (si es invitado).
+  nudgeSave(parent, text) {
+    if (!parent || !this.guest || (window.YSL && YSL.portal)) return null;
+    parent.querySelector(':scope > .save-nudge')?.remove();
+    const box = document.createElement('div');
+    box.className = 'save-nudge';
+    const p = document.createElement('p');
+    p.textContent = text || `Estás jugando como invitado (${this.data.name}). Guarda tu progreso para no perder tus monedas y jugar desde cualquier móvil.`;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn';
+    b.textContent = '💾 Guardar mi progreso';
+    b.addEventListener('click', () => showLogin('Crea tu cuenta y te quedas con todo lo que llevas: monedas, partidas y héroe.', location.pathname + location.search, { closable: true, register: true }));
+    box.append(p, b);
+    parent.appendChild(box);
+    return box;
   },
 };
 
-function showLogin(message, next) {
+// Navegadores dentro de apps (TikTok, Instagram, Facebook…): Google no deja entrar desde ahí.
+const IN_APP = /BytedanceWebview|musical_ly|TikTok|Instagram|FBAN|FBAV|FB_IAB|Line\/|Snapchat/i.test(navigator.userAgent || '');
+
+function showLogin(message, next, opts = {}) {
   if (document.querySelector('.overlay.login')) return;
   const target = next || location.pathname + location.search;
   const overlay = document.createElement('div');
@@ -128,6 +156,15 @@ function showLogin(message, next) {
   const $ = (sel) => overlay.querySelector(sel);
   $('.login-msg').textContent = message;
   $('.btn-google').href = Player.loginUrl(next);
+  if (IN_APP) {
+    // Google bloquea el acceso desde estos navegadores: se ofrece el correo y se explica cómo abrirlo fuera.
+    $('.btn-google').hidden = true;
+    $('.login-or span').textContent = 'Entra con tu correo';
+    const hint = document.createElement('p');
+    hint.className = 'login-inapp';
+    hint.textContent = '¿Prefieres Google? Abre esta página en tu navegador (menú ··· → «Abrir en el navegador»).';
+    $('.login-or').after(hint);
+  }
   let mode = 'login';
   const form = $('.login-form');
   const note = (text) => {
@@ -178,7 +215,8 @@ function showLogin(message, next) {
     const body = { email: form.email.value, password: form.password.value };
     try {
       if (mode === 'register') {
-        const res = await api.post('/api/auth/register', { ...body, name: form.name.value });
+        const guestToken = Player.guest ? Player.token : undefined;
+        const res = await api.post('/api/auth/register', { ...body, name: form.name.value, guestToken });
         if (res.needsVerification) {
           note(`📬 Te hemos enviado un correo a ${res.email}. Ábrelo y pulsa el enlace para activar tu cuenta (mira también en «Spam»). `);
           $('.login-note').appendChild(resendButton(res.email));
@@ -204,8 +242,9 @@ function showLogin(message, next) {
       error(err.message);
     }
   });
-  // En la portada se puede cerrar la ventana y seguir mirando.
-  if (location.pathname === '/') {
+  if (opts.register) setMode('register');
+  // En la portada (o si se pide) se puede cerrar la ventana y seguir mirando.
+  if (location.pathname === '/' || opts.closable) {
     $('.login-back').textContent = 'Cerrar';
     $('.login-back').addEventListener('click', (e) => {
       e.preventDefault();
@@ -213,7 +252,7 @@ function showLogin(message, next) {
     });
   }
   document.body.appendChild(overlay);
-  $('.btn-google').focus();
+  (IN_APP ? form.email : $('.btn-google')).focus();
 }
 
 // Monedas y comodines del jugador.
@@ -309,6 +348,7 @@ function renderMeChip() {
 const BIRTHDATE_FREE_PAGES = ['/edad', '/entrar', '/privacidad', '/verificar'];
 function needsBirthdate(data) {
   if (window.YSL && YSL.portal) return false;
+  if (data && data.guest) return false;
   return data && data.hasAccount && data.birthdateSet === false && !BIRTHDATE_FREE_PAGES.includes(location.pathname);
 }
 function askBirthdate() {

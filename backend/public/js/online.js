@@ -493,6 +493,7 @@
     const me = msg.ranking.find((r) => r.playerId === state.me.id);
     const won = me && me.position === 1;
     const tie = won && msg.ranking.filter((r) => r.position === 1).length > 1;
+    Player.nudgeSave(document.getElementById('end-save'));
     $('end-title').textContent = tie ? '🤝 ¡Empate!' : won ? '🏆 ¡Has ganado!' : me ? `Has quedado ${me.position}º` : 'Fin de la partida';
     FX.endMascot($('s-end').querySelector('.card'), !!(me && me.position <= (msg.mode === 'duel' ? 1 : 3)));
     if (won) {

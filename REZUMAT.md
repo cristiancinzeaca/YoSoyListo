@@ -245,3 +245,13 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - **Monetizare** (când există trafic): Google AdSense + banner de cookie-uri (obligatoriu în UE) + pagina „Aviso legal” (cere numele și NIF-ul titularului).
 - Mai multe întrebări și categorii (de exemplu „España”, cinema, muzică). Formatul e explicat în `README.md`.
 - Aplicație pentru magazinele Android/iOS din același cod.
+
+## 5s. Joc fără cont pe site + contor de vizite (oct. 2026)
+- **Invitați web**: `Player.ensure()` creează un cont anonim (`POST /api/players/portal` cu `source: 'web'`, `portal_source='web'`, `guest_at`). `toPublic` dă `guest: true`, `portal: null`. Fără dată de naștere, fără chat (server: 403 la scris; raportare/blocare permise), fără +18.
+- **Salvarea progresului**: `Player.nudgeSave(el)` („💾 Guardar mi progreso”) pe ecranele de final (Conquista, Blitz, duel/sală), pe prima pagină și în profil. Google (`guestToken` la `/api/auth/complete`) și înregistrarea cu email (`guestToken` la `/api/auth/register`) transformă ACELAȘI rând: se păstrează monedele, nu se mai dă bonusul de bun venit, `created: false`.
+- **Navigatoare din aplicații** (TikTok, Instagram, Facebook): Google nu permite login acolo → butonul Google e ascuns, rămâne emailul + indicația „Abrir en el navegador”.
+- **Cola**: așteptare 8 s (Conquista/duel), 4 s (portal), buton „▶️ Jugar ya” (`cq_now`), numărătoare inversă vie.
+- **Prima pagină**: „▶️ Jugar ahora” + „👥 Reta a 2 amigos”. Final Conquista: „👥 Reta a tus amigos” → sală privată cu buton WhatsApp (`wa.me`).
+- **Vizite** (`modules/visits`): fără cookies; numără GET-urile de pagini HTML (fără boți/fișiere), pe zi/origine/pagină; unicii cu amprentă zilnică doar în memorie (sare nouă în fiecare zi). Se scriu la 60 s cu `count_visits()` în tabela `visits`. Originea: `?utm_source=` / `?ref=`, altfel Referer (tiktok, google, instagram…), `directo`, `interno`.
+- **Admin**: secțiunea „Embudo”: vizitatori unici → invitați → au jucat → revin → și-au salvat contul; tabele cu originea și paginile; barele pe zile au vizitatori și invitați.
+- Linkul din bio TikTok: `https://www.yosoylisto.es/?utm_source=tiktok` (și `?utm_source=tiktok2` pentru al doilea cont), ca să știm de unde vin.

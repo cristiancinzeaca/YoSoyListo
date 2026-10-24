@@ -551,6 +551,8 @@ function attachMultiplayer(server, deps = {}) {
     async chat(conn, msg) {
       const room = currentRoom(conn.player.id);
       if (!room) throw new GameError('No estás en ninguna partida');
+      // Invitados y portales no escriben en el chat (no hay edad ni forma de moderarlos bien).
+      if (conn.player.guest || conn.player.portal) throw new GameError('Para usar el chat necesitas una cuenta');
       let message;
       try {
         message = await postMatchChat(conn.player.id, room.code, msg.text);

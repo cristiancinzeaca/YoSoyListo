@@ -1,5 +1,5 @@
 const express = require('express');
-const { requireAdmin } = require('../../core/http');
+const { requireAdmin, httpError } = require('../../core/http');
 const { rateLimit } = require('../../core/rateLimit');
 const { requirePlayer } = require('../players/auth');
 const service = require('./service');
@@ -18,6 +18,12 @@ router.post('/admin/reports/:id', requireAdmin, async (req, res) => {
 
 // ---------- jugadores ----------
 router.use(requirePlayer);
+// Invitados y portales pueden leer, pero escribir en el chat pide una cuenta (con fecha de nacimiento).
+router.use((req, res, next) => {
+  const safety = req.path === '/report' || req.path.startsWith('/block');
+  if (req.method !== 'GET' && !safety && (req.player.guest || req.player.portal)) return next(httpError(403, 'Para usar el chat necesitas una cuenta'));
+  next();
+});
 
 router.get('/lobby', rateLimit({ windowMs: 60_000, max: 90 }), async (req, res) => {
   res.json(await service.lobby(req.player.id, req.query.after));

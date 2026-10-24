@@ -259,6 +259,7 @@
     $('result-streak').textContent = result.bestStreak;
 
     renderCoins(result);
+    Player.nudgeSave(document.getElementById('end-save'));
     if (result.rank) {
       $('rank-msg').textContent = `🏆 Puesto ${result.rank} del ranking histórico`;
       $('rank-msg').hidden = false;
