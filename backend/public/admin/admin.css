@@ -64,3 +64,5 @@ h3 { font-size: 0.95rem; margin: 18px 0 8px; }
 .tbl td { border-bottom: 1px solid #f0ecf8; padding: 6px; white-space: nowrap; }
 label.inline { display: flex; gap: 6px; align-items: center; font-weight: 600; margin: 0; }
 #act-search { margin-bottom: 8px; }
+
+.s5 { background: #3b82f6; } .s6 { background: #a3a3a3; }

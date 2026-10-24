@@ -16,6 +16,13 @@
   }
 
   $('profile').hidden = false;
+  if (me.guest) {
+    // Invitado: lo primero, guardar el progreso (y sin «cerrar sesión», que lo perdería).
+    const box = document.createElement('div');
+    $('profile').prepend(box);
+    Player.nudgeSave(box);
+    $('logout-btn').hidden = true;
+  }
   $('name').value = me.name;
   $('p-avatar').src = me.hero && window.Hero ? Hero.portraitSrc(me.hero) : FX.avatar(me.name, me.avatar).src;
   $('p-hero-txt').textContent = me.hero ? `Nivel ${me.level} · ${me.hero.title} · ⚔️ ${me.power}` : 'Crea tu héroe';

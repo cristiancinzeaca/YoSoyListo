@@ -7,7 +7,7 @@ function createFakeDb() {
     questions: [], numeric_questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [],
     player_sessions: [], player_items: [], coin_ledger: [], country_owners: [], country_attacks: [],
     chat_messages: [], chat_reports: [], chat_blocks: [], chat_reads: [], campaign_runs: [], auth_tokens: [], daily_runs: [],
-    weekly_points: [], weekly_payouts: [], weekly_prizes: [],
+    weekly_points: [], weekly_payouts: [], weekly_prizes: [], visits: [],
   };
 
   class Query {
@@ -361,6 +361,16 @@ function createFakeDb() {
           ledger(r.player_id, args.p_prizes[i], `weekly:${args.p_week}`);
         });
         return { data: [{ paid: top.length }], error: null };
+      }
+      if (name === 'count_visits') {
+        for (const r of args.p_rows) {
+          const row = tables.visits.find((v) => v.day === r.day && v.source === r.source && v.page === r.page);
+          if (row) {
+            row.views += r.views;
+            row.uniques += r.uniques;
+          } else tables.visits.push({ ...r });
+        }
+        return { data: null, error: null };
       }
       if (name === 'admin_stats') {
         const acc = tables.players.filter((p) => p.google_sub || p.password_hash);

@@ -14,6 +14,8 @@ function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+const isWebGuest = (row) => row.portal_source === 'web' && !row.google_sub && !row.password_hash;
+
 function toPublic(row) {
   const hero = heroes.summary(row);
   return {
@@ -30,8 +32,10 @@ function toPublic(row) {
     conquistaWon: row.conquista_won ?? 0,
     createdAt: row.created_at,
     hasAccount: !!(row.google_sub || row.password_hash || row.portal_source),
+    // Invitado de la web: juega al momento con una cuenta anónima; puede guardarla luego con Google o correo.
+    guest: isWebGuest(row),
     // Jugador que entra desde un portal de juegos (CrazyGames…): sin correo ni fecha de nacimiento.
-    portal: row.portal_source || null,
+    portal: isWebGuest(row) ? null : row.portal_source || null,
     coins: row.coins ?? 0,
     avatar: row.avatar && AVATARS[row.avatar] ? row.avatar : null,
     // Héroe, nivel y poder (lo que ven los rivales).
@@ -169,6 +173,20 @@ async function loginWithGoogle(identity, guestToken, { onCreated } = {}) {
       }
     }
     const guest = guestToken ? await findByToken(guestToken) : null;
+    // Invitado de la web que guarda su progreso: la misma cuenta, con sus monedas y su historial.
+    if (guest && guest.guest) {
+      const { data: linked, error: linkErr } = await db
+        .from('players')
+        .update({ google_sub: identity.sub, email: identity.email || null, email_verified: true, portal_source: null })
+        .eq('id', guest.id)
+        .is('google_sub', null)
+        .select('id');
+      if (linkErr) throw dbError(linkErr, 'players.login.guest');
+      if (linked.length) {
+        const token = await createSession(guest.id);
+        return { player: await findById(guest.id), token, created: false };
+      }
+    }
     if (guest && !guest.hasAccount) {
       const { data: linked, error: linkErr } = await db
         .from('players')
@@ -203,7 +221,7 @@ async function loginWithGoogle(identity, guestToken, { onCreated } = {}) {
 
 // Jugador de un portal de juegos (CrazyGames…): cuenta anónima creada al momento, sin correo.
 // No tiene fecha de nacimiento, así que nunca ve el modo +18.
-const PORTALS = ['crazygames'];
+const PORTALS = ['crazygames', 'web'];
 async function createPortal(source, { onCreated } = {}) {
   if (!PORTALS.includes(source)) throw httpError(400, 'Portal no válido');
   const db = getDb();
@@ -212,7 +230,7 @@ async function createPortal(source, { onCreated } = {}) {
     const name = numberedName('Listo', crypto.randomInt(1000, 1000000));
     const { data: row, error } = await db
       .from('players')
-      .insert({ name, name_key: nameKey(name), portal_source: source, coins: COINS.welcome, avatar: randomFreeAvatar() })
+      .insert({ name, name_key: nameKey(name), portal_source: source, guest_at: source === 'web' ? new Date().toISOString() : null, coins: COINS.welcome, avatar: randomFreeAvatar() })
       .select('id')
       .single();
     if (error && error.code === '23505' && attempt < 5) continue;
@@ -261,10 +279,24 @@ async function birthdayGift(playerId) {
 }
 
 // Cuenta nueva con correo y contraseña (el nombre se elige libre a partir del deseado).
-async function createLocal({ email, wantedName, passwordHash, verified }) {
+async function createLocal({ email, wantedName, passwordHash, verified, guestToken }) {
   const db = getDb();
   let fallback = wantedName;
   if (!validatePlayerName(fallback).value) fallback = `Jugador${crypto.randomInt(1000, 10000)}`;
+  // Invitado de la web que crea su cuenta: se queda con sus monedas y su historial.
+  const guest = guestToken ? await findByToken(guestToken) : null;
+  if (guest && guest.guest) {
+    const name = await freeName(fallback);
+    const { data, error } = await db
+      .from('players')
+      .update({ name, name_key: nameKey(name), email, password_hash: passwordHash, email_verified: !!verified, portal_source: null })
+      .eq('id', guest.id)
+      .is('password_hash', null)
+      .select('id');
+    if (error && error.code === '23505') throw httpError(409, 'Ya hay una cuenta con ese correo');
+    if (error) throw dbError(error, 'players.createLocal.guest');
+    if (data.length) return { id: guest.id, linked: true };
+  }
   for (let attempt = 0; attempt < 6; attempt++) {
     const name = attempt < 3 ? await freeName(fallback) : numberedName(fallback, crypto.randomInt(100, 100000));
     const { data, error } = await db
@@ -283,7 +315,7 @@ async function createLocal({ email, wantedName, passwordHash, verified }) {
     if (error && error.code === '23505' && String(error.constraint || error.message).includes('name_key')) continue;
     if (error && error.code === '23505') throw httpError(409, 'Ya hay una cuenta con ese correo');
     if (error) throw dbError(error, 'players.createLocal');
-    return data.id;
+    return { id: data.id, linked: false };
   }
   throw httpError(500, 'No se pudo crear la cuenta');
 }

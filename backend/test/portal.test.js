@@ -7,6 +7,8 @@ const { CQ } = require('../modules/conquista/config');
 const { ConquistaGame } = require('../modules/conquista/game');
 const english = require('../modules/english/questions');
 const { createFakeDb } = require('./fakeDb');
+const { login } = require('./login');
+const { sourceOf } = require('../modules/visits');
 
 Object.assign(CQ, { introMs: 20, numericMs: 300, choiceMs: 300, pickMs: 250, resultMs: 20, botWaitMs: 200 });
 
@@ -147,4 +149,64 @@ test('portal en inglés: partida contra bots con preguntas en inglés', async ()
   assert.equal(final.result.ranking.length, 3);
   assert.ok(asked.size > 0);
   for (const text of asked) assert.ok(englishTexts.has(text), `pregunta en inglés: ${text}`);
+});
+
+async function webGuest() {
+  const res = await fetch(`http://${base}/api/players/portal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source: 'web' }),
+  });
+  assert.equal(res.status, 201);
+  return res.json();
+}
+
+test('web sin cuenta: invitado al momento, sin chat, y guarda su progreso con correo', async () => {
+  const { player, token } = await webGuest();
+  assert.equal(player.guest, true);
+  assert.equal(player.portal, null);
+  assert.equal(player.hasAccount, true);
+  const auth = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const chat = await fetch(`http://${base}/api/chat/lobby`, { method: 'POST', headers: auth, body: JSON.stringify({ text: 'hola' }) });
+  assert.equal(chat.status, 403);
+  db.tables.players.find((p) => p.id === player.id).coins = 777;
+  const reg = await fetch(`http://${base}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'invitado@example.com', password: 'clave-larga-123', name: 'Guardon', guestToken: token }),
+  });
+  const body = await reg.json();
+  assert.equal(reg.status, 201, JSON.stringify(body));
+  const p = body.player || (await (await fetch(`http://${base}/api/players/me`, { headers: auth })).json());
+  assert.equal(p.id, player.id, 'misma cuenta');
+  assert.equal(p.guest, false);
+  assert.equal(p.coins, 777, 'conserva sus monedas');
+});
+
+test('web sin cuenta: al entrar con Google se queda la misma cuenta', async () => {
+  const { player, token } = await webGuest();
+  const res = await login(base, 'Gugle', { guestToken: token, email: 'gugle@example.com' });
+  assert.equal(res.player.id, player.id);
+  assert.equal(res.player.guest, false);
+  assert.equal(res.created, false);
+});
+
+test('visitas: se cuentan las páginas (no bots ni ficheros) con su origen', async () => {
+  const visits = server.visits;
+  await visits.flush();
+  const html = { Accept: 'text/html', 'User-Agent': 'Mozilla/5.0 (iPhone) BytedanceWebview' };
+  await fetch(`http://${base}/`, { headers: { ...html, Referer: 'https://www.tiktok.com/' } });
+  await fetch(`http://${base}/conquista?utm_source=Instagram`, { headers: html });
+  await fetch(`http://${base}/`, { headers: { Accept: 'text/html', 'User-Agent': 'Googlebot/2.1' } });
+  await fetch(`http://${base}/styles.css`, { headers: html });
+  await new Promise((r) => setTimeout(r, 50));
+  await visits.flush();
+  const rows = db.tables.visits;
+  assert.deepEqual(rows.find((r) => r.page === '/' && r.source === 'tiktok'), { day: rows[0].day, source: 'tiktok', page: '/', views: 1, uniques: 1 });
+  assert.ok(rows.find((r) => r.page === '/conquista' && r.source === 'instagram'));
+  assert.equal(rows.reduce((a, r) => a + r.views, 0), 2, 'sin bots ni ficheros');
+  const req = (h, q = {}) => ({ query: q, hostname: 'www.yosoylisto.es', get: (k) => h[k.toLowerCase()] });
+  assert.equal(sourceOf(req({ referer: 'https://www.google.es/' })), 'google');
+  assert.equal(sourceOf(req({})), 'directo');
+  assert.equal(sourceOf(req({ referer: 'https://www.yosoylisto.es/blitz' })), 'interno');
 });

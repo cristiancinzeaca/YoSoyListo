@@ -95,7 +95,7 @@ async function sendVerify(row, base) {
 }
 
 // Crear cuenta.
-async function register({ email, password, name } = {}, base) {
+async function register({ email, password, name, guestToken } = {}, base) {
   const e = normEmail(email);
   const bad = checkPassword(password);
   if (bad) throw httpError(400, bad);
@@ -104,8 +104,8 @@ async function register({ email, password, name } = {}, base) {
   if (existing.some((r) => r.google_sub)) throw httpError(409, 'Ese correo ya tiene cuenta con Google: usa «Entrar con Google».');
   const wantedName = String(name || e.split('@')[0]).replace(/[^\p{L}\p{N} _.-]/gu, '').slice(0, 20) || 'Jugador';
   const needsVerify = mail.configured();
-  const id = await players.createLocal({ email: e, wantedName, passwordHash: await hashPassword(password), verified: !needsVerify });
-  await shop.grantWelcome(id);
+  const { id, linked } = await players.createLocal({ email: e, wantedName, passwordHash: await hashPassword(password), verified: !needsVerify, guestToken });
+  if (!linked) await shop.grantWelcome(id);
   if (needsVerify) {
     const row = (await byEmail(e)).find((r) => r.id === id);
     canMail(e, 'verify');
@@ -118,7 +118,7 @@ async function register({ email, password, name } = {}, base) {
     return { needsVerification: true, email: e };
   }
   const token = await players.createSession(id);
-  return { player: await players.findById(id), token, created: true };
+  return { player: await players.findById(id), token, created: !linked };
 }
 
 // Entrar.

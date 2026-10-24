@@ -78,7 +78,8 @@
     storage.set('ysl:category', select.value);
     if (!Player.has()) {
       event.preventDefault();
-      Player.ensure(null, select.value ? `/blitz?cat=${encodeURIComponent(select.value)}` : '/blitz');
+      const target = select.value ? `/blitz?cat=${encodeURIComponent(select.value)}` : '/blitz';
+      Player.ensure(null, target).then(() => (location.href = target));
     }
   });
 
@@ -209,6 +210,7 @@
     }
   }
 
+  Player.nudgeSave(document.getElementById('home-save'));
   loadCategories();
   loadRanking('week');
   heroBanner();

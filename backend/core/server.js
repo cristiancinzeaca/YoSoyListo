@@ -39,6 +39,8 @@ function baseUrl(req) {
 // Huella de la clave de subida de la app de Android (no es secreta).
 const ANDROID_CERTS = ['3A:79:37:F0:8C:AE:C8:32:B5:A5:5A:06:AD:FA:C9:2F:34:3A:4F:5A:B7:0E:FF:22:41:DB:BD:E9:D4:FA:11:EE'];
 
+const { createVisits } = require('../modules/visits');
+
 const isPortalPath = (p) => p === '/portal' || p.startsWith('/portal/');
 
 function createApp() {
@@ -86,6 +88,10 @@ function createApp() {
     if ((req.method !== 'GET' && req.method !== 'HEAD') || req.path === '/health' || req.path.startsWith('/api/')) return next();
     res.redirect(301, target + req.originalUrl);
   });
+
+  // Contador de visitas (sin cookies): por día, origen y página.
+  app.visits = createVisits();
+  app.use(app.visits.middleware);
 
   app.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'yosoylisto-backend' });
@@ -184,7 +190,9 @@ function createApp() {
 
 // Servidor HTTP + partidas en red por WebSocket en el mismo puerto.
 function createServer(deps) {
-  const server = http.createServer(createApp());
+  const app = createApp();
+  const server = http.createServer(app);
+  server.visits = app.visits;
   const multiplayer = attachMultiplayer(server, deps);
   server.multiplayer = multiplayer;
   live.setStats(multiplayer.stats);
@@ -225,6 +233,7 @@ if (require.main === module) {
   const shutdown = (signal) => {
     console.log(`${signal} recibido, cerrando...`);
     server.multiplayer.close();
+    server.visits.flush().catch(() => {});
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(0), 10_000).unref();
   };
