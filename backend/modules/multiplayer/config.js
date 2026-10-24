@@ -7,7 +7,7 @@ const config = {
   revealMs: 3_500,
   countdownMs: 3_000,
   // Si en este tiempo no aparece rival humano, se juega contra un bot.
-  botWaitMs: 12_000,
+  botWaitMs: 8_000,
   // Tiempo para volver tras perder la conexión estando en una sala de espera.
   lobbyGraceMs: 30_000,
   // Las salas terminadas se borran tras este tiempo sin actividad.

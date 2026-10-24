@@ -13,7 +13,7 @@ const CQ = {
   defenseBonus: 100,
   towers: 3,
   // Si no se juntan 3 personas en este tiempo, se completa con bots.
-  botWaitMs: 15_000,
+  botWaitMs: 8_000,
 };
 
 module.exports = { CQ };

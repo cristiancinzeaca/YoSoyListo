@@ -135,7 +135,7 @@ function attachMultiplayer(server, deps = {}) {
     // Versión internacional (CrazyGames…): preguntas y textos en inglés, sin aliados (sus preguntas son en español).
     en: { players: CQ.players, prefix: 'E', loadNumeric: loadNumericEn, loadChoice: loadChoiceEn, allyQuestion: null, rounds: CQ.battleRounds, adult: false, lang: 'en',
       // En los portales hay que llegar rápido a jugar: se espera menos antes de poner bots.
-      botWaitMs: Math.min(CQ.botWaitMs, 6_000) },
+      botWaitMs: Math.min(CQ.botWaitMs, 4_000) },
   };
   const variantOf = (v) => (Object.prototype.hasOwnProperty.call(CQ_VARIANTS, v) ? v : 'normal');
 
@@ -485,6 +485,24 @@ function attachMultiplayer(server, deps = {}) {
       const entry = [...privateCq.entries()].find(([, w]) => w.hostId === me.id);
       if (!entry) throw new GameError('No tienes ninguna partida privada esperando');
       launchLobby(entry[0]);
+    },
+    // En la cola pública, «Jugar ya»: empieza con quien esté esperando y el resto, bots.
+    cq_now(conn) {
+      const me = conn.player.id;
+      const variant = Object.keys(cqQueues).find((v) => cqQueues[v].has(me));
+      if (!variant) return;
+      const q = cqQueues[variant];
+      const mine = q.get(me);
+      const rest = [...q.entries()].filter(([id]) => id !== me && clients.has(id))
+        .sort((a, b) => Math.abs(mine.score - a[1].score) - Math.abs(mine.score - b[1].score))
+        .slice(0, CQ_VARIANTS[variant].players - 1).map(([id]) => id);
+      const ids = [me, ...rest];
+      for (const id of ids) q.delete(id);
+      if (q.size === 0) {
+        clearTimeout(cqTimers[variant]?.handle);
+        cqTimers[variant] = null;
+      }
+      return launchConquista(variant, ids);
     },
     cq_cancel(conn) {
       leaveQueue(conn.player.id);

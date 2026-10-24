@@ -330,14 +330,28 @@
   function onQueued(msg) {
     state.phase = 'queue';
     show('s-queue');
+    $('q-now').disabled = false;
     $('q-waiting').textContent = msg.waiting;
     $('q-needed').textContent = msg.needed || 3;
     if (msg.tier) $('q-tier').textContent = `Tu nivel: ${msg.tier.icon} ${msg.tier.name}`;
-    const secs = msg.startsInMs !== null ? Math.ceil(msg.startsInMs / 1000) : null;
-    $('q-bots').textContent = secs
-      ? `Si en ${secs} s no aparece nadie más, completaremos la partida con bots.`
-      : 'Si no aparece nadie, completaremos la partida con bots.';
+    // Cuenta atrás visible, segundo a segundo.
+    clearInterval(state.queueTick);
+    const until = msg.startsInMs !== null ? Date.now() + msg.startsInMs : null;
+    const paint = () => {
+      const secs = until ? Math.ceil((until - Date.now()) / 1000) : null;
+      $('q-bots').textContent = secs > 0
+        ? `Si en ${secs} s no aparece nadie más, completaremos la partida con bots.`
+        : 'Si no aparece nadie, completaremos la partida con bots.';
+      if (state.phase !== 'queue' || !(secs > 0)) clearInterval(state.queueTick);
+    };
+    paint();
+    if (until) state.queueTick = setInterval(paint, 1000);
   }
+
+  $('q-now').addEventListener('click', () => {
+    $('q-now').disabled = true;
+    socket.send({ t: 'cq_now' });
+  });
 
   $('q-cancel').addEventListener('click', (e) => {
     e.preventDefault();
