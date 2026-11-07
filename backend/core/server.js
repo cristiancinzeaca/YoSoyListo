@@ -37,7 +37,7 @@ function baseUrl(req) {
 }
 
 // Huella de la clave de subida de la app de Android (no es secreta).
-const ANDROID_CERTS = ['3A:79:37:F0:8C:AE:C8:32:B5:A5:5A:06:AD:FA:C9:2F:34:3A:4F:5A:B7:0E:FF:22:41:DB:BD:E9:D4:FA:11:EE'];
+const ANDROID_CERTS = ['9E:17:3E:1F:DB:E9:70:E7:B2:B9:DA:12:ED:E3:F6:E3:8B:77:51:31:03:1E:7C:16:F1:5E:CD:41:92:A4:A0:02'];
 
 const { createVisits } = require('../modules/visits');
 
