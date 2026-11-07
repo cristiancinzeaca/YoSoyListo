@@ -421,4 +421,12 @@ async function leaderboard(limit = 20, mode = 'duel') {
   }));
 }
 
-module.exports = { createPortal, createLocal, setBirthdate, birthdayGift, checkName, findByToken, findById, rename, profile, leaderboard, hashToken, loginWithGoogle, createSession, logout };
+// Borra la cuenta y todo lo suyo (sesiones, monedas, objetos, chat, países… van en cascada; en las partidas queda como jugador anónimo).
+async function deleteAccount(playerId) {
+  const { error } = await getDb().from('players').delete().eq('id', playerId);
+  if (error) throw dbError(error, 'deleteAccount');
+  return { deleted: true };
+}
+
+module.exports = {
+  deleteAccount, createPortal, createLocal, setBirthdate, birthdayGift, checkName, findByToken, findById, rename, profile, leaderboard, hashToken, loginWithGoogle, createSession, logout };

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b1035">
+  <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Borrar cuenta · Yo Soy Listo</title>
+  <meta name="description" content="Cómo borrar tu cuenta de Yo Soy Listo y qué datos se eliminan.">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a class="logo" href="/" aria-label="Yo Soy Listo · Inicio"><img src="/img/logo.webp" alt="Yo Soy Listo" width="900" height="580"></a>
+      <a class="me-chip" id="me-chip" href="/perfil">👤 Mi perfil</a>
+    <main class="card prose">
+      <p class="ok-box" id="done" hidden>✅ Tu cuenta se ha borrado. ¡Gracias por jugar!</p>
+      <h1>Borrar tu cuenta de Yo Soy Listo</h1>
+      <p>Puedes borrar tu cuenta de <strong>Yo Soy Listo</strong> (desarrollador: ElGatoLoco) cuando quieras, desde la web o desde la app de Android.</p>
+
+      <h2>Desde el juego (al momento)</h2>
+      <ol>
+        <li>Entra en <a href="/perfil">Mi perfil</a> con tu cuenta.</li>
+        <li>Abajo del todo, pulsa <strong>«Borrar mi cuenta»</strong>.</li>
+        <li>Escribe <strong>BORRAR</strong> y confirma.</li>
+      </ol>
+
+      <h2>Por correo</h2>
+      <p>Si no puedes entrar, escríbenos a <a href="mailto:cristiancinzeaca@gmail.com?subject=Borrar%20mi%20cuenta%20de%20Yo%20Soy%20Listo">cristiancinzeaca@gmail.com</a> desde el correo de tu cuenta, con el asunto «Borrar mi cuenta», y la borraremos en un máximo de 30 días.</p>
+
+      <h2>Qué se borra</h2>
+      <ul>
+        <li>Tu perfil: nombre, correo, cuenta de Google vinculada, fecha de nacimiento y contraseña cifrada.</li>
+        <li>Tus monedas, avatares, comodines, héroe, países, progreso de campaña, retos y puntos de la liga.</li>
+        <li>Tus mensajes del chat, reportes y bloqueos.</li>
+      </ul>
+      <p>En los resultados de partidas pasadas de otros jugadores puedes seguir apareciendo como jugador anónimo, sin tu nombre ni ningún dato tuyo. No guardamos copias de tu cuenta después del borrado.</p>
+    </main>
+    <footer class="site-footer">© Yo Soy Listo · <a href="/privacidad">Privacidad</a></footer>
+  </div>
+  <script>
+    if (new URLSearchParams(location.search).has('hecho')) document.getElementById('done').hidden = false;
+  </script>
+</body>
+</html>
