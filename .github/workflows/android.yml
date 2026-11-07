@@ -1,5 +1,5 @@
 # Construye la app de Android (Trusted Web Activity) y la deja en Releases → «android-latest».
-# Sin clave de firma (secretos ANDROID_KEYSTORE_B64 y ANDROID_KEYSTORE_PASSWORD) solo sale un APK de prueba.
+# Firma con android/upload.jks.enc (cifrada) + secreto ANDROID_KEYSTORE_PASSWORD; sin él, solo sale un APK de prueba.
 name: Android
 
 on:
@@ -28,12 +28,16 @@ jobs:
 
       - name: Clave de firma
         env:
-          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
-          if [ -n "$KS_B64" ]; then
-            printf '%s' "$KS_B64" | tr -d ' \r\n\t' | base64 -d > "$RUNNER_TEMP/upload.jks" || { echo "::error::ANDROID_KEYSTORE_B64 no es base64 válido (¿copiado incompleto?)"; exit 1; }
-            echo "Longitud del secreto (sin espacios): $(printf '%s' "$KS_B64" | tr -d ' \r\n\t' | wc -c) (debe ser 3532)"
+          # La clave de subida va cifrada en el repo (android/upload.jks.enc); la contraseña es el secreto ANDROID_KEYSTORE_PASSWORD.
+          if [ -n "$KEYSTORE_PASSWORD" ] && [ -f android/upload.jks.enc ]; then
+            KP=$(printf '%s' "$KEYSTORE_PASSWORD" | tr -d ' \r\n\t')
+            openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in android/upload.jks.enc -out "$RUNNER_TEMP/upload.jks" -pass "pass:$KP" \
+              || { echo "::error::No se pudo descifrar la clave: revisa el secreto ANDROID_KEYSTORE_PASSWORD"; exit 1; }
             echo "KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+            echo "::add-mask::$KP"
+            echo "KEYSTORE_PASSWORD=$KP" >> "$GITHUB_ENV"
             echo "Firmado con la clave de subida."
           else
             echo "Sin clave de firma: solo APK de prueba."
@@ -42,7 +46,6 @@ jobs:
       - name: Compilar
         working-directory: android
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           VERSION_CODE: ${{ github.run_number }}
           VERSION_NAME: 1.0.${{ github.run_number }}
         run: |
@@ -58,8 +61,6 @@ jobs:
 
       - name: Huella SHA-256 de la firma (para assetlinks.json)
         if: env.KEYSTORE_PATH != ''
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: keytool -list -v -keystore "$KEYSTORE_PATH" -alias upload -storepass "$KEYSTORE_PASSWORD" | grep 'SHA256:' | tee out/sha256.txt
 
       - name: Publicar en Releases (android-latest)
