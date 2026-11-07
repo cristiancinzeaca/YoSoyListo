@@ -31,7 +31,8 @@ jobs:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
         run: |
           if [ -n "$KS_B64" ]; then
-            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            printf '%s' "$KS_B64" | tr -d ' \r\n\t' | base64 -d > "$RUNNER_TEMP/upload.jks" || { echo "::error::ANDROID_KEYSTORE_B64 no es base64 válido (¿copiado incompleto?)"; exit 1; }
+            echo "Longitud del secreto (sin espacios): $(printf '%s' "$KS_B64" | tr -d ' \r\n\t' | wc -c) (debe ser 3532)"
             echo "KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
             echo "Firmado con la clave de subida."
           else
