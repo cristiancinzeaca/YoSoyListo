@@ -38,6 +38,9 @@ const api = {
   patch(path, body) {
     return this.request(path, { method: 'PATCH', body: JSON.stringify(body || {}) });
   },
+  del(path, body) {
+    return this.request(path, { method: 'DELETE', body: JSON.stringify(body || {}) });
+  },
 };
 
 const CATEGORY_NAMES = {

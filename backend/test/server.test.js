@@ -65,7 +65,7 @@ test('assetlinks.json para la app de Android', async () => {
     const [entry] = await res.json();
     assert.equal(entry.target.package_name, 'es.yosoylisto.app');
     assert.deepEqual(entry.relation, ['delegate_permission/common.handle_all_urls']);
-    assert.equal(entry.target.sha256_cert_fingerprints.length, 1);
+    assert.equal(entry.target.sha256_cert_fingerprints.length, 2);
     assert.match(entry.target.sha256_cert_fingerprints[0], /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/);
   } finally {
     delete process.env.ANDROID_CERT_SHA256;

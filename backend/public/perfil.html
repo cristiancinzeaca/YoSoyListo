@@ -53,8 +53,19 @@
         <p>Tu cuenta está vinculada a Google: puedes entrar desde cualquier móvil u ordenador y conservarás tus monedas, avatares y estadísticas.</p>
         <button class="btn btn-secondary" type="button" id="logout-btn">Cerrar sesión</button>
       </section>
+      <section class="card danger-zone" id="delete-card">
+        <h2>Borrar mi cuenta</h2>
+        <p>Se borran para siempre tu perfil, tus monedas, avatares, héroe, países y mensajes. No se puede deshacer.</p>
+        <button class="btn btn-secondary" type="button" id="delete-open">🗑️ Borrar mi cuenta</button>
+        <form id="delete-form" hidden>
+          <label for="delete-confirm">Escribe <strong>BORRAR</strong> para confirmar:</label>
+          <input id="delete-confirm" autocomplete="off" autocapitalize="characters" maxlength="10">
+          <button class="btn btn-danger" type="submit">Borrar definitivamente</button>
+          <p class="error-box" id="delete-error" hidden></p>
+        </form>
+      </section>
     </main>
-    <footer class="site-footer">© Yo Soy Listo · <a href="/privacidad">Privacidad</a></footer>
+    <footer class="site-footer">© Yo Soy Listo · <a href="/privacidad">Privacidad</a> · <a href="/borrar-cuenta">Borrar cuenta</a></footer>
   </div>
   <script src="/js/fx.js"></script>
   <script src="/js/api.js"></script>

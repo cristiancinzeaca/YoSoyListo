@@ -36,8 +36,11 @@ function baseUrl(req) {
   return `${req.protocol}://${req.get('host')}`;
 }
 
-// Huella de la clave de subida de la app de Android (no es secreta).
-const ANDROID_CERTS = ['9E:17:3E:1F:DB:E9:70:E7:B2:B9:DA:12:ED:E3:F6:E3:8B:77:51:31:03:1E:7C:16:F1:5E:CD:41:92:A4:A0:02'];
+// Huellas de la app de Android: clave de subida y clave de firma de Google Play.
+const ANDROID_CERTS = [
+  '9E:17:3E:1F:DB:E9:70:E7:B2:B9:DA:12:ED:E3:F6:E3:8B:77:51:31:03:1E:7C:16:F1:5E:CD:41:92:A4:A0:02',
+  '20:C1:07:97:0A:45:15:51:48:F9:13:67:D3:2E:11:FA:81:4F:0C:D2:7A:E5:4F:FF:23:A1:E6:16:AF:27:10:C3',
+];
 
 const { createVisits } = require('../modules/visits');
 

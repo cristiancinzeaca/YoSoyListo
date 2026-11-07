@@ -37,4 +37,12 @@ router.patch('/me', requirePlayer, rateLimit({ windowMs: 60 * 60_000, max: 20 })
   res.json(await service.rename(req.player.id, req.body?.name));
 });
 
+// Borrar la cuenta (obligatorio en Google Play). Hay que confirmar escribiendo BORRAR.
+router.delete('/me', requirePlayer, rateLimit({ windowMs: 60 * 60_000, max: 5 }), async (req, res) => {
+  if (String(req.body?.confirm || '').trim().toUpperCase() !== 'BORRAR') {
+    return res.status(400).json({ error: 'Escribe BORRAR para confirmar' });
+  }
+  res.json(await service.deleteAccount(req.player.id));
+});
+
 module.exports = router;

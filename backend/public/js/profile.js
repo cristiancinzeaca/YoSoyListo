@@ -31,6 +31,23 @@
     await Player.logout();
     location.href = '/';
   });
+  $('delete-open').addEventListener('click', () => {
+    $('delete-form').hidden = false;
+    $('delete-open').hidden = true;
+    $('delete-confirm').focus();
+  });
+  $('delete-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('delete-error').hidden = true;
+    try {
+      await api.del('/api/players/me', { confirm: $('delete-confirm').value });
+      Player.clear();
+      location.href = '/borrar-cuenta?hecho=1';
+    } catch (err) {
+      $('delete-error').textContent = err.message;
+      $('delete-error').hidden = false;
+    }
+  });
   FX.countUp($('st-rating'), me.rating);
   if (me.tier) $('st-tier').textContent = `${me.tier.icon} ${me.tier.name}`;
   $('st-blitz').textContent = me.bestBlitz;
