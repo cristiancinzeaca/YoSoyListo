@@ -234,11 +234,18 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 
 ## 5r. Aplicația de Android (ramura `android`)
 - Trusted Web Activity (site-ul pe tot ecranul), pachet `es.yosoylisto.app`, în `android/` (androidbrowserhelper 2.5.0, AGP 8.11.1, compile/targetSdk 36, doar portret). Pornește pe `https://www.yosoylisto.es/?utm_source=android`.
-- Se construiește în GitHub Actions (`.github/workflows/android.yml`, la push pe `android/**` sau manual) și ajunge în **Releases → `android-latest`**. Fără secrete iese doar un APK de test (semnat cu cheie de debug). Cu secretele `ANDROID_KEYSTORE_B64` și `ANDROID_KEYSTORE_PASSWORD` iese AAB semnat (pentru Google Play) + APK + amprenta SHA-256.
+- Se construiește în GitHub Actions (`.github/workflows/android.yml`, la push pe `android/**` sau manual) și ajunge în **Releases → `android-latest`**. Cheia de upload e criptată în repo (`android/upload.jks.enc`, AES-256/PBKDF2); singurul secret e `ANDROID_KEYSTORE_PASSWORD`. Fără el iese doar APK de test. minSdk 24 (cerut de Play).
 - `/.well-known/assetlinks.json`: amprentele din `ANDROID_CERTS` (în `core/server.js`) + variabila `ANDROID_CERT_SHA256` (adaugi amprenta cheii Google Play din Play Console → App integrity, separate prin virgulă).
 - Cheia de upload (nov 2026): nouă, amprenta 9E:17:3E…A0:02 în `ANDROID_CERTS`; Cristian trebuie să pună secretele în GitHub.
 - Materiale Google Play (texte ES, iconiță, 1024x500, capturi) livrate în chat.
 - Proxy-ul sesiunii nu permite API-ul GitHub Actions (nici secrete, nici rulări); Releases se pot citi.
+
+## Google Play (nov 2026)
+- App „Yo Soy Listo: Trivial y Quiz” (`es.yosoylisto.app`) în contul ElGatoLoco. Trimisă la review pe 8 nov 2026 în **testare închisă (Alpha)**, versiunea 5 (1.0.5), țări: Spania + România.
+- Testeri: Grupuri Google `neon-paws-testers@googlegroups.com` + `testers-community@googlegroups.com`. Cont personal → 12 testeri 14 zile, apoi cererea de acces la producție.
+- Declarații: fără reclame, fără ID publicitar, public țintă 18+, Data Safety (nume, email, ID utilizator, data nașterii, mesaje chat, interacțiuni; criptat; fără partajare), IARC: PEGI 12 / USK 16 / Australia 18+, refuzat în Taiwan.
+- Ștergerea contului: `DELETE /api/players/me` (confirmare BORRAR), buton în profil, pagina publică `/borrar-cuenta`.
+- Fișa: imagini în `play/` (nu sunt în repo), marcate ca generate cu AI.
 
 ## 6. Alte idei în așteptare
 
