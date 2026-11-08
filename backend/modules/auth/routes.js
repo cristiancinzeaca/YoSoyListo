@@ -49,7 +49,30 @@ pages.get('/google', rateLimit({ windowMs: 60_000, max: 30 }), (req, res) => {
   res.redirect(google.authUrl(redirectUri(req), state));
 });
 
+// Desde la app de Android: /auth/google/app se abre en el navegador; al volver, /volver-app devuelve a la app.
+pages.get('/google/app', rateLimit({ windowMs: 60_000, max: 30 }), (req, res) => {
+  const next = google.safeNext(req.query.next);
+  if (!google.configured()) return res.redirect('/entrar#error=config');
+  const state = google.createAppState(next);
+  if (google.fakeMode()) {
+    const name = String(req.query.dev || 'Probador').replace(/[^\p{L}\p{N}]/gu, '').slice(0, 20);
+    return res.redirect(`/auth/google/callback?state=${state}&code=dev:${encodeURIComponent(name)}`);
+  }
+  res.redirect(google.authUrl(redirectUri(req), state));
+});
+
 pages.get('/google/callback', rateLimit({ windowMs: 60_000, max: 30 }), async (req, res) => {
+  const appEntry = google.consumeAppState(req.query.state);
+  if (appEntry) {
+    if (req.query.error || typeof req.query.code !== 'string') return res.redirect('/volver-app#error=cancel');
+    try {
+      const identity = await google.exchangeCode(req.query.code, redirectUri(req));
+      return res.redirect(`/volver-app#code=${encodeURIComponent(google.createLoginCode(identity, appEntry.next))}`);
+    } catch (err) {
+      console.error('[auth] Google (app)', err.message);
+      return res.redirect('/volver-app#error=google');
+    }
+  }
   const saved = readCookie(req, COOKIE) || '';
   setCookie(req, res, '', 0);
   const [state, next] = saved.split('|');

@@ -1,10 +1,8 @@
-// App de Android de Yo Soy Listo: la web dentro de una Trusted Web Activity (pantalla completa, sin barra del navegador).
+// App de Android de Yo Soy Listo: la web dentro de un WebView propio (MainActivity), a pantalla completa.
 plugins {
     id 'com.android.application'
 }
 
-def host = 'www.yosoylisto.es'
-def launchUrl = "https://${host}/?utm_source=android"
 def keystore = System.getenv('KEYSTORE_PATH')
 
 android {
@@ -19,13 +17,6 @@ android {
         versionName(System.getenv('VERSION_NAME') ?: '1.0.0')
 
         resValue 'string', 'appName', 'Yo Soy Listo'
-        resValue 'string', 'launchUrl', launchUrl
-        resValue 'string', 'hostName', host
-        resValue 'string', 'providerAuthority', 'es.yosoylisto.app.fileprovider'
-        resValue 'color', 'colorPrimary', '#1b1035'
-        resValue 'color', 'navigationColor', '#1b1035'
-        resValue 'color', 'backgroundColor', '#1b1035'
-        resValue 'string', 'assetStatements', """[{ "relation": ["delegate_permission/common.handle_all_urls"], "target": { "namespace": "web", "site": "https://${host}" } }]"""
     }
 
     signingConfigs {
@@ -57,5 +48,7 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+    implementation 'androidx.core:core:1.16.0'
+    implementation 'androidx.activity:activity:1.10.1'
+    implementation 'androidx.core:core-splashscreen:1.0.1'
 }

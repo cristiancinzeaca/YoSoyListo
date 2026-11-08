@@ -83,8 +83,12 @@ const Player = {
       throw err;
     }
   },
+  // En la app de Android, Google se abre en el navegador del móvil (Google no deja entrar desde un WebView).
+  get inApp() {
+    return /YoSoyListoApp/.test(navigator.userAgent);
+  },
   loginUrl(next = location.pathname + location.search) {
-    return `/auth/google?next=${encodeURIComponent(next)}`;
+    return `/auth/google${this.inApp ? '/app' : ''}?next=${encodeURIComponent(next)}`;
   },
 
   // Garantiza que hay cuenta: si no, muestra la ventana para entrar con Google.

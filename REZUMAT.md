@@ -240,6 +240,10 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Materiale Google Play (texte ES, iconiță, 1024x500, capturi) livrate în chat.
 - Proxy-ul sesiunii nu permite API-ul GitHub Actions (nici secrete, nici rulări); Releases se pot citi.
 
+## App Android = WebView propio (nov 2026)
+- Ya no es TWA: `android/app/src/main/java/es/yosoylisto/app/MainActivity.java` carga https://www.yosoylisto.es en un WebView (UA con `YoSoyListoApp`), enlaces externos fuera, botón atrás, splash, edge-to-edge, página «Sin conexión».
+- Login con Google desde la app: `Player.loginUrl` → `/auth/google/app` (state en el servidor, no cookie) → se abre en el navegador del móvil → callback → `/volver-app#code=` → `intent://login?code=…` → la app abre `/entrar#code=…`. Test: `test/appLogin.test.js`.
+
 ## Google Play (nov 2026)
 - App „Yo Soy Listo: Trivial y Quiz” (`es.yosoylisto.app`) în contul ElGatoLoco. Trimisă la review pe 8 nov 2026 în **testare închisă (Alpha)**, versiunea 5 (1.0.5), țări: Spania + România.
 - Testeri: Grupuri Google `neon-paws-testers@googlegroups.com` + `testers-community@googlegroups.com`. Cont personal → 12 testeri 14 zile, apoi cererea de acces la producție.

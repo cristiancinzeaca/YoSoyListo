@@ -75,7 +75,7 @@ async function exchangeCode(code, redirectUri) {
 
 // Códigos de un solo uso (2 minutos) para terminar el inicio de sesión desde la página /entrar.
 const pending = new Map();
-const LOGIN_CODE_TTL_MS = 2 * 60_000;
+const LOGIN_CODE_TTL_MS = 5 * 60_000;
 
 function createLoginCode(identity, next = '/') {
   const now = Date.now();
@@ -89,6 +89,26 @@ function consumeLoginCode(code) {
   const entry = typeof code === 'string' ? pending.get(code) : null;
   if (!entry) return null;
   pending.delete(code);
+  return entry.expires >= Date.now() ? entry : null;
+}
+
+// Login desde la app de Android: Google se abre en el navegador del móvil (no en el WebView de la app,
+// que Google bloquea), así que el «state» se guarda en el servidor y no en una cookie.
+const appStates = new Map();
+const APP_STATE_TTL_MS = 10 * 60_000;
+
+function createAppState(next = '/') {
+  const now = Date.now();
+  for (const [k, v] of appStates) if (v.expires < now) appStates.delete(k);
+  const state = 'app.' + crypto.randomBytes(18).toString('base64url');
+  appStates.set(state, { next, expires: now + APP_STATE_TTL_MS });
+  return state;
+}
+
+function consumeAppState(state) {
+  const entry = typeof state === 'string' ? appStates.get(state) : null;
+  if (!entry) return null;
+  appStates.delete(state);
   return entry.expires >= Date.now() ? entry : null;
 }
 
@@ -106,5 +126,7 @@ module.exports = {
   createLoginCode,
   consumeLoginCode,
   safeNext,
+  createAppState,
+  consumeAppState,
   setExchangeForTests: (fn) => (exchangeOverride = fn),
 };
