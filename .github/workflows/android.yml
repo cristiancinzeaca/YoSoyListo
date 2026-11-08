@@ -1,4 +1,4 @@
-# Construye la app de Android (Trusted Web Activity) y la deja en Releases → «android-latest».
+# Construye la app de Android (WebView propio) y la deja en Releases → «android-latest».
 # Firma con android/upload.jks.enc (cifrada) + secreto ANDROID_KEYSTORE_PASSWORD; sin él, solo sale un APK de prueba.
 name: Android
 

@@ -132,7 +132,7 @@ function createApp() {
 
   app.get('/robots.txt', (req, res) => {
     res.type('text/plain').send(
-      ['User-agent: *', 'Disallow: /admin/', 'Disallow: /api/', 'Disallow: /pareja', 'Disallow: /auth/', 'Disallow: /portal', '', `Sitemap: ${baseUrl(req)}/sitemap.xml`, ''].join('\n')
+      ['User-agent: *', 'Disallow: /admin/', 'Disallow: /api/', 'Disallow: /pareja', 'Disallow: /auth/', 'Disallow: /volver-app', 'Disallow: /portal', '', `Sitemap: ${baseUrl(req)}/sitemap.xml`, ''].join('\n')
     );
   });
 
