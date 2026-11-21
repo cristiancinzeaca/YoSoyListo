@@ -65,6 +65,7 @@
       page = 1;
       loadList();
       loadReports();
+      loadFeedback();
       loadChatReports();
       loadActivity();
     } catch (err) {
@@ -517,6 +518,53 @@
     }
   }
 
+  // ---------- Sugerencias ----------
+  async function loadFeedback() {
+    if (!cfg.url || !cfg.key) return;
+    const box = $('feedback');
+    try {
+      const { items } = await api('/api/feedback');
+      box.replaceChildren();
+      $('fb-total').textContent = `(${items.length})`;
+      if (!items.length) {
+        const empty = document.createElement('p');
+        empty.className = 'hint';
+        empty.textContent = 'Todavía no hay sugerencias.';
+        box.appendChild(empty);
+      }
+      for (const f of items) {
+        const item = document.createElement('div');
+        item.className = 'q-item';
+        const text = document.createElement('div');
+        text.className = 'q-text';
+        text.textContent = f.message;
+        const meta = document.createElement('p');
+        meta.className = 'q-meta';
+        meta.textContent = [fmtDate(f.created_at), f.player_name || 'Sin cuenta', f.source === 'android' ? 'App Android' : 'Web', f.contact ? `Contacto: ${f.contact}` : ''].filter(Boolean).join(' · ');
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+        const done = document.createElement('button');
+        done.type = 'button';
+        done.className = 'small';
+        done.textContent = 'Leída';
+        done.addEventListener('click', async () => {
+          try {
+            await api(`/api/feedback/${f.id}`, { method: 'DELETE' });
+            loadFeedback();
+          } catch (err) {
+            message($('fb-msg'), err.message, false);
+          }
+        });
+        actions.append(done);
+        item.append(text, meta, actions);
+        box.appendChild(item);
+      }
+      message($('fb-msg'), '');
+    } catch (err) {
+      message($('fb-msg'), err.message, false);
+    }
+  }
+
   // ---------- Chat: mensajes reportados ----------
   async function loadChatReports() {
     if (!cfg.url || !cfg.key) return;
@@ -580,6 +628,7 @@
   resetForm();
   loadList();
   loadReports();
+  loadFeedback();
   loadChatReports();
   loadActivity();
 })();

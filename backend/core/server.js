@@ -19,6 +19,7 @@ const campaignRoutes = require('../modules/campaign/routes');
 const dailyRoutes = require('../modules/daily/routes');
 const weeklyRoutes = require('../modules/weekly/routes');
 const adminRoutes = require('../modules/admin/routes');
+const feedbackRoutes = require('../modules/feedback/routes');
 const live = require('./live');
 const weekly = require('../modules/weekly/service');
 const chat = require('../modules/chat/service');
@@ -114,6 +115,7 @@ function createApp() {
   app.use('/api/daily', dailyRoutes);
   app.use('/api/weekly', weeklyRoutes);
   app.use('/api/admin', adminRoutes);
+  app.use('/api/feedback', feedbackRoutes);
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
   app.use('/auth', authRoutes.pages);

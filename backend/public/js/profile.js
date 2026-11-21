@@ -31,6 +31,18 @@
     await Player.logout();
     location.href = '/';
   });
+  $('fb-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const st = $('fb-status');
+    st.hidden = false;
+    try {
+      await api.post('/api/feedback', { message: $('fb-text').value, contact: $('fb-contact').value });
+      $('fb-text').value = '';
+      st.textContent = '✅ ¡Gracias! Hemos recibido tu sugerencia.';
+    } catch (err) {
+      st.textContent = err.message;
+    }
+  });
   $('delete-open').addEventListener('click', () => {
     $('delete-form').hidden = false;
     $('delete-open').hidden = true;

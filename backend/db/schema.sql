@@ -57,6 +57,17 @@ create table if not exists question_reports (
 
 create index if not exists question_reports_question_idx on question_reports (question_id);
 
+-- Sugerencias de los jugadores (botón «Enviar sugerencia» del perfil).
+create table if not exists feedback (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid,
+  message text not null check (char_length(message) between 5 and 1000),
+  contact text check (contact is null or char_length(contact) <= 120),
+  source text check (source is null or char_length(source) <= 20),
+  created_at timestamptz not null default now()
+);
+create index if not exists feedback_created_idx on feedback (created_at desc);
+
 -- ---------------------------------------------------------------------
 -- Jugadores (perfil de invitado: sin email ni contraseña)
 -- ---------------------------------------------------------------------
