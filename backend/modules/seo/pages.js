@@ -173,8 +173,8 @@ const THEMES = {
   },
   'preguntas-trampa': {
     name: 'Preguntas trampa',
-    title: 'Preguntas trampa con respuestas',
-    desc: 'Preguntas trampa con respuestas para pillar a tus amigos: acertijos rápidos que casi todo el mundo falla. ¿Cuántas aciertas?',
+    title: 'Preguntas trampa y capciosas con respuestas',
+    desc: 'Preguntas trampa y capciosas con respuestas para pillar a tus amigos: acertijos rápidos que casi todo el mundo falla. ¿Cuántas aciertas?',
     intro:
       'Preguntas trampa con respuestas: acertijos cortos que parecen fáciles pero esconden un truco. Son perfectas para una cena, un viaje en coche o para pillar a tus amigos. Léelas en voz alta, deja que contesten rápido… y luego toca «Ver respuesta».',
     filter: (q) => q.tag === 'trampa',
@@ -252,6 +252,16 @@ const THEMES = {
     filter: inCats(['general', 'ciencia'], (q) => /(\bcuanto es\b|\bnumeros?\b|\bsuma\b|\braiz\b|\bimpar\b|\bprimo\b|\bmultiplic|\bdivid|\bporcentaje|\bgeometr|\btriangulo|\bcirculo|\bangulo|\bpi\b|\becuacion|\bfraccion|\bromano|\blados\b|\bhexagono|\boctogono|\bpentagono|\bdocena|\bcentena|\bmillon)/.test(norm(`${q.text} ${q.correct}`)) && !/emergencia|mala suerte|personas|supercontinente|planta/.test(norm(q.text))),
   },
 };
+// Selección fija de 100 preguntas variadas (mismo orden siempre, para que la página no cambie).
+const pick100 = new Set();
+THEMES['100-preguntas-de-cultura-general'] = {
+  name: '100 preguntas',
+  title: '100 preguntas de cultura general con respuestas',
+  desc: '100 preguntas de cultura general con respuestas, de fáciles a difíciles: historia, geografía, ciencia, arte, deportes y curiosidades.',
+  intro:
+    'Una selección de 100 preguntas de cultura general con respuestas, mezclando todas las categorías: historia, geografía, ciencia, arte y literatura, deportes y curiosidades. Van de más fáciles a más difíciles, así que sirven tanto para un trivial en familia como para medir tu nivel. Apunta cuántas aciertas y, al final, compara tu resultado con el de tus amigos.',
+  filter: (q) => pick100.has(q.text),
+};
 const MIN_THEME = 20;
 
 const LEVELS = { 1: 'Preguntas fáciles', 2: 'Preguntas de dificultad media', 3: 'Preguntas difíciles' };
@@ -271,6 +281,7 @@ function shuffledOptions(q) {
 }
 
 let cache = null;
+const hashOf = (t) => crypto.createHash('md5').update(t).digest('hex');
 function load() {
   if (cache) return cache;
   cache = {};
@@ -278,10 +289,24 @@ function load() {
     const list = JSON.parse(fs.readFileSync(path.join(DIR, `${cat}.json`), 'utf8'));
     cache[cat] = list.map(([text, correct, wrong, difficulty, explanation, tag]) => ({ text, correct, wrong, difficulty: difficulty || 2, explanation, tag: tag || null }));
   }
+  // 100 preguntas: por cada categoría, 17 (8 fáciles, 6 medias, 3 difíciles) elegidas por hash; se recorta a 100.
+  const quota = { 1: 8, 2: 6, 3: 3 };
+  const chosen = [];
+  for (const cat of ORDER) {
+    for (const level of [1, 2, 3]) {
+      const qs = cache[cat].filter((q) => q.difficulty === level && q.tag !== 'trampa').sort((a, b) => (hashOf(a.text) < hashOf(b.text) ? -1 : 1));
+      chosen.push(...qs.slice(0, quota[level]));
+    }
+  }
+  chosen.sort((a, b) => (hashOf(a.text) < hashOf(b.text) ? -1 : 1)).slice(0, 100).forEach((q) => pick100.add(q.text));
   return cache;
 }
 
-function layout({ title, description, canonical, body }) {
+// JSON-LD: datos estructurados para Google (no se ejecuta; la CSP no lo bloquea).
+const ld = (obj) => `<script type="application/ld+json">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`;
+
+function layout({ title, description, canonical, body, jsonld = [] }) {
+  const origin = canonical.replace(/^(https?:\/\/[^/]+).*$/, '$1');
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -294,8 +319,14 @@ function layout({ title, description, canonical, body }) {
   <meta property="og:title" content="${esc(title)}">
   <meta property="og:description" content="${esc(description)}">
   <meta property="og:url" content="${esc(canonical)}">
-  <meta property="og:image" content="/img/og-image.jpg">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:site_name" content="Yo Soy Listo">
+  <meta property="og:image" content="${esc(origin)}/img/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
+  ${jsonld.map(ld).join('\n  ')}
   <link rel="icon" href="/img/favicon-48.png" type="image/png" sizes="48x48">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
@@ -309,7 +340,7 @@ function layout({ title, description, canonical, body }) {
       <a class="me-chip" href="/">🎮 Jugar</a>
     </header>
 ${body}
-    <footer class="site-footer">© Yo Soy Listo · <a href="/preguntas">Preguntas con respuestas</a> · <a href="/privacidad">Privacidad</a></footer>
+    <footer class="site-footer">© Yo Soy Listo · <a href="/preguntas">Preguntas con respuestas</a> · <a href="/test-de-cultura-general">Test de cultura general</a> · <a href="/privacidad">Privacidad</a></footer>
   </div>
 </body>
 </html>`;
@@ -326,9 +357,16 @@ function cta(cat) {
       <h2>¿Te atreves a jugar de verdad?</h2>
       <p>En Yo Soy Listo respondes contra el reloj y contra otros jugadores: conquista el mapa de España, reta a un amigo a un duelo o haz el reto diario. Gratis y desde el móvil.</p>
       <a class="btn" href="/blitz${cat ? `?cat=${cat}` : ''}">⚡ Jugar${cat ? ` a ${esc(CATS[cat].name.toLowerCase())}` : ''} (60 segundos)</a>
+      <a class="btn btn-secondary" href="/test-de-cultura-general">📝 Hacer el test de cultura general</a>
       <a class="btn btn-secondary" href="/conquista">🏰 Conquistar España</a>
     </section>`;
 }
+
+const crumbs = (base, items) => ({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: items.map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, item: base + url })),
+});
 
 function indexPage(base) {
   const qs = load();
@@ -354,6 +392,20 @@ function indexPage(base) {
     description: `Más de ${(Math.floor(total / 100) * 100).toLocaleString('es-ES')} preguntas de trivial con respuestas: cultura general, historia, geografía, ciencia, arte y deportes. Gratis.`,
     canonical: `${base}/preguntas`,
     body,
+    jsonld: [
+      crumbs(base, [['Inicio', '/'], ['Preguntas con respuestas', '/preguntas']]),
+      {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: 'Preguntas de trivial con respuestas',
+        itemListElement: [...ORDER, ...activeThemes()].map((slug, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: (CATS[slug] || THEMES[slug]).title,
+          url: `${base}/preguntas/${slug}`,
+        })),
+      },
+    ],
   });
 }
 
@@ -418,16 +470,93 @@ function categoryPage(base, cat) {
   const count = list.length >= 100 ? Math.floor(list.length / 10) * 10 : list.length;
   const levels = new Set(list.map((q) => q.difficulty));
   const tail = levels.has(1) && levels.has(3) ? ' (fáciles y difíciles)' : '';
-  const lead = `${count}${list.length > count ? '+' : ''} ${info.title.charAt(0).toLowerCase()}${info.title.slice(1)}`;
+  const lead = /^\d/.test(info.title) ? info.title : `${count}${list.length > count ? '+' : ''} ${info.title.charAt(0).toLowerCase()}${info.title.slice(1)}`;
+  const quiz = {
+    '@context': 'https://schema.org',
+    '@type': 'Quiz',
+    name: info.title,
+    about: { '@type': 'Thing', name: info.name },
+    inLanguage: 'es',
+    educationalLevel: levels.has(1) && levels.has(3) ? 'Fácil a difícil' : levels.has(1) ? 'Fácil' : 'Difícil',
+    hasPart: list.slice(0, 60).map((q) => ({
+      '@type': 'Question',
+      eduQuestionType: 'Multiple choice',
+      text: q.text,
+      acceptedAnswer: { '@type': 'Answer', text: q.correct },
+      suggestedAnswer: q.wrong.map((w) => ({ '@type': 'Answer', text: w })),
+    })),
+  };
   return layout({
     title: `${lead}${tail}`,
     description: `${info.desc} ${count} preguntas con soluciones, gratis.`,
     canonical: `${base}/preguntas/${cat}`,
     body,
+    jsonld: [crumbs(base, [['Inicio', '/'], ['Preguntas con respuestas', '/preguntas'], [info.name, `/preguntas/${cat}`]]), quiz],
   });
 }
 
-const exists = (slug) => !!CATS[slug] || activeThemes().includes(slug);
-const SEO_PATHS = ['/preguntas', ...ORDER.map((c) => `/preguntas/${c}`), ...activeThemes().map((t) => `/preguntas/${t}`)];
+// Test interactivo de cultura general (20 preguntas). Cambia cada día; ?s= da otra tanda.
+const TEST_CATS = { '': 'cultura general', ...Object.fromEntries(ORDER.filter((c) => c !== 'general').map((c) => [c, CATS[c].name.toLowerCase()])) };
+function testQuestions(cat, seed) {
+  const all = load();
+  const pool = (cat ? all[cat] : ORDER.flatMap((c) => all[c])).filter((q) => q.tag !== 'trampa');
+  const order = (q) => hashOf(seed + q.text);
+  const by = (level, n) => pool.filter((q) => q.difficulty === level).sort((a, b) => (order(a) < order(b) ? -1 : 1)).slice(0, n);
+  return [...by(1, 8), ...by(2, 8), ...by(3, 4)].map((q) => ({ t: q.text, o: shuffledOptions(q), a: q.correct, e: q.explanation || null }));
+}
+function testPage(base, cat = '', seedParam = '') {
+  const topic = TEST_CATS[cat];
+  const today = new Date().toISOString().slice(0, 10);
+  const seed = String(seedParam || today).slice(0, 20);
+  const qs = testQuestions(cat, seed);
+  const url = `/test-de-cultura-general${cat ? `/${cat}` : ''}`;
+  const name = cat ? `Test de ${topic}` : 'Test de cultura general';
+  const others = Object.keys(TEST_CATS)
+    .filter((c) => c !== cat)
+    .map((c) => `<a href="/test-de-cultura-general${c ? `/${c}` : ''}">${esc(c ? `Test de ${TEST_CATS[c]}` : 'Test de cultura general')}</a>`)
+    .join('');
+  const body = `    <main>
+      <section class="card prose qa-head">
+        <p class="qa-crumbs"><a href="/preguntas">Preguntas con respuestas</a> › ${esc(name)}</p>
+        <h1>${esc(name)}: 20 preguntas con respuestas</h1>
+        <p>¿Cuánto sabes de ${esc(topic)}? Responde estas 20 preguntas tipo test, de fáciles a difíciles, y al final verás tu nota sobre 20. Cada día hay una tanda nueva, y puedes pedir otra cuando quieras. Es gratis y no hace falta registrarse.</p>
+      </section>
+      <section class="card test-box" id="test" data-url="${esc(url)}">
+        <noscript><p>Activa JavaScript para hacer el test, o mira las <a href="/preguntas${cat ? `/${cat}` : ''}">preguntas con respuestas</a>.</p></noscript>
+      </section>
+      <script type="application/json" id="test-data">${JSON.stringify(qs).replace(/</g, '\\u003c')}</script>
+      <section class="card prose">
+        <h2>¿Cómo funciona el test?</h2>
+        <p>Son 20 preguntas con cuatro respuestas posibles: 8 fáciles, 8 de dificultad media y 4 difíciles. Al elegir una respuesta verás al momento si has acertado y, en muchas, una pequeña explicación. Al terminar tendrás tu puntuación y podrás compartirla para retar a tus amigos.</p>
+        <h2>¿Qué nota es buena?</h2>
+        <p>Si aciertas 10 o más, tienes un buen nivel de ${esc(topic)}. A partir de 15 estás muy por encima de lo normal, y con 18 o más… eres listo de verdad.</p>
+        <h2>Más tests</h2>
+        <nav class="qa-cats" aria-label="Más tests">${others}</nav>
+      </section>
+      ${cta(cat || null)}
+    </main>
+    <script src="/js/test.js"></script>`;
+  return layout({
+    title: `${name} online: 20 preguntas con nota final · Yo Soy Listo`,
+    description: `Haz gratis el ${name.toLowerCase()}: 20 preguntas tipo test con respuestas, de fáciles a difíciles, y tu nota al final. Una tanda nueva cada día.`,
+    canonical: `${base}${url}`,
+    body,
+    jsonld: [
+      crumbs(base, [['Inicio', '/'], ['Preguntas con respuestas', '/preguntas'], [name, url]]),
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Quiz',
+        name: `${name}: 20 preguntas`,
+        about: { '@type': 'Thing', name: topic },
+        inLanguage: 'es',
+        isAccessibleForFree: true,
+      },
+    ],
+  });
+}
+const TEST_PATHS = Object.keys(TEST_CATS).map((c) => `/test-de-cultura-general${c ? `/${c}` : ''}`);
 
-module.exports = { indexPage, categoryPage, exists, themeQuestions, CATS, THEMES, ORDER, SEO_PATHS };
+const exists = (slug) => !!CATS[slug] || activeThemes().includes(slug);
+const SEO_PATHS = ['/preguntas', ...TEST_PATHS, ...ORDER.map((c) => `/preguntas/${c}`), ...activeThemes().map((t) => `/preguntas/${t}`)];
+
+module.exports = { indexPage, categoryPage, testPage, TEST_CATS, exists, themeQuestions, CATS, THEMES, ORDER, SEO_PATHS };

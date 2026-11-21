@@ -29,6 +29,8 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
 
 // Páginas que queremos que Google indexe.
+// Fecha de la última versión desplegada (las preguntas cambian con cada despliegue).
+const SITEMAP_LASTMOD = new Date().toISOString().slice(0, 10);
 const SITEMAP_PAGES = ['/', '/reto', '/conquista', '/mundo', '/campana', '/privacidad', ...seoPages.SEO_PATHS];
 
 function baseUrl(req) {
@@ -138,7 +140,8 @@ function createApp() {
 
   app.get('/sitemap.xml', (req, res) => {
     const base = baseUrl(req);
-    const urls = SITEMAP_PAGES.map((p) => `  <url><loc>${base}${p}</loc></url>`).join('\n');
+    const lastmod = SITEMAP_LASTMOD;
+    const urls = SITEMAP_PAGES.map((p) => `  <url><loc>${base}${p}</loc><lastmod>${p.startsWith('/test-') ? new Date().toISOString().slice(0, 10) : lastmod}</lastmod></url>`).join('\n');
     res
       .type('application/xml')
       .send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
@@ -151,6 +154,14 @@ function createApp() {
   app.get('/preguntas/:cat', (req, res, next) => {
     if (!seoPages.exists(req.params.cat)) return next();
     res.set('Cache-Control', 'public, max-age=3600').type('html').send(seoPages.categoryPage(baseUrl(req), req.params.cat));
+  });
+
+  // Test interactivo de cultura general (por categoría opcional).
+  app.get(['/test-de-cultura-general', '/test-de-cultura-general/:cat'], (req, res, next) => {
+    const cat = req.params.cat || '';
+    if (!(cat in seoPages.TEST_CATS)) return next();
+    const seed = typeof req.query.s === 'string' ? req.query.s.replace(/[^a-z0-9]/gi, '').slice(0, 20) : '';
+    res.set('Cache-Control', seed ? 'no-store' : 'public, max-age=600').type('html').send(seoPages.testPage(baseUrl(req), cat, seed));
   });
 
   // Versión para portales de juegos (CrazyGames): menú propio y la Conquista dentro de un iframe.

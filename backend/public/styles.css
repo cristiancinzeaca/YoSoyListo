@@ -1376,3 +1376,20 @@ html.portal .chat-btn {
 .danger-zone { border-color: rgba(229, 72, 77, 0.5); }
 .danger-zone form { display: grid; gap: 10px; margin-top: 12px; }
 .danger-zone input { font: inherit; padding: 10px 12px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.25); color: inherit; text-transform: uppercase; }
+
+/* Test de cultura general */
+.test-box { display: grid; gap: 12px; }
+.test-top { display: flex; justify-content: space-between; font-weight: 800; opacity: .9; }
+.test-bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.15); overflow: hidden; }
+.test-fill { height: 100%; background: #ffcb2b; transition: width .3s; }
+.test-q { font-size: 1.3rem; font-weight: 800; margin: 6px 0; }
+.test-opts { display: grid; gap: 10px; }
+.test-opt { font: inherit; font-weight: 700; text-align: left; padding: 14px 16px; border-radius: 14px; border: 2px solid transparent; background: #fff; color: #1b1035; cursor: pointer; }
+.test-opt:disabled { cursor: default; opacity: .75; }
+.test-opt.ok { background: #2eaa5a; color: #fff; opacity: 1; border-color: #ffcb2b; }
+.test-opt.bad { background: #e5484d; color: #fff; opacity: 1; }
+.test-fb { font-weight: 800; margin: 0; }
+.test-fb.ok { color: #6ee7a0; } .test-fb.bad { color: #ff9a9d; }
+.test-expl { margin: 0; opacity: .85; }
+.test-final { font-size: 3.2rem; font-weight: 900; text-align: center; margin: 4px 0 0; color: #ffcb2b; }
+.test-verdict { text-align: center; font-size: 1.25rem; font-weight: 800; margin: 0 0 8px; }

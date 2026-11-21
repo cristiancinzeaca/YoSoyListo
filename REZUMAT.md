@@ -244,6 +244,11 @@ Obiectiv: jocul să arate „ca un joc adevărat”, nu ca un site. Idei, în or
 - Ya no es TWA: `android/app/src/main/java/es/yosoylisto/app/MainActivity.java` carga https://www.yosoylisto.es en un WebView (UA con `YoSoyListoApp`), enlaces externos fuera, botón atrás, splash, edge-to-edge, página «Sin conexión».
 - Login con Google desde la app: `Player.loginUrl` → `/auth/google/app` (state en el servidor, no cookie) → se abre en el navegador del móvil → callback → `/volver-app#code=` → `intent://login?code=…` → la app abre `/entrar#code=…`. Test: `test/appLogin.test.js`.
 
+## SEO (nov 2026)
+- `modules/seo/pages.js`: JSON-LD (Quiz + BreadcrumbList en cada página de preguntas, ItemList en /preguntas), og:image absoluta, página `/preguntas/100-preguntas-de-cultura-general` (selección fija), título «trampa y capciosas».
+- Test interactivo `/test-de-cultura-general` (+ `/historia`, `/geografia`, `/ciencia`, `/arte`, `/deportes`): 20 preguntas (8/8/4), tanda nueva cada día, `?s=` otra tanda; JS en `public/js/test.js`.
+- Home: título «Trivial online gratis…», canonical, JSON-LD WebSite + VideoGame, sección de enlaces «Preguntas y tests para practicar». Sitemap con `lastmod`. Tests: `test/seo.test.js`.
+
 ## Google Play (nov 2026)
 - App „Yo Soy Listo: Trivial y Quiz” (`es.yosoylisto.app`) în contul ElGatoLoco. Trimisă la review pe 8 nov 2026 în **testare închisă (Alpha)**, versiunea 5 (1.0.5), țări: Spania + România.
 - Testeri: Grupuri Google `neon-paws-testers@googlegroups.com` + `testers-community@googlegroups.com`. Cont personal → 12 testeri 14 zile, apoi cererea de acces la producție.
