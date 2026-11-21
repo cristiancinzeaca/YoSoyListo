@@ -7,7 +7,7 @@ function createFakeDb() {
     questions: [], numeric_questions: [], blitz_sessions: [], players: [], question_reports: [], matches: [], match_players: [],
     player_sessions: [], player_items: [], coin_ledger: [], country_owners: [], country_attacks: [],
     chat_messages: [], chat_reports: [], chat_blocks: [], chat_reads: [], campaign_runs: [], auth_tokens: [], daily_runs: [],
-    weekly_points: [], weekly_payouts: [], weekly_prizes: [], visits: [],
+    weekly_points: [], weekly_payouts: [], weekly_prizes: [], visits: [], feedback: [],
   };
 
   class Query {

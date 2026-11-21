@@ -53,6 +53,16 @@
         <p>Tu cuenta está vinculada a Google: puedes entrar desde cualquier móvil u ordenador y conservarás tus monedas, avatares y estadísticas.</p>
         <button class="btn btn-secondary" type="button" id="logout-btn">Cerrar sesión</button>
       </section>
+      <section class="card" id="sugerencia">
+        <h2>💡 Enviar sugerencia</h2>
+        <p>¿Has encontrado un fallo, echas algo en falta o tienes una idea para el juego? Cuéntanoslo: lo leemos todo.</p>
+        <form id="fb-form" class="fb-form">
+          <textarea id="fb-text" rows="4" maxlength="1000" required placeholder="Escribe aquí tu sugerencia…"></textarea>
+          <input id="fb-contact" maxlength="120" placeholder="Tu correo, si quieres que te respondamos (opcional)">
+          <button class="btn" type="submit">Enviar</button>
+          <p class="hint" id="fb-status" hidden></p>
+        </form>
+      </section>
       <section class="card danger-zone" id="delete-card">
         <h2>Borrar mi cuenta</h2>
         <p>Se borran para siempre tu perfil, tus monedas, avatares, héroe, países y mensajes. No se puede deshacer.</p>
