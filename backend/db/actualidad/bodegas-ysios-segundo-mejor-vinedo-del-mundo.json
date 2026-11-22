@@ -1,0 +1,34 @@
+{
+  "slug": "bodegas-ysios-segundo-mejor-vinedo-del-mundo",
+  "date": "2026-11-22",
+  "category": "geografia",
+  "title": "Ysios, segundo mejor viñedo del mundo: test de vino y La Rioja",
+  "h1": "Bodegas Ysios, segundo mejor viñedo del mundo: ¿cuánto sabes de vino?",
+  "description": "Ysios, en la Rioja Alavesa, es el segundo mejor viñedo del mundo en 2026. Pon a prueba lo que sabes de vino, bodegas y regiones con este test de 14 preguntas.",
+  "news": "El 18 de noviembre se publicó la lista The World's 50 Best Vineyards 2026. Bodegas Ysios, en Laguardia (Álava), quedó segunda, solo por detrás del alemán Schloss Johannisberg. España metió ocho bodegas entre las 50.",
+  "intro": [
+    "La lista no premia solo el vino: valora la experiencia de visitar la bodega, desde la arquitectura hasta las vistas y la gastronomía. Ysios destaca por su edificio de techo ondulado, que imita las sierras que lo rodean, y por la panorámica sobre los viñedos de la Rioja Alavesa.",
+    "Rioja, Jerez, el Penedès, la Ribera del Duero… España es un país de vino y su geografía está llena de nombres que salen en cualquier trivial. ¿Sabrías ubicarlos? Responde las preguntas y despliega cada respuesta para comprobarlo."
+  ],
+  "sources": [
+    { "title": "Euronews: los 50 mejores viñedos del mundo", "url": "https://es.euronews.com/2026/11/19/worlds-50-best-vineyards-2026-el-no1-es-schloss-johannisberg-en-alemania" },
+    { "title": "Directo al Paladar: las ocho bodegas españolas de la lista", "url": "https://www.directoalpaladar.com/enologia/rioja-jerez-penedes-emporda-ribera-duero-espana-incluye-ocho-bodegas-cincuenta-mejores-mundo" },
+    { "title": "Wine Industry Advisor: Schloss Johannisberg, mejor viñedo de 2026", "url": "https://wineindustryadvisor.com/2026/11/19/schloss-johannisberg-is-named-the-worlds-best-vineyard-2026/" }
+  ],
+  "questions": [
+    ["¿Qué arquitecto diseñó el edificio de Bodegas Ysios, en Laguardia?", "Santiago Calatrava", ["Frank Gehry", "Rafael Moneo", "Norman Foster"], 2, "El valenciano Calatrava también es el autor de la Ciudad de las Artes y las Ciencias de Valencia."],
+    ["¿Y quién diseñó el hotel de Marqués de Riscal en Elciego, ganador de la lista en 2024?", "Frank Gehry", ["Santiago Calatrava", "Zaha Hadid", "Jean Nouvel"], 2, "Gehry es también el arquitecto del Museo Guggenheim de Bilbao."],
+    ["¿A qué provincia pertenece Laguardia, donde está Bodegas Ysios?", "Álava", ["La Rioja", "Navarra", "Burgos"], 2, "Está en la Rioja Alavesa, la parte vasca de la denominación de origen Rioja."],
+    ["¿Cuál es la capital de La Rioja?", "Logroño", ["Haro", "Calahorra", "Nájera"], 1, null],
+    ["¿Qué uva es la más importante en los vinos tintos de Rioja?", "Tempranillo", ["Albariño", "Verdejo", "Monastrell"], 1, null],
+    ["Según la explicación más extendida, ¿de qué río toma su nombre La Rioja?", "Del río Oja", ["Del río Ebro", "Del río Najerilla", "Del río Iregua"], 3, "«Rioja» vendría de «Río Oja», un afluente del Tirón."],
+    ["¿En qué ciudad está la bodega de Tío Pepe, otra de las españolas de la lista?", "Jerez de la Frontera", ["Sanlúcar de Barrameda", "El Puerto de Santa María", "Montilla"], 1, null],
+    ["¿En qué comunidad autónoma se elabora el vino albariño de Rías Baixas?", "Galicia", ["Asturias", "Cantabria", "País Vasco"], 1, null],
+    ["¿Por qué comunidad autónoma discurre la denominación de origen Ribera del Duero?", "Castilla y León", ["Castilla-La Mancha", "Aragón", "La Rioja"], 1, null],
+    ["¿En qué comarca catalana se produce la mayor parte del cava?", "El Penedès", ["El Priorat", "El Empordà", "La Garrotxa"], 2, "Su capital del cava es Sant Sadurní d'Anoia."],
+    ["¿Junto a qué río está Schloss Johannisberg, el mejor viñedo del mundo en 2026?", "El Rin", ["El Danubio", "El Elba", "El Sena"], 2, "Está en la región alemana del Rheingau, en la orilla del Rin."],
+    ["El tercer puesto fue para la bodega Montes, en el valle de Apalta. ¿En qué país está?", "Chile", ["Argentina", "Sudáfrica", "Australia"], 2, null],
+    ["¿Cómo se llama la ciencia que estudia la elaboración del vino?", "Enología", ["Edafología", "Etología", "Espeleología"], 1, null],
+    ["¿Qué país tiene la mayor superficie de viñedo del mundo?", "España", ["Francia", "Italia", "China"], 3, "Según la OIV, España lidera en hectáreas de viñedo, aunque no es el país que más vino produce."]
+  ]
+}

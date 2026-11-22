@@ -1409,3 +1409,7 @@ html.portal .chat-btn {
 .onb-dots span { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.3); }
 .onb-dots span.on { background: #ffcb2b; }
 @keyframes onb-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Actualidad */
+.qa-news { padding: 10px 12px; border-left: 4px solid var(--primary); background: rgba(255,255,255,0.06); border-radius: 8px; }
+.qa-sources { font-size: 0.85rem; color: var(--muted); }
