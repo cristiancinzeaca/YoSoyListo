@@ -340,7 +340,7 @@ function layout({ title, description, canonical, body, jsonld = [] }) {
       <a class="me-chip" href="/">🎮 Jugar</a>
     </header>
 ${body}
-    <footer class="site-footer">© Yo Soy Listo · <a href="/preguntas">Preguntas con respuestas</a> · <a href="/test-de-cultura-general">Test de cultura general</a> · <a href="/privacidad">Privacidad</a></footer>
+    <footer class="site-footer">© Yo Soy Listo · <a href="/preguntas">Preguntas con respuestas</a> · <a href="/test-de-cultura-general">Test de cultura general</a> · <a href="/actualidad">Actualidad</a> · <a href="/privacidad">Privacidad</a></footer>
   </div>
 </body>
 </html>`;
@@ -559,4 +559,4 @@ const TEST_PATHS = Object.keys(TEST_CATS).map((c) => `/test-de-cultura-general${
 const exists = (slug) => !!CATS[slug] || activeThemes().includes(slug);
 const SEO_PATHS = ['/preguntas', ...TEST_PATHS, ...ORDER.map((c) => `/preguntas/${c}`), ...activeThemes().map((t) => `/preguntas/${t}`)];
 
-module.exports = { indexPage, categoryPage, testPage, TEST_CATS, exists, themeQuestions, CATS, THEMES, ORDER, SEO_PATHS };
+module.exports = { indexPage, categoryPage, testPage, TEST_CATS, exists, themeQuestions, CATS, THEMES, ORDER, SEO_PATHS, layout, esc, shuffledOptions, crumbs, cta, catLinks };

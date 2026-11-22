@@ -24,6 +24,7 @@ const live = require('./live');
 const weekly = require('../modules/weekly/service');
 const chat = require('../modules/chat/service');
 const seoPages = require('../modules/seo/pages');
+const actualidad = require('../modules/seo/actualidad');
 const { attachMultiplayer } = require('../modules/multiplayer/hub');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -32,7 +33,7 @@ const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAIL
 // Páginas que queremos que Google indexe.
 // Fecha de la última versión desplegada (las preguntas cambian con cada despliegue).
 const SITEMAP_LASTMOD = new Date().toISOString().slice(0, 10);
-const SITEMAP_PAGES = ['/', '/reto', '/conquista', '/mundo', '/campana', '/privacidad', ...seoPages.SEO_PATHS];
+const SITEMAP_PAGES = ['/', '/reto', '/conquista', '/mundo', '/campana', '/privacidad', ...seoPages.SEO_PATHS, ...actualidad.paths()];
 
 function baseUrl(req) {
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, '');
@@ -143,7 +144,7 @@ function createApp() {
   app.get('/sitemap.xml', (req, res) => {
     const base = baseUrl(req);
     const lastmod = SITEMAP_LASTMOD;
-    const urls = SITEMAP_PAGES.map((p) => `  <url><loc>${base}${p}</loc><lastmod>${p.startsWith('/test-') ? new Date().toISOString().slice(0, 10) : lastmod}</lastmod></url>`).join('\n');
+    const urls = SITEMAP_PAGES.map((p) => `  <url><loc>${base}${p}</loc><lastmod>${p.startsWith('/test-') ? new Date().toISOString().slice(0, 10) : actualidad.lastmodOf(p) || lastmod}</lastmod></url>`).join('\n');
     res
       .type('application/xml')
       .send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
@@ -156,6 +157,15 @@ function createApp() {
   app.get('/preguntas/:cat', (req, res, next) => {
     if (!seoPages.exists(req.params.cat)) return next();
     res.set('Cache-Control', 'public, max-age=3600').type('html').send(seoPages.categoryPage(baseUrl(req), req.params.cat));
+  });
+
+  // Actualidad: tests sobre temas que son noticia.
+  app.get('/actualidad', (req, res) => {
+    res.set('Cache-Control', 'public, max-age=1800').type('html').send(actualidad.indexPage(baseUrl(req)));
+  });
+  app.get('/actualidad/:slug', (req, res, next) => {
+    if (!actualidad.bySlug(req.params.slug)) return next();
+    res.set('Cache-Control', 'public, max-age=3600').type('html').send(actualidad.articlePage(baseUrl(req), req.params.slug));
   });
 
   // Test interactivo de cultura general (por categoría opcional).
