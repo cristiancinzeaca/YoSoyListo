@@ -1,0 +1,35 @@
+{
+  "slug": "alcaraz-gana-atp-finals-turin",
+  "date": "2026-11-23",
+  "category": "deportes",
+  "title": "Alcaraz gana las ATP Finals: test de tenis y Copa de Maestros",
+  "h1": "Alcaraz, campeón de las ATP Finals en Turín: ¿cuánto sabes de tenis?",
+  "description": "Carlos Alcaraz gana por primera vez las ATP Finals tras vencer a Zverev en Turín. Pon a prueba lo que sabes de tenis con este test de 15 preguntas.",
+  "news": "El domingo 22 de noviembre de 2026, Carlos Alcaraz ganó por primera vez las ATP Finals al derrotar a Alexander Zverev por 6-2 y 7-6 en la final de Turín. Es el primer español que se lleva el torneo de Maestros desde Àlex Corretja en 1998.",
+  "intro": [
+    "Las ATP Finals reúnen a final de temporada a los ocho mejores tenistas del año, y ganarlas es uno de los grandes objetivos del circuito justo después de los cuatro Grand Slam. Alcaraz, finalista el año pasado, llegó a la final sin perder ningún partido y resolvió el segundo set en un desempate muy apretado que terminó 9-7.",
+    "España ya sabía lo que era tener un campeón de Maestros, pero llevaba casi tres décadas esperando otro. Repasa la historia de este torneo, los grandes nombres del tenis español y algunas reglas básicas del juego. Responde y despliega cada respuesta para comprobarla."
+  ],
+  "sources": [
+    { "title": "Telemundo: Alcaraz conquista las ATP Finals y acaba con 28 años de sequía", "url": "https://www.telemundo.com/deportes/deportes-noticias/alcaraz-conquista-las-atp-finals-vence-a-zverev-y-termina-con-28-anos-rcna610699" },
+    { "title": "Yahoo Sports (AFP): Alcaraz vence a Zverev y gana su primer título de ATP Finals", "url": "https://sports.yahoo.com/articles/alcaraz-downs-zverev-win-atp-192911557.html" },
+    { "title": "ATP Tour: Alcaraz derrota a Zverev en la final de Turín", "url": "https://www.atptour.com/en/news/alcaraz-zverev-nitto-atp-finals-2026-sunday" }
+  ],
+  "questions": [
+    ["¿En qué ciudad italiana se disputan las ATP Finals desde 2021?", "Turín", ["Milán", "Roma", "Bolonia"], 1, "Antes se jugaron durante doce años en el O2 Arena de Londres."],
+    ["¿A qué tenista venció Alcaraz en la final de las ATP Finals 2026?", "Alexander Zverev", ["Jannik Sinner", "Novak Djokovic", "Ben Shelton"], 1, null],
+    ["¿De qué país es Alexander Zverev?", "Alemania", ["Rusia", "Austria", "Suiza"], 1, "Zverev ya había ganado las ATP Finals en 2018 y 2021."],
+    ["¿Cuántos tenistas disputan el cuadro individual de las ATP Finals?", "Ocho", ["Cuatro", "Doce", "Dieciséis"], 1, "Se reparten en dos grupos de cuatro y los dos primeros de cada grupo pasan a semifinales."],
+    ["¿Quién fue el último español en ganar la Copa de Maestros antes de Alcaraz?", "Àlex Corretja", ["Rafael Nadal", "Carlos Moyá", "Juan Carlos Ferrero"], 2, "Corretja ganó en 1998 en Hannover, precisamente ante Carlos Moyá."],
+    ["¿Qué español ganó la Copa de Maestros en 1976, en Houston?", "Manuel Orantes", ["Manolo Santana", "Andrés Gimeno", "Sergi Bruguera"], 3, "Venció en la final al polaco Wojciech Fibak."],
+    ["¿Qué tenista tiene el récord de títulos de las ATP Finals?", "Novak Djokovic", ["Roger Federer", "Pete Sampras", "Ivan Lendl"], 2, "Djokovic suma siete títulos; Federer, seis."],
+    ["¿En qué año se disputó por primera vez el Masters de fin de temporada?", "1970", ["1968", "1980", "1990"], 3, "La primera edición se jugó en Tokio."],
+    ["¿Quién es el tenista más joven en alcanzar el número 1 del ranking ATP?", "Carlos Alcaraz", ["Lleyton Hewitt", "Rafael Nadal", "Marat Safin"], 2, "Lo logró en septiembre de 2022, con 19 años, tras ganar el US Open."],
+    ["¿En qué comunidad autónoma nació Carlos Alcaraz?", "Región de Murcia", ["Comunidad Valenciana", "Andalucía", "Castilla-La Mancha"], 1, "Nació en El Palmar, una pedanía de Murcia."],
+    ["¿Cuál es el único Grand Slam que se juega sobre tierra batida?", "Roland Garros", ["Wimbledon", "US Open", "Open de Australia"], 1, null],
+    ["¿Sobre qué superficie se juega Wimbledon?", "Hierba", ["Tierra batida", "Pista dura", "Moqueta"], 1, null],
+    ["¿Qué tenista tiene el récord de títulos en Roland Garros?", "Rafael Nadal", ["Björn Borg", "Novak Djokovic", "Roger Federer"], 1, "Nadal lo ganó catorce veces."],
+    ["¿Cuántos sets hay que ganar para llevarse un partido masculino de Grand Slam?", "Tres", ["Dos", "Cuatro", "Cinco"], 1, "Se juega al mejor de cinco sets."],
+    ["¿Quién es el capitán del equipo español en la fase final de la Copa Davis 2026, en Bolonia?", "David Ferrer", ["Rafael Nadal", "Feliciano López", "Sergi Bruguera"], 2, "La fase final se juega del 24 al 29 de noviembre."]
+  ]
+}
