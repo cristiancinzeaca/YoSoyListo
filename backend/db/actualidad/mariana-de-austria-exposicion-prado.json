@@ -1,0 +1,35 @@
+{
+  "slug": "mariana-de-austria-exposicion-prado",
+  "date": "2026-11-25",
+  "category": "arte",
+  "title": "Mariana de Austria en el Prado: test de Velázquez y los Austrias",
+  "h1": "El Prado dedica una gran exposición a Mariana de Austria: ¿cuánto sabes de Velázquez y los Austrias?",
+  "description": "El Museo del Prado abre «Mariana de Austria», con 111 obras sobre la reina regente. Pon a prueba lo que sabes de Velázquez y los Austrias en 15 preguntas.",
+  "news": "El miércoles 25 de noviembre de 2026, los Reyes y el presidente federal de Austria, Alexander Van der Bellen, inauguraron en el Museo del Prado la exposición «Mariana de Austria», que abre al público el 26 de noviembre y podrá verse hasta el 28 de marzo de 2027. Comisariada por la catedrática Noelia García Pérez, reúne 111 piezas, entre pinturas de Velázquez, Martínez del Mazo, Carreño de Miranda y Claudio Coello, esculturas, dibujos y libros iluminados.",
+  "intro": [
+    "Mariana de Austria (1634-1696) fue reina consorte de Felipe IV y, a la muerte de este, gobernó la Monarquía Hispánica durante la minoría de edad de su hijo Carlos II. La muestra recorre su vida en cuatro etapas, de archiduquesa a reina madre, y explica cómo los retratos oficiales, con sus tocas de viuda, papeles y tintero, sirvieron para afirmar una autoridad que pocas mujeres tuvieron en su siglo.",
+    "Es también una buena excusa para volver a «Las meninas», a los pintores de la corte y a la historia del propio museo. Las preguntas mezclan datos de la exposición con cultura general sobre el Barroco español y la casa de Austria. Responde y despliega cada respuesta para comprobarla."
+  ],
+  "sources": [
+    { "title": "Infobae (EFE): El Prado muestra cómo Mariana de Austria hizo del arte su instrumento de poder", "url": "https://www.infobae.com/espana/agencias/2026/11/24/el-prado-muestra-como-mariana-de-austria-hizo-del-arte-su-instrumento-de-poder/" },
+    { "title": "El Cultural: El Prado dedica una exposición a Mariana de Austria", "url": "https://www.elespanol.com/el-cultural/arte/20261124/prado-dedica-exposicion-mariana-austria-mujer-afianzo-poder-golpe-retrato/1003744470723_0.html" },
+    { "title": "Diario Siglo XXI: Los Reyes inauguran con el presidente austriaco la exposición del Prado", "url": "https://www.diariosigloxxi.com/texto-s/mostrar/685409/reyes-inauguran-hoy-presidente-austriaco-exposicion-prado-dedicada-mariana-austria" }
+  ],
+  "questions": [
+    ["¿Qué pintor sevillano pintó «Las meninas»?", "Diego Velázquez", ["Bartolomé Esteban Murillo", "Francisco de Zurbarán", "El Greco"], 1, "Velázquez la pintó en 1656, cuando era pintor de cámara de Felipe IV."],
+    ["¿A qué dinastía pertenecía Mariana de Austria?", "Los Habsburgo", ["Los Borbones", "Los Trastámara", "Los Saboya"], 1, "En España, los Habsburgo se conocen como la casa de Austria."],
+    ["¿Qué rey, el último de los Austrias españoles, era hijo de Mariana?", "Carlos II", ["Felipe V", "Felipe III", "Carlos I"], 1, null],
+    ["¿Qué conflicto estalló tras morir Carlos II sin descendencia en 1700?", "La guerra de Sucesión Española", ["La guerra de los Treinta Años", "La guerra de los Ochenta Años", "La guerra de la Independencia"], 1, "La ganó Felipe de Anjou, que reinó como Felipe V, el primer Borbón."],
+    ["¿Aproximadamente cuántas obras reúne la exposición del Prado sobre Mariana de Austria?", "Más de cien", ["Unas veinte", "Unas cincuenta", "Más de mil"], 1, "Son 111 piezas; algo más de la mitad pertenecen al propio Prado."],
+    ["¿Qué infanta, hija de Felipe IV y Mariana de Austria, ocupa el centro de «Las meninas»?", "Margarita Teresa", ["Isabel Clara Eugenia", "María Teresa", "Ana de Austria"], 2, null],
+    ["¿Qué reyes aparecen reflejados en el espejo del fondo de «Las meninas»?", "Felipe IV y Mariana de Austria", ["Felipe III y Margarita de Austria", "Carlos II y María Luisa de Orleans", "Felipe II e Isabel de Valois"], 2, null],
+    ["¿Qué pintor, pintor de cámara de Carlos II, retrató varias veces a Mariana con tocas de viuda?", "Juan Carreño de Miranda", ["José de Ribera", "Francisco Pacheco", "Alonso Sánchez Coello"], 2, null],
+    ["¿En qué año abrió sus puertas el Museo del Prado?", "1819", ["1785", "1868", "1901"], 2, "Se inauguró el 19 de noviembre de 1819, durante el reinado de Fernando VII."],
+    ["¿Qué arquitecto diseñó el edificio original del Museo del Prado?", "Juan de Villanueva", ["Ventura Rodríguez", "Juan de Herrera", "Antonio Palacios"], 2, "Lo proyectó a finales del siglo XVIII como Gabinete de Ciencias Naturales."],
+    ["¿Qué modisto ha reproducido a tamaño real dos vestidos de Mariana para la exposición?", "Lorenzo Caprile", ["Cristóbal Balenciaga", "Manuel Pertegaz", "Paco Rabanne"], 2, "Uno es el traje de un retrato y el otro, el vestido de viuda que llevó tras la muerte de Felipe IV."],
+    ["¿Hasta cuándo puede visitarse «Mariana de Austria» en el Prado?", "Hasta el 28 de marzo de 2027", ["Hasta el 6 de enero de 2027", "Hasta el 31 de diciembre de 2026", "Hasta el 30 de junio de 2027"], 2, null],
+    ["¿Qué parentesco tenía Mariana de Austria con Felipe IV antes de casarse con él?", "Era su sobrina", ["Era su prima", "Era su tía", "Era su hermanastra"], 3, "Su madre, María Ana de España, era hermana de Felipe IV."],
+    ["¿Qué pintor, yerno de Velázquez, hizo los primeros retratos de Mariana mientras su suegro estaba en Italia?", "Juan Bautista Martínez del Mazo", ["Alonso Cano", "Claudio Coello", "Juan Pantoja de la Cruz"], 3, "Estaba casado con Francisca, hija de Velázquez."],
+    ["¿En qué año murió Felipe IV, dejando a Mariana como regente?", "1665", ["1621", "1659", "1700"], 3, "Carlos II tenía entonces solo tres años; asumió el gobierno en 1675."]
+  ]
+}
