@@ -1,0 +1,35 @@
+{
+  "slug": "premios-ondas-2026-rosalia-leiva-alboran",
+  "date": "2026-11-27",
+  "category": "arte",
+  "title": "Premios Ondas 2026: test de radio, televisión y música española",
+  "h1": "Premios Ondas 2026: Rosalía, Leiva y Alborán, premiados en el Liceu. ¿Cuánto sabes de radio y tele?",
+  "description": "Rosalía, Leiva, Pablo Alborán y Carlos Alsina recogen sus Premios Ondas en el Liceu. Pon a prueba lo que sabes de radio, televisión y música con 15 preguntas.",
+  "news": "El jueves 26 de noviembre de 2026 se celebró en el Gran Teatre del Liceu de Barcelona la gala de la 73.ª edición de los Premios Ondas, que concede Ràdio Barcelona de la Cadena SER. Rosalía recibió el premio al fenómeno musical del año por «LUX», Leiva el de trayectoria musical y Pablo Alborán el de mejor gira por su «Global Tour KM0»; en radio, Carlos Alsina fue reconocido por su trayectoria.",
+  "intro": [
+    "Los Ondas son los premios más veteranos de la radio y la televisión en España: nacieron a mediados del siglo pasado en Barcelona y hoy reconocen también música, pódcast y publicidad. La edición de este año batió el récord de candidaturas, con más de mil propuestas llegadas desde 26 países, y repartió galardones entre nombres tan distintos como la serie «Yakarta», el veterano «Polònia» de TV3 o los cincuenta años de Ràdio 4.",
+    "Aprovechamos la gala para repasar cómo nacieron la radio y la televisión en España, quién inventó la radio, de dónde son algunos de los músicos premiados y qué esconde el teatro que acogió la ceremonia. Responde cada pregunta y despliega la respuesta para comprobar si aciertas."
+  ],
+  "sources": [
+    { "title": "Atlántico: lista de ganadores de los Premios Ondas 2026", "url": "https://www.atlantico.net/cultura/lista-ganadores-premios-ondas-2026_1_20261103-4477900.html" },
+    { "title": "ESCplus: Leiva, Rosalía y Pablo Alborán, Premios Ondas de música 2026", "url": "https://www.escplus.es/musica/2026/premios-ondas-musica-2026-leiva-rosalia-pablo-alboran/" },
+    { "title": "Infobae: los momentos más destacados de los Premios Ondas 2026", "url": "https://www.infobae.com/america/agencias/2026/11/27/de-rosalia-a-pablo-alboran-las-celebrities-y-los-momentos-mas-destacados-de-los-premios-ondas-2026/" }
+  ],
+  "questions": [
+    ["¿Qué emisora concede los Premios Ondas?", "Ràdio Barcelona (Cadena SER)", ["Radio Nacional de España", "Onda Cero", "Catalunya Ràdio"], 1, "Ràdio Barcelona, la primera emisora de España, los creó en 1954."],
+    ["¿En qué año se entregaron por primera vez los Premios Ondas?", "1954", ["1924", "1968", "1977"], 3, "Por eso en 2026 se ha celebrado su 73.ª edición."],
+    ["¿En qué teatro de Barcelona se celebró la gala de los Premios Ondas 2026?", "Gran Teatre del Liceu", ["Palau de la Música Catalana", "Teatre Nacional de Catalunya", "Teatre Grec"], 1, null],
+    ["¿En qué paseo de Barcelona se encuentra el Gran Teatre del Liceu?", "La Rambla", ["Paseo de Gràcia", "Avenida Diagonal", "Vía Laietana"], 2, "El teatro abrió sus puertas en 1847."],
+    ["¿Por qué álbum recibió Rosalía el Ondas al fenómeno musical del año?", "LUX", ["Motomami", "El mal querer", "Los Ángeles"], 1, null],
+    ["¿Cómo se titula el álbum de Rosalía de 2018 inspirado en la novela medieval «Flamenca»?", "El mal querer", ["Motomami", "Los Ángeles", "LUX"], 2, "Cada canción del disco es un capítulo de una historia de amor tóxico."],
+    ["¿En qué grupo de rock se dio a conocer Leiva, premio Ondas a la trayectoria?", "Pereza", ["Estopa", "Marea", "Los Planetas"], 1, "Formó el dúo con Rubén Pozo hasta su separación en 2011."],
+    ["¿De qué ciudad es el cantante Pablo Alborán?", "Málaga", ["Sevilla", "Cádiz", "Granada"], 1, null],
+    ["¿A qué inventor italiano se atribuye tradicionalmente la invención de la radio?", "Guglielmo Marconi", ["Alessandro Volta", "Antonio Meucci", "Enrico Fermi"], 1, "Marconi recibió el Nobel de Física en 1909 por la telegrafía sin hilos."],
+    ["¿Qué significan las siglas FM en la radio?", "Frecuencia modulada", ["Frecuencia media", "Fuerza magnética", "Fase múltiple"], 1, "La otra gran banda es la AM, de amplitud modulada."],
+    ["¿Con qué indicativo empezó a emitir Ràdio Barcelona en 1924?", "EAJ-1", ["EAJ-7", "RNE-1", "ESP-1"], 3, "Fue la primera emisora de radio de España."],
+    ["¿En qué año comenzaron las emisiones regulares de Televisión Española?", "1956", ["1948", "1964", "1975"], 2, "Empezaron el 28 de octubre de 1956 desde el paseo de la Habana, en Madrid."],
+    ["¿Qué emisora de Radio Nacional de España recibió una mención especial por sus 50 años?", "Ràdio 4", ["Radio 3", "Radio Clásica", "Radio 5"], 2, "Es la emisora de RNE que emite en catalán."],
+    ["¿Qué serie de Movistar Plus ganó el Ondas a la mejor serie de ficción en 2026?", "Yakarta", ["Cochinas", "Polònia", "Sidosa"], 2, "Javier Cámara compartió además el premio a la mejor interpretación."],
+    ["¿En qué cadena presenta Carlos Alsina el matinal «Más de uno»?", "Onda Cero", ["Cadena SER", "COPE", "RNE"], 2, null]
+  ]
+}
